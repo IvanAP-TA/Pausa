@@ -1,0 +1,16 @@
+# dependencies
+**/node_modules/
+# next / build output
+pausa/.next/
+pausa/out/
+pausa/.open-next/
+pausa/.vercel/
+# cloudflare wrangler local state
+pausa/.wrangler/
+# secrets / env (mock or real)
+**/.dev.vars
+**/.env*
+# misc
+.DS_Store
+*.tsbuildinfo
+pausa/next-env.d.ts

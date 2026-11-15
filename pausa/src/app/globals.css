@@ -1,0 +1,154 @@
+/* Hallmark · locked-system (Midnight Screening Room, MASTER_PROMPT_PAUSA v2.3) · one accent per screen · tokens only */
+@import "tailwindcss";
+@source "../**/*.{ts,tsx,js,jsx}";
+
+:root {
+  /* Color — locked by spec §3 */
+  --bg-base: #0f1115;
+  --bg-base-alt: #14181c;
+  --surface-1: #1c2228;
+  --surface-2: #242c34;
+  --ink: #f3f0eb;
+  --ink-dim: #9ca3af;
+  --mandarin: #ff6b35;   /* single bold accent — primary action only */
+  --forest: #2d6a4f;     /* rating, positive, belonging */
+  --line: #2a3139;
+  --depth: #191e24;              /* screening-room ambient (neutral, not orange) */
+  --vignette: rgba(0, 0, 0, 0.35);
+
+  /* Type */
+  --font-body: var(--font-hanken), system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, serif;
+
+  /* Radius — one per nesting level */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+}
+
+@theme inline {
+  --color-base: var(--bg-base);
+  --color-base-alt: var(--bg-base-alt);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-dim: var(--ink-dim);
+  --color-mandarin: var(--mandarin);
+  --color-forest: var(--forest);
+  --color-line: var(--line);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+}
+
+/* Floor: no horizontal overflow, never 100vw */
+html,
+body {
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* mobile-native polish: no tap flash, no long-press text selection on controls */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Press feedback (Emil) — transform/opacity only, specific transitions (never `all`) */
+button,
+a {
+  transition:
+    transform 0.08s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+button:active {
+  transform: scale(0.97);
+}
+a:active {
+  opacity: 0.8;
+}
+
+body {
+  /* Screening-room depth: neutral radial (NOT orange — spec §3 forbids orange bg) + vignette */
+  background-color: var(--bg-base);
+  background-image:
+    radial-gradient(ellipse 80% 60% at 72% 32%, var(--depth) 0%, transparent 55%),
+    radial-gradient(ellipse 120% 100% at 50% 0%, transparent 55%, var(--vignette) 100%);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-feature-settings: "ss01";
+}
+
+/* Subtle film grain for a physical, cinematic surface */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+/* Floor: visible keyboard focus, instant */
+:focus-visible {
+  outline: 2px solid var(--mandarin);
+  outline-offset: 2px;
+}
+
+/* Floor: reduced motion honored */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* One orchestrated hero entrance — transform/opacity only (Emil) */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.rise-2 {
+  animation: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.08s both;
+}
+.rise-3 {
+  animation: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.16s both;
+}
