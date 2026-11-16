@@ -111,7 +111,7 @@ export function Landing() {
             <div className="rise relative mx-auto h-[595px] w-full max-w-[460px] md:h-[600px]" style={{ ["--d" as string]: "200ms" }} aria-hidden="true">
               <div data-speed="0.07" className="absolute left-0 top-0 z-10 w-[min(68vw,285px)]"><div className="-rotate-3"><MockLogCard /></div></div>
               <div data-speed="0.16" className="absolute right-0 top-[262px] z-20 w-[min(66vw,265px)] md:top-[170px]"><div className="rotate-2"><MockMatchup /></div></div>
-              <div data-speed="0.04" className="absolute bottom-0 left-3 z-0 hidden w-[150px] md:left-8 md:block md:w-[165px]"><div className="-rotate-1"><MockResultCard /></div></div>
+              <div data-speed="0.04" className="absolute bottom-0 left-3 z-0 hidden w-[150px] md:left-6 md:block md:w-[190px]"><div className="-rotate-1"><MockResultCard /></div></div>
             </div>
           </div>
         </section>
