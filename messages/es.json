@@ -114,7 +114,48 @@
     "inviteBody": "Envía este enlace a quien quieras en el Círculo. Solo entra quien lo tenga.",
     "copy": "Copiar enlace",
     "copied": "Copiado",
-    "code": "Código"
+    "code": "Código",
+    "insightsTitle": "Insights del Círculo",
+    "insightsBody": "Vuestro año, cuánto os parecéis, qué ver juntos.",
+    "invites": {
+      "title": "Invitaciones",
+      "body": "Quien tenga un enlace activo puede entrar. Caduca solo y puedes revocarlo cuando quieras.",
+      "none": "No hay ninguna invitación activa. Crea una nueva.",
+      "noneMember": "No hay ninguna invitación activa: pide a un admin que cree una.",
+      "expires": "Caduca el {date}",
+      "never": "No caduca",
+      "uses": "{used, plural, =0 {Sin usar} one {Usada # vez} other {Usada # veces}}",
+      "usesOf": "{used} de {max} usos",
+      "revoke": "Revocar",
+      "new": "Nueva invitación",
+      "expiry": "Caducidad",
+      "expiryChoices": {
+        "1d": "24 horas",
+        "7d": "7 días",
+        "30d": "30 días",
+        "never": "Nunca"
+      },
+      "maxUses": "Cuántas personas",
+      "unlimited": "Sin límite",
+      "people": "{count, plural, one {Solo # persona} other {Como máximo # personas}}",
+      "create": "Crear invitación"
+    },
+    "actions": {
+      "makeAdmin": "Hacer admin",
+      "makeMember": "Quitar admin",
+      "remove": "Quitar",
+      "confirmRemove": "Sí, quitar a {name}"
+    },
+    "leave": {
+      "title": "Salir del Círculo",
+      "body": "Dejarás de ver el diario de este Círculo. Para volver necesitarás una invitación nueva.",
+      "confirm": "Salir del Círculo"
+    },
+    "errors": {
+      "forbidden": "Solo un admin puede hacerlo.",
+      "last_admin": "Eres el único admin: nombra antes a otro admin.",
+      "not_member": "Esa persona ya no está en el Círculo."
+    }
   },
   "serata": {
     "title": "Esta noche vemos",
@@ -207,7 +248,24 @@
     "title": "Te han invitado a {name}",
     "body": "Entra para ver el diario del Círculo y añadir el tuyo.",
     "cta": "Entrar en el Círculo",
-    "invalid": "Esta invitación no es válida o ha caducado."
+    "invalid": {
+      "not_found": {
+        "title": "Esta invitación no existe.",
+        "body": "Comprueba que copiaste todo el enlace, o pide una invitación nueva."
+      },
+      "expired": {
+        "title": "Esta invitación ha caducado.",
+        "body": "Pide a quien te invitó que te envíe otra: duran poco a propósito."
+      },
+      "revoked": {
+        "title": "Esta invitación fue revocada.",
+        "body": "Pide a un admin del Círculo que te envíe una nueva."
+      },
+      "exhausted": {
+        "title": "Esta invitación ya se usó.",
+        "body": "Tenía un número limitado de plazas. Pide una invitación nueva."
+      }
+    }
   },
   "tmdb": {
     "attribution": "Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica."
@@ -225,7 +283,7 @@
     "log": "<b>{name}</b> vio {title}",
     "comment": "<b>{name}</b> comentó {title}",
     "reaction": "<b>{name}</b> reaccionó a {title}",
-    "now_watching": "<b>{name}</b> empezó a ver algo en {circle}",
+    "now_watching": "<b>{name}</b> empezó a ver {title} en {circle}",
     "circle_join": "<b>{name}</b> entró en {circle}",
     "serata_invite": "<b>{name}</b> abrió una noche de cine en {circle}"
   },
@@ -233,5 +291,237 @@
     "subject": "Tu enlace para entrar en Pausa",
     "body": "Toca el enlace para entrar. Caduca en 15 minutos.",
     "ignore": "Si no lo pediste tú, ignora este correo."
+  },
+  "insights": {
+    "title": "Insights",
+    "yearLabel": "Año",
+    "yearTitle": "Vuestro {year}",
+    "yearEmpty": "Todavía nada en {year}. Registrad algo y volved.",
+    "stats": {
+      "logs": "{count, plural, one {visionado} other {visionados}}",
+      "titles": "títulos distintos",
+      "hours": "horas de cine",
+      "avg": "estrellas de nota media"
+    },
+    "titleOfYear": "El título del año",
+    "raters": "{count, plural, one {Puntuado por una persona} other {Puntuado por # personas}}",
+    "starsLabel": "{stars} de 5 estrellas",
+    "ratingLabel": "{name}: {stars} de 5 estrellas",
+    "facts": {
+      "mostActive": "Quien más ha registrado: {name} ({count, plural, one {# visionado} other {# visionados}}).",
+      "busiest": "El mes más lleno: {month} ({count, plural, one {# visionado} other {# visionados}}).",
+      "platform": "La plataforma más usada: {name}.",
+      "together": "Ven más cosas juntos: {a} y {b} ({count, plural, one {# vez} other {# veces}})."
+    },
+    "taste": {
+      "title": "Cuánto os parecéis",
+      "body": "Comparado en los títulos que habéis puntuado los dos. Hacen falta al menos {min} títulos en común, si no el número no dice nada.",
+      "onTitles": "en {count} títulos",
+      "unknown": "Aún no comparables",
+      "needMore": "{count} títulos en común de {min}: puntuad alguno más."
+    },
+    "agree": {
+      "title": "En esto coincidís"
+    },
+    "split": {
+      "title": "En esto os dividís"
+    },
+    "recs": {
+      "title": "Para ver juntos",
+      "body": "Títulos que alguien amó y que otros aún no han visto, ponderados por el gusto de quien los vería. Salen solo de vuestras notas.",
+      "lovedBy": "Les gustó a {names}.",
+      "unseenBy": "Aún no lo han visto: {names}.",
+      "forecast": "Previsión",
+      "empty": "Hacen falta más notas para recomendar algo: seguid registrando y puntuando."
+    }
+  },
+  "landing": {
+    "meta": {
+      "title": "Pausa · El diario privado para grupos de amigos, con la noche de cine que decide por ti",
+      "description": "Películas, series y anime que veis juntos, con las notas de todos y sin público. Y cuando llega la noche, una noche de cine de dos minutos elige qué ver."
+    },
+    "og": {
+      "tagline": "El diario privado de tu grupo de amigos."
+    },
+    "nav": {
+      "how": "Cómo funciona",
+      "try": "Pruébala",
+      "privacy": "Privacidad",
+      "faq": "Preguntas",
+      "login": "Entrar",
+      "start": "Empezar",
+      "menu": "Secciones",
+      "language": "Idioma"
+    },
+    "hero": {
+      "title": "El diario privado de tu grupo de amigos. Y el fin del «¿qué vemos?»",
+      "lede": "Películas, series y anime vistos juntos, con las notas de todos. Y cuando llega la noche, una noche de cine de dos minutos elige por el grupo.",
+      "cta": "Crea tu Círculo",
+      "secondary": "Prueba la noche de cine",
+      "note": "Solo necesitas tu email, sin contraseña. Tus amigos pueden votar sin cuenta."
+    },
+    "mock": {
+      "who": "Giulia",
+      "action": "vio",
+      "title": "Chernobyl",
+      "meta": "Serie · 2019",
+      "review": "Cinco capítulos, cinco nudos en el estómago. Marco dejó de respirar en el tercero.",
+      "with": "Visto con",
+      "serataTitle": "Esta noche vemos",
+      "round": "Final",
+      "pick": "Elige uno.",
+      "rating": "4,5 de 5 estrellas",
+      "invite": "Invitación",
+      "inviteCode": "Código",
+      "inviteExpires": "Caduca en 14 días",
+      "copy": "Copiar enlace",
+      "cardKicker": "LA NOCHE ELIGIÓ",
+      "cardSubtitle": "Esta noche, esta.",
+      "cardLine1": "Club del Sofá · 16 nov",
+      "cardLine2": "Torneo relámpago · 2 rondas · 4 personas"
+    },
+    "problem": {
+      "title": "Media hora de mensajes para elegir una película. Y tres meses después nadie recuerda qué visteis.",
+      "body": "Pasa en todos los grupos. Pausa te da dos cosas: un sitio donde guardar lo que veis juntos y una forma rápida de decidir qué ver después."
+    },
+    "how": {
+      "title": "Tres pasos y la noche está resuelta",
+      "steps": [
+        {
+          "title": "Crea el Círculo",
+          "body": "Ponle nombre al grupo y envía el enlace de invitación. Quien entra ve solo vuestro diario, nada más. El enlace caduca solo y lo revocas cuando quieras."
+        },
+        {
+          "title": "Registra lo que ves",
+          "body": "Nota con medias estrellas, un par de líneas que se leen como subtítulos, quién estaba contigo. Los spoilers quedan ocultos hasta que alguien decide leerlos."
+        },
+        {
+          "title": "Decidid esa noche",
+          "body": "Abre una noche de cine con una lista de títulos y envía el enlace. Se vota desde el móvil, incluso sin cuenta: en dos minutos hay ganador y una Card para compartir."
+        }
+      ]
+    },
+    "features": {
+      "title": "Todo lo que necesita un grupo, nada de lo que no",
+      "items": [
+        {
+          "title": "Un diario de todos",
+          "body": "Cada película, serie y anime, con la nota de cada uno, reacciones y comentarios. Con «visto con» sabes quién estaba."
+        },
+        {
+          "title": "La noche de cine",
+          "body": "Torneo relámpago o Mesa con 3 votos y un veto. Se acabó el «elige tú»."
+        },
+        {
+          "title": "Cuánto os parecéis",
+          "body": "Con las notas reales: quién tiene gustos parecidos, qué os divide, qué ver juntos. Vuestro año de un vistazo."
+        },
+        {
+          "title": "Listas y rankings",
+          "body": "Watchlist del grupo, rankings, listas personales. Añade un título con un toque."
+        },
+        {
+          "title": "Una Card para compartir",
+          "body": "El resultado de la noche en formato historia, con el título elegido. Nunca quién votó qué."
+        },
+        {
+          "title": "Hecha para el móvil",
+          "body": "Italiano, inglés y español, clara u oscura. Se instala desde la pantalla de inicio, sin tienda de apps."
+        }
+      ]
+    },
+    "try": {
+      "title": "Prueba una noche de cine, ahora",
+      "body": "Cuatro películas, dos duelos, una final. Es justo lo que haréis con vuestros amigos, solo que aquí decides tú.",
+      "pick": "Elige la que verías esta noche.",
+      "progress": "Duelo {n} de 3",
+      "rounds": {
+        "first": "Primer duelo",
+        "second": "Segundo duelo",
+        "final": "Final"
+      },
+      "vs": "vs",
+      "cardLine1": "Demo de Pausa",
+      "cardLine2": "Torneo relámpago · 3 duelos",
+      "again": "Empezar de nuevo",
+      "cta": "Hazlo con tus amigos",
+      "films": {
+        "spirited": "El viaje de Chihiro",
+        "matrix": "Matrix",
+        "shawshank": "Cadena perpetua",
+        "inception": "Origen"
+      }
+    },
+    "guest": {
+      "title": "Tus amigos no tienen que registrarse",
+      "body": "Para votar en una noche de cine basta abrir el enlace y escribir un nombre. Sin cuenta, sin contraseña, sin app. Funciona también dentro de WhatsApp e Instagram.",
+      "steps": [
+        "Envías el enlace",
+        "Escriben un nombre",
+        "Votan"
+      ]
+    },
+    "privacy": {
+      "title": "Privado de verdad",
+      "items": [
+        {
+          "title": "Solo quien invitáis",
+          "body": "El diario lo ven solo los miembros del Círculo. No hay perfiles públicos ni rankings globales."
+        },
+        {
+          "title": "Invitaciones que se cierran",
+          "body": "Los enlaces caducan, pueden tener plazas limitadas y se revocan con un toque."
+        },
+        {
+          "title": "La Card dice poco",
+          "body": "Lo único que sale del Círculo es la Card: el título elegido, nunca quién votó qué."
+        },
+        {
+          "title": "Sal cuando quieras",
+          "body": "Puedes dejar un Círculo en cualquier momento."
+        }
+      ]
+    },
+    "faq": {
+      "title": "Preguntas frecuentes",
+      "items": [
+        {
+          "q": "¿Cuánto cuesta?",
+          "a": "Ahora mismo Pausa no tiene planes de pago: creas un Círculo y listo."
+        },
+        {
+          "q": "¿Mis amigos necesitan cuenta?",
+          "a": "No para votar en una noche de cine: basta un nombre. Llevar el diario del Círculo sí requiere una cuenta, solo con email."
+        },
+        {
+          "q": "¿Tengo que instalar una app?",
+          "a": "No. Pausa funciona en el navegador y se puede añadir a la pantalla de inicio."
+        },
+        {
+          "q": "¿Quién ve lo que escribo?",
+          "a": "Solo los miembros de los Círculos en los que estás. Nada es público. Lo único que sale es la Card, si decides compartirla."
+        },
+        {
+          "q": "¿Sirve para series y anime?",
+          "a": "Sí: películas, series y anime en el mismo diario."
+        },
+        {
+          "q": "¿En qué idiomas está?",
+          "a": "Italiano, inglés y español. Cada persona ve Pausa en su idioma, incluso en el mismo Círculo."
+        },
+        {
+          "q": "¿De dónde salen los pósters y los datos?",
+          "a": "De TMDB. Pausa usa la API de TMDB, pero TMDB no la respalda ni la certifica."
+        }
+      ]
+    },
+    "final": {
+      "title": "Esta noche, se acabó discutir.",
+      "body": "Crea el Círculo, invita a tus amigos, decidid en dos minutos."
+    },
+    "footer": {
+      "tagline": "El diario privado para grupos de amigos.",
+      "language": "Idioma"
+    }
   }
 }

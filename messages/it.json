@@ -114,7 +114,48 @@
     "inviteBody": "Manda questo link a chi vuoi nella Cerchia. Entra solo chi ce l'ha.",
     "copy": "Copia link",
     "copied": "Copiato",
-    "code": "Codice"
+    "code": "Codice",
+    "insightsTitle": "Insight della Cerchia",
+    "insightsBody": "Il vostro anno, quanto vi somigliate, cosa guardare insieme.",
+    "invites": {
+      "title": "Inviti",
+      "body": "Chi ha un link attivo può entrare. Scade da solo e puoi revocarlo quando vuoi.",
+      "none": "Nessun invito attivo. Creane uno nuovo.",
+      "noneMember": "Nessun invito attivo: chiedi a un admin di crearne uno.",
+      "expires": "Scade il {date}",
+      "never": "Non scade",
+      "uses": "{used, plural, =0 {Mai usato} one {Usato # volta} other {Usato # volte}}",
+      "usesOf": "{used} di {max} usi",
+      "revoke": "Revoca",
+      "new": "Nuovo invito",
+      "expiry": "Scadenza",
+      "expiryChoices": {
+        "1d": "24 ore",
+        "7d": "7 giorni",
+        "30d": "30 giorni",
+        "never": "Mai"
+      },
+      "maxUses": "Quante persone",
+      "unlimited": "Senza limite",
+      "people": "{count, plural, one {Solo # persona} other {Al massimo # persone}}",
+      "create": "Crea invito"
+    },
+    "actions": {
+      "makeAdmin": "Rendi admin",
+      "makeMember": "Togli admin",
+      "remove": "Rimuovi",
+      "confirmRemove": "Sì, rimuovi {name}"
+    },
+    "leave": {
+      "title": "Esci dalla Cerchia",
+      "body": "Non vedrai più il diario di questa Cerchia. Per rientrare servirà un nuovo invito.",
+      "confirm": "Esci dalla Cerchia"
+    },
+    "errors": {
+      "forbidden": "Solo un admin può farlo.",
+      "last_admin": "Sei l'unico admin: nomina prima un altro admin.",
+      "not_member": "Questa persona non fa più parte della Cerchia."
+    }
   },
   "serata": {
     "title": "Stasera si guarda",
@@ -207,7 +248,24 @@
     "title": "Ti hanno invitato in {name}",
     "body": "Entra per vedere il diario della Cerchia e aggiungere il tuo.",
     "cta": "Entra nella Cerchia",
-    "invalid": "Questo invito non è valido o è scaduto."
+    "invalid": {
+      "not_found": {
+        "title": "Questo invito non esiste.",
+        "body": "Controlla di aver copiato tutto il link, o chiedi un invito nuovo."
+      },
+      "expired": {
+        "title": "Questo invito è scaduto.",
+        "body": "Chiedi a chi ti ha invitato di mandartene uno nuovo: dura poco apposta."
+      },
+      "revoked": {
+        "title": "Questo invito è stato revocato.",
+        "body": "Chiedi a un admin della Cerchia di mandartene uno nuovo."
+      },
+      "exhausted": {
+        "title": "Questo invito è già stato usato.",
+        "body": "Aveva un numero limitato di posti. Chiedi un invito nuovo."
+      }
+    }
   },
   "tmdb": {
     "attribution": "Questo prodotto usa l'API di TMDB ma non è approvato né certificato da TMDB."
@@ -225,7 +283,7 @@
     "log": "<b>{name}</b> ha visto {title}",
     "comment": "<b>{name}</b> ha commentato {title}",
     "reaction": "<b>{name}</b> ha reagito a {title}",
-    "now_watching": "<b>{name}</b> ha iniziato a guardare qualcosa in {circle}",
+    "now_watching": "<b>{name}</b> ha iniziato a guardare {title} in {circle}",
     "circle_join": "<b>{name}</b> ora fa parte di {circle}",
     "serata_invite": "<b>{name}</b> ha aperto una Serata in {circle}"
   },
@@ -233,5 +291,237 @@
     "subject": "Il tuo link per entrare in Pausa",
     "body": "Tocca il link per entrare. Scade tra 15 minuti.",
     "ignore": "Se non l'hai chiesto tu, ignora questa email."
+  },
+  "insights": {
+    "title": "Insight",
+    "yearLabel": "Anno",
+    "yearTitle": "Il vostro {year}",
+    "yearEmpty": "Ancora niente nel {year}. Registrate una visione e tornate qui.",
+    "stats": {
+      "logs": "{count, plural, one {visione} other {visioni}}",
+      "titles": "titoli diversi",
+      "hours": "ore di film",
+      "avg": "stelle di voto medio"
+    },
+    "titleOfYear": "Il titolo dell'anno",
+    "raters": "{count, plural, one {Votato da una persona} other {Votato da # persone}}",
+    "starsLabel": "{stars} stelle su 5",
+    "ratingLabel": "{name}: {stars} stelle su 5",
+    "facts": {
+      "mostActive": "Chi ha registrato di più: {name} ({count, plural, one {# visione} other {# visioni}}).",
+      "busiest": "Il mese più pieno: {month} ({count, plural, one {# visione} other {# visioni}}).",
+      "platform": "La piattaforma più usata: {name}.",
+      "together": "Guardano più spesso insieme: {a} e {b} ({count, plural, one {# volta} other {# volte}})."
+    },
+    "taste": {
+      "title": "Quanto vi somigliate",
+      "body": "Confronto sui titoli che avete votato entrambi. Servono almeno {min} titoli in comune, altrimenti il numero non dice niente.",
+      "onTitles": "su {count} titoli",
+      "unknown": "Non ancora confrontabili",
+      "needMore": "{count} titoli in comune su {min}: votatene altri."
+    },
+    "agree": {
+      "title": "Qui siete d'accordo"
+    },
+    "split": {
+      "title": "Qui vi dividete"
+    },
+    "recs": {
+      "title": "Da vedere insieme",
+      "body": "Titoli che qualcuno ha amato e che altri non hanno ancora visto, pesati sui gusti di chi li guarderebbe. Vengono solo dai vostri voti.",
+      "lovedBy": "Piaciuto a {names}.",
+      "unseenBy": "Non l'hanno ancora visto: {names}.",
+      "forecast": "Previsione",
+      "empty": "Servono più voti per consigliare qualcosa: continuate a registrare e a votare."
+    }
+  },
+  "landing": {
+    "meta": {
+      "title": "Pausa · Il diario privato per gruppi di amici, con la Serata che sceglie il film",
+      "description": "Film, serie e anime visti insieme, con i voti di tutti e nessun pubblico. E quando arriva la sera, una Serata di due minuti decide cosa guardare."
+    },
+    "og": {
+      "tagline": "Il diario privato del vostro gruppo."
+    },
+    "nav": {
+      "how": "Come funziona",
+      "try": "Prova",
+      "privacy": "Privacy",
+      "faq": "Domande",
+      "login": "Accedi",
+      "start": "Inizia",
+      "menu": "Sezioni",
+      "language": "Lingua"
+    },
+    "hero": {
+      "title": "Il diario privato del vostro gruppo. E la fine del «che guardiamo?»",
+      "lede": "Film, serie e anime visti insieme, con i voti di tutti. E quando arriva la sera, una Serata di due minuti sceglie per il gruppo.",
+      "cta": "Crea la tua Cerchia",
+      "secondary": "Prova la Serata",
+      "note": "Ti basta l'email, niente password. I tuoi amici possono votare anche senza account."
+    },
+    "mock": {
+      "who": "Giulia",
+      "action": "ha visto",
+      "title": "Chernobyl",
+      "meta": "Serie · 2019",
+      "review": "Cinque puntate, cinque nodi allo stomaco. Marco ha smesso di respirare alla terza.",
+      "with": "Visto con",
+      "serataTitle": "Stasera si guarda",
+      "round": "Finale",
+      "pick": "Scegli uno.",
+      "rating": "4,5 stelle su 5",
+      "invite": "Invito",
+      "inviteCode": "Codice",
+      "inviteExpires": "Scade tra 14 giorni",
+      "copy": "Copia link",
+      "cardKicker": "LA SERATA HA SCELTO",
+      "cardSubtitle": "Stasera si guarda questo.",
+      "cardLine1": "Divano Club · 16 nov",
+      "cardLine2": "Torneo lampo · 2 turni · 4 persone"
+    },
+    "problem": {
+      "title": "Mezz'ora di messaggi per scegliere un film. E tre mesi dopo nessuno ricorda cosa avete visto.",
+      "body": "Succede in ogni gruppo. Pausa ti dà due cose: un posto dove tenere quello che guardate insieme, e un modo veloce per decidere cosa guardare dopo."
+    },
+    "how": {
+      "title": "Tre passi, e la serata è sistemata",
+      "steps": [
+        {
+          "title": "Create la Cerchia",
+          "body": "Dai un nome al gruppo e mandate il link d'invito. Chi entra vede solo il vostro diario, nient'altro. Il link scade da solo, e lo revochi quando vuoi."
+        },
+        {
+          "title": "Segnate quello che guardate",
+          "body": "Voto a mezze stelle, due righe che si leggono come sottotitoli, chi c'era con te. Gli spoiler restano nascosti finché qualcuno non decide di leggerli."
+        },
+        {
+          "title": "Decidete la sera",
+          "body": "Aprite una Serata con una rosa di titoli e mandate il link. Si vota dal telefono, anche senza account: dopo due minuti c'è un vincitore e una Card da condividere."
+        }
+      ]
+    },
+    "features": {
+      "title": "Tutto quello che serve a un gruppo, niente di quello che non serve",
+      "items": [
+        {
+          "title": "Un diario di tutti",
+          "body": "Ogni film, serie e anime, con i voti di ognuno, le reazioni e i commenti. Con «visto con» sai chi c'era."
+        },
+        {
+          "title": "La Serata",
+          "body": "Torneo lampo a eliminazione o Tavolo con 3 voti e un veto. Niente più «scegli tu»."
+        },
+        {
+          "title": "Quanto vi somigliate",
+          "body": "Dai voti veri: chi ha gusti simili, cosa vi divide, cosa vedere insieme. Il vostro anno, a colpo d'occhio."
+        },
+        {
+          "title": "Liste e classifiche",
+          "body": "Watchlist di gruppo, classifiche, liste personali. Aggiungi un titolo in un tocco."
+        },
+        {
+          "title": "Una Card da condividere",
+          "body": "Il risultato della Serata in formato storia, con il titolo scelto. Mai chi ha votato cosa."
+        },
+        {
+          "title": "Fatta per il telefono",
+          "body": "Italiano, inglese e spagnolo, chiara o scura. Si installa dalla schermata Home, senza store."
+        }
+      ]
+    },
+    "try": {
+      "title": "Prova una Serata, adesso",
+      "body": "Quattro film, due sfide, una finale. È esattamente quello che farete con i vostri amici, ma qui decidi solo tu.",
+      "pick": "Scegli quello che guarderesti stasera.",
+      "progress": "Sfida {n} di 3",
+      "rounds": {
+        "first": "Prima sfida",
+        "second": "Seconda sfida",
+        "final": "Finale"
+      },
+      "vs": "vs",
+      "cardLine1": "Demo di Pausa",
+      "cardLine2": "Torneo lampo · 3 sfide",
+      "again": "Ricomincia",
+      "cta": "Falla con i tuoi amici",
+      "films": {
+        "spirited": "La città incantata",
+        "matrix": "Matrix",
+        "shawshank": "Le ali della libertà",
+        "inception": "Inception"
+      }
+    },
+    "guest": {
+      "title": "I tuoi amici non devono registrarsi",
+      "body": "Per votare una Serata basta aprire il link e scrivere un nome. Niente account, niente password, niente app. Funziona anche dentro WhatsApp e Instagram.",
+      "steps": [
+        "Mandi il link",
+        "Scrivono un nome",
+        "Votano"
+      ]
+    },
+    "privacy": {
+      "title": "Privato, davvero",
+      "items": [
+        {
+          "title": "Solo chi invitate",
+          "body": "Il diario è visibile solo ai membri della Cerchia. Non esistono profili pubblici né classifiche globali."
+        },
+        {
+          "title": "Inviti che si chiudono",
+          "body": "I link scadono, possono avere un numero limitato di posti e si revocano con un tocco."
+        },
+        {
+          "title": "La Card dice poco",
+          "body": "Quello che esce dalla Cerchia è solo la Card: il titolo scelto, mai chi ha votato cosa."
+        },
+        {
+          "title": "Esci quando vuoi",
+          "body": "Puoi lasciare una Cerchia in qualsiasi momento."
+        }
+      ]
+    },
+    "faq": {
+      "title": "Domande frequenti",
+      "items": [
+        {
+          "q": "Quanto costa?",
+          "a": "Per ora Pausa non ha piani a pagamento: crei la Cerchia e sei dentro."
+        },
+        {
+          "q": "I miei amici devono avere un account?",
+          "a": "Non per votare una Serata: basta un nome. Per tenere il diario della Cerchia serve un account, con la sola email."
+        },
+        {
+          "q": "Devo installare un'app?",
+          "a": "No. Pausa funziona dal browser e si può aggiungere alla schermata Home."
+        },
+        {
+          "q": "Chi vede quello che scrivo?",
+          "a": "Solo i membri delle Cerchie di cui fai parte. Niente è pubblico. L'unica cosa che esce è la Card, se scegli di condividerla."
+        },
+        {
+          "q": "Funziona anche con serie e anime?",
+          "a": "Sì: film, serie e anime nello stesso diario."
+        },
+        {
+          "q": "In che lingue è?",
+          "a": "Italiano, inglese e spagnolo. Ognuno vede Pausa nella sua lingua, anche nella stessa Cerchia."
+        },
+        {
+          "q": "Da dove arrivano locandine e dati?",
+          "a": "Da TMDB. Pausa usa l'API di TMDB ma non è approvata né certificata da TMDB."
+        }
+      ]
+    },
+    "final": {
+      "title": "Stasera, basta litigare.",
+      "body": "Crea la Cerchia, invita gli amici, scegliete in due minuti."
+    },
+    "footer": {
+      "tagline": "Il diario privato per gruppi di amici.",
+      "language": "Lingua"
+    }
   }
 }

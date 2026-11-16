@@ -32,7 +32,7 @@ export async function getMyCircles(userId: string) {
 export async function getCircleForMember(circleId: string, userId: string) {
   const db = await getDb();
   const [row] = await db
-    .select({ id: s.circle.id, name: s.circle.name, inviteCode: s.circle.inviteCode, role: s.circleMember.role })
+    .select({ id: s.circle.id, name: s.circle.name, role: s.circleMember.role })
     .from(s.circle)
     .innerJoin(s.circleMember, and(eq(s.circleMember.circleId, s.circle.id), eq(s.circleMember.userId, userId)))
     .where(eq(s.circle.id, circleId));
@@ -159,7 +159,10 @@ export async function getMyNowWatching(userId: string, locale: string) {
 
 export async function getNotifications(userId: string, locale: string, limit = 50) {
   const db = await getDb();
-  const logMedia = sql<string | null>`(select ${titleFor(locale)} from ${s.log} join ${s.mediaEntity} on ${s.mediaEntity.id} = ${s.log.mediaId} where ${s.log.id} = ${s.notification.logId})`;
+  // The title a notice is about: through its log, or directly (e.g. "now watching" has no log).
+  const logMedia = sql<string | null>`coalesce(
+    (select ${titleFor(locale)} from ${s.log} join ${s.mediaEntity} on ${s.mediaEntity.id} = ${s.log.mediaId} where ${s.log.id} = ${s.notification.logId}),
+    (select ${titleFor(locale)} from ${s.mediaEntity} where ${s.mediaEntity.id} = ${s.notification.mediaId}))`;
   return db
     .select({
       id: s.notification.id,

@@ -1,6 +1,7 @@
 import "server-only";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { getDb, schema as s } from "@/db";
+import { getActiveInvite } from "@/lib/core/circles";
 import type { MediaSummary } from "@/lib/data";
 import {
   closeMatch, closeTable, currentMatch, matchProgress, roundName,
@@ -161,9 +162,12 @@ export async function getRoomView(code: string, viewerId: string, locale: string
     circle: { id: string; name: string; inviteCode: string } | null;
   };
   if (row.status === "done" && row.winnerMediaId && state) {
-    const [circle] = row.circleId
-      ? await db.select({ id: s.circle.id, name: s.circle.name, inviteCode: s.circle.inviteCode }).from(s.circle).where(eq(s.circle.id, row.circleId))
+    // Only offered while the Cerchia has an invite that still works: an admin who revoked them closed that door.
+    const [circleRow] = row.circleId
+      ? await db.select({ id: s.circle.id, name: s.circle.name }).from(s.circle).where(eq(s.circle.id, row.circleId))
       : [];
+    const activeInvite = circleRow ? await getActiveInvite(db, circleRow.id) : null;
+    const circle = circleRow && activeInvite ? { ...circleRow, inviteCode: activeInvite.code } : null;
     result = {
       winner: byId.get(row.winnerMediaId)!,
       finishedAt: (row.finishedAt ?? row.createdAt).getTime(),

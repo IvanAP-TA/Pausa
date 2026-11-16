@@ -11,12 +11,10 @@ import { requireUser } from "./session";
 import { getCircleForMember, logVisibleTo, searchLocalMedia, type MediaSummary } from "./data";
 import { searchTmdb } from "./tmdb";
 import { REACTIONS } from "./reactions";
-
-const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
-function inviteCode() {
-  const bytes = crypto.getRandomValues(new Uint8Array(8));
-  return Array.from(bytes, (b) => INVITE_ALPHABET[b % INVITE_ALPHABET.length]).join("");
-}
+import {
+  EXPIRY_CHOICES, MAX_USES_CHOICES, createCircleWithInvite, createInvite, leaveCircle, redeemInvite, removeMember,
+  revokeInvite, setMemberRole,
+} from "./core/circles";
 
 /** Server actions have no locale context without a proxy: forms send it explicitly. */
 function localeFrom(value: unknown): Locale {
@@ -29,9 +27,7 @@ export async function createCircle(formData: FormData) {
   const user = await requireUser();
   const name = z.string().trim().min(1).max(60).parse(formData.get("name"));
   const db = await getDb();
-  const id = crypto.randomUUID();
-  await db.insert(s.circle).values({ id, name, inviteCode: inviteCode(), createdBy: user.id });
-  await db.insert(s.circleMember).values({ circleId: id, userId: user.id, role: "admin" });
+  const { id } = await createCircleWithInvite(db, { name, createdBy: user.id });
   redirect(`/${localeFrom(formData.get("locale"))}/c/${id}`);
 }
 
@@ -39,16 +35,78 @@ export async function joinCircle(formData: FormData) {
   const user = await requireUser();
   const code = z.string().trim().toUpperCase().min(4).max(16).parse(formData.get("code"));
   const db = await getDb();
-  const [circle] = await db.select({ id: s.circle.id }).from(s.circle).where(eq(s.circle.inviteCode, code));
   const locale = localeFrom(formData.get("locale"));
-  if (!circle) redirect(`/${locale}/join/${encodeURIComponent(code)}`);
-  await db.insert(s.circleMember).values({ circleId: circle.id, userId: user.id }).onConflictDoNothing();
-  const others = await db.select({ userId: s.circleMember.userId }).from(s.circleMember)
-    .where(and(eq(s.circleMember.circleId, circle.id), ne(s.circleMember.userId, user.id)));
-  if (others.length) {
-    await db.insert(s.notification).values(others.map((o) => ({ userId: o.userId, type: "circle_join" as const, actorId: user.id, circleId: circle.id })));
+  const res = await redeemInvite(db, user.id, code);
+  // Unknown / expired / revoked / used-up: the join page explains which.
+  if ("error" in res) redirect(`/${locale}/join/${encodeURIComponent(code)}`);
+  if (!res.already) {
+    const others = await db.select({ userId: s.circleMember.userId }).from(s.circleMember)
+      .where(and(eq(s.circleMember.circleId, res.circleId), ne(s.circleMember.userId, user.id)));
+    if (others.length) {
+      await db.insert(s.notification).values(others.map((o) => ({ userId: o.userId, type: "circle_join" as const, actorId: user.id, circleId: res.circleId })));
+    }
   }
-  redirect(`/${locale}/c/${circle.id}`);
+  redirect(`/${locale}/c/${res.circleId}`);
+}
+
+/* ───────────── Cerchie: inviti e ruoli ───────────── */
+
+const circleFields = z.object({ circleId: z.string().min(1), locale: z.string().optional() });
+
+function backToMembers(formData: FormData, circleId: string, error?: string): never {
+  const locale = localeFrom(formData.get("locale"));
+  redirect(`/${locale}/c/${circleId}/members${error ? `?e=${error}` : ""}`);
+}
+
+export async function createInviteAction(formData: FormData) {
+  const user = await requireUser();
+  const { circleId } = circleFields.parse({ circleId: formData.get("circleId") });
+  const expiry = z.enum(Object.keys(EXPIRY_CHOICES) as [keyof typeof EXPIRY_CHOICES, ...(keyof typeof EXPIRY_CHOICES)[]]).parse(formData.get("expiry"));
+  const rawUses = String(formData.get("maxUses") ?? "");
+  const maxUses = rawUses === "" ? null : z.coerce.number().refine((n) => (MAX_USES_CHOICES as readonly number[]).includes(n)).parse(rawUses);
+  const db = await getDb();
+  const [me] = await db.select({ role: s.circleMember.role }).from(s.circleMember)
+    .where(and(eq(s.circleMember.circleId, circleId), eq(s.circleMember.userId, user.id)));
+  if (me?.role !== "admin") backToMembers(formData, circleId, "forbidden");
+  await createInvite(db, { circleId, createdBy: user.id, expiresInMs: EXPIRY_CHOICES[expiry], maxUses });
+  revalidatePath("/[locale]/c/[circleId]/members", "page");
+  backToMembers(formData, circleId);
+}
+
+export async function revokeInviteAction(formData: FormData) {
+  const user = await requireUser();
+  const { circleId } = circleFields.parse({ circleId: formData.get("circleId") });
+  const inviteId = z.string().min(1).parse(formData.get("inviteId"));
+  const res = await revokeInvite(await getDb(), { inviteId, circleId, actorId: user.id });
+  revalidatePath("/[locale]/c/[circleId]/members", "page");
+  backToMembers(formData, circleId, "error" in res ? res.error : undefined);
+}
+
+export async function setMemberRoleAction(formData: FormData) {
+  const user = await requireUser();
+  const { circleId } = circleFields.parse({ circleId: formData.get("circleId") });
+  const targetId = z.string().min(1).parse(formData.get("targetId"));
+  const role = z.enum(["admin", "member"]).parse(formData.get("role"));
+  const res = await setMemberRole(await getDb(), { circleId, actorId: user.id, targetId, role });
+  revalidatePath("/[locale]/c/[circleId]/members", "page");
+  backToMembers(formData, circleId, "error" in res ? res.error : undefined);
+}
+
+export async function removeMemberAction(formData: FormData) {
+  const user = await requireUser();
+  const { circleId } = circleFields.parse({ circleId: formData.get("circleId") });
+  const targetId = z.string().min(1).parse(formData.get("targetId"));
+  const res = await removeMember(await getDb(), { circleId, actorId: user.id, targetId });
+  revalidatePath("/[locale]/c/[circleId]/members", "page");
+  backToMembers(formData, circleId, "error" in res ? res.error : undefined);
+}
+
+export async function leaveCircleAction(formData: FormData) {
+  const user = await requireUser();
+  const { circleId } = circleFields.parse({ circleId: formData.get("circleId") });
+  const res = await leaveCircle(await getDb(), { circleId, userId: user.id });
+  if ("error" in res) backToMembers(formData, circleId, res.error);
+  redirect(`/${localeFrom(formData.get("locale"))}`);
 }
 
 /* ───────────── Diario ───────────── */
@@ -213,7 +271,7 @@ export async function setNowWatching(formData: FormData) {
     const others = await db.select({ userId: s.circleMember.userId }).from(s.circleMember)
       .where(and(eq(s.circleMember.circleId, circleId), ne(s.circleMember.userId, user.id)));
     if (others.length) {
-      await db.insert(s.notification).values(others.map((o) => ({ userId: o.userId, type: "now_watching" as const, actorId: user.id, circleId })));
+      await db.insert(s.notification).values(others.map((o) => ({ userId: o.userId, type: "now_watching" as const, actorId: user.id, circleId, mediaId })));
     }
   }
   redirect(`/${localeFrom(formData.get("locale"))}/c/${circleId}`);

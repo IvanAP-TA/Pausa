@@ -104,3 +104,26 @@ From a Cerchia's **Serata** tab: pick a mode and a shortlist of 2–8 titles (gr
 How it works: rules live in `src/lib/serata/engine.ts` (pure functions, tested in `engine.test.ts`, `npm test`). Phones poll `/api/serata/<CODE>` every 1.5 s; it answers 204 when nothing changed. Closing a match uses compare-and-set on `serata.version`, so two simultaneous "last votes" close it once. Durable Objects are the upgrade path if polling ever feels slow.
 
 Testing two people locally: open the host on `http://localhost:3000` and the guest on `http://127.0.0.1:3000` (separate cookies; allowed in dev only).
+
+## Landing page
+
+`/<locale>` shows a public landing page to anyone who isn't signed in (signed-in people go straight to their Cerchia).
+Smooth scrolling and a light parallax come from [Lenis](https://lenis.darkroom.engineering) (`src/components/landing/smooth-scroll.tsx`); the hero entrance is pure CSS, sections fade in on scroll, and "How it works" is a sticky panel that follows the scroll.
+Everything animated is switched off for `prefers-reduced-motion`. The page includes a real, tiny Serata people can play before signing up, a sticky call-to-action on phones, an FAQ, per-language metadata with hreflang, structured data (WebApplication and FAQPage), `robots.txt`, `sitemap.xml` and a social preview image.
+Copy lives in `messages/*.json` under `landing`. It makes no claim that isn't true today (no invented numbers, reviews or logos).
+Set `NEXT_PUBLIC_SITE_URL` (or `BETTER_AUTH_URL`) to the public origin so canonical links and the sitemap are right.
+
+## Invites and roles
+
+A Cerchia can have many invites, each with an optional expiry and use limit, and any of them can be revoked. A new Cerchia starts with a 14-day invite. Admins create and revoke invites and manage roles (promote, demote, remove); anyone can leave. A Cerchia always keeps an admin: the last one can't be demoted or leave while others remain. A used-up, expired or revoked link says exactly that on the join page.
+The logic is in `src/lib/core/circles.ts`.
+
+## Insights
+
+`/<locale>/c/<circle>/insights`, linked from the Cerchia page: Year in Review (watches, titles, hours of films, average rating, title of the year, most active, busiest month, top platform, who watches together most), taste similarity between members, titles you agree and split on, and "worth watching together".
+All of it is computed from the Cerchia's own logs and ratings (`src/lib/core/insights.ts`), with these rules: similarity needs at least 3 shared rated titles, hours count films only (series store a per-episode runtime), recommendations come from your own ratings weighted by taste (an opposite-taste rating counts mirrored), and someone already watching a title isn't offered it.
+Not done: a "where to watch" filter. It needs real TMDB availability data and a key.
+
+## Tests
+
+`npm test` runs the Serata engine and the `src/lib/core` modules against a real SQLite: `sql.js` (WebAssembly, no native build) with the project's actual migrations applied and foreign keys on, like D1. Core modules take the database as a parameter, so tests and app share the same queries.

@@ -61,10 +61,22 @@ export const verification = sqliteTable("verification", {
 export const circle = sqliteTable("circle", {
   id: id(),
   name: text("name").notNull(),
-  inviteCode: text("invite_code").notNull().unique(),
   createdBy: text("created_by").notNull().references(() => user.id),
   createdAt: createdAt(),
 });
+
+/** Invite links: many per Cerchia, each with an optional expiry and use limit, and revocable by an admin. */
+export const invite = sqliteTable("invite", {
+  id: id(),
+  circleId: text("circle_id").notNull().references(() => circle.id, { onDelete: "cascade" }),
+  code: text("code").notNull().unique(),
+  createdBy: text("created_by").notNull().references(() => user.id),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
+  maxUses: integer("max_uses"),
+  uses: integer("uses").notNull().default(0),
+  revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
+  createdAt: createdAt(),
+}, (t) => [index("invite_circle_idx").on(t.circleId)]);
 
 export const circleMember = sqliteTable("circle_member", {
   circleId: text("circle_id").notNull().references(() => circle.id, { onDelete: "cascade" }),
@@ -216,6 +228,8 @@ export const notification = sqliteTable("notification", {
   actorId: text("actor_id").references(() => user.id, { onDelete: "cascade" }),
   circleId: text("circle_id").references(() => circle.id, { onDelete: "cascade" }),
   logId: text("log_id").references(() => log.id, { onDelete: "cascade" }),
+  /** The title a notice is about when there is no log (e.g. "now watching"). */
+  mediaId: text("media_id").references(() => mediaEntity.id),
   readAt: integer("read_at", { mode: "timestamp_ms" }),
   createdAt: createdAt(),
 }, (t) => [index("notification_user_idx").on(t.userId, t.createdAt)]);

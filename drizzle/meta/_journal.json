@@ -15,6 +15,13 @@
       "when": 1794741614057,
       "tag": "0001_serata",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794823780461,
+      "tag": "0002_invites",
+      "breakpoints": true
     }
   ]
 }
