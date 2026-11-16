@@ -155,7 +155,9 @@
       "forbidden": "Solo un admin può farlo.",
       "last_admin": "Sei l'unico admin: nomina prima un altro admin.",
       "not_member": "Questa persona non fa più parte della Cerchia."
-    }
+    },
+    "importTitle": "Importa la tua cronologia",
+    "importBody": "Da Letterboxd, AniList o MyAnimeList."
   },
   "serata": {
     "title": "Stasera si guarda",
@@ -522,6 +524,71 @@
     "footer": {
       "tagline": "Il diario privato per gruppi di amici.",
       "language": "Lingua"
+    }
+  },
+  "import": {
+    "title": "Importa la tua cronologia",
+    "lede": "Porta qui quello che hai già visto. Puoi rifarlo quando vuoi: quello che c'è già non viene duplicato.",
+    "visibility": "Quello che importi compare nel diario di tutte le tue Cerchie, con la data in cui l'hai visto (non come novità di oggi). Nessuno riceve notifiche. Le recensioni le includi solo se lasci la spunta.",
+    "tabs": {
+      "letterboxd": "Letterboxd",
+      "anilist": "AniList",
+      "mal": "MyAnimeList"
+    },
+    "letterboxd": {
+      "title": "Film da Letterboxd",
+      "steps": [
+        "Su Letterboxd vai in Settings → Data → Export your data.",
+        "Scarica lo ZIP che ti arriva.",
+        "Caricalo qui sotto (va bene anche diary.csv, ratings.csv, reviews.csv e watched.csv a mano)."
+      ],
+      "pick": "Scegli lo ZIP o i file CSV",
+      "noCovers": "Su questo server la ricerca TMDB non è attiva: i film si importano lo stesso, ma senza locandina."
+    },
+    "anilist": {
+      "title": "Anime da AniList",
+      "body": "Basta il tuo nome utente: leggiamo la lista pubblica degli anime completati, direttamente da AniList. Se il profilo è privato, rendilo pubblico solo per il tempo dell'importazione.",
+      "user": "Nome utente AniList",
+      "find": "Cerca la lista"
+    },
+    "mal": {
+      "title": "Anime da MyAnimeList",
+      "steps": [
+        "Su MyAnimeList vai in Profilo → Export (myanimelist.net/panel.php?go=export).",
+        "Scegli «Export My Anime List»: scarichi un file .xml.gz.",
+        "Caricalo qui senza decomprimerlo."
+      ],
+      "pick": "Scegli il file .xml o .xml.gz"
+    },
+    "reading": "Leggo il file…",
+    "found": {
+      "films": "{films, plural, one {# film} other {# film}}, {views, plural, one {# visione} other {# visioni}}.",
+      "anime": "{count, plural, one {# anime completato} other {# anime completati}}.",
+      "skipped": "Lasciati fuori: {watching} in corso, {planned} da vedere, {onHold} in pausa, {dropped} abbandonati."
+    },
+    "options": {
+      "reviews": "Importa anche le recensioni",
+      "undated": "{count, plural, one {# elemento non ha una data} other {# elementi non hanno una data}}: importali comunque, con la data di oggi",
+      "undatedHint": "Altrimenti restano fuori. Con la data di oggi finiscono nel conto di quest'anno."
+    },
+    "run": "{count, plural, one {Importa # visione} other {Importa # visioni}}",
+    "progress": "{done} di {total}",
+    "done": {
+      "title": "{count, plural, =0 {Nessuna nuova visione} one {# visione aggiunta} other {# visioni aggiunte}}",
+      "newTitles": "{count, plural, one {# titolo nuovo in Pausa} other {# titoli nuovi in Pausa}}",
+      "alreadyHad": "{count, plural, one {# c'era già} other {# c'erano già}}",
+      "undated": "{count, plural, one {# senza data, lasciata fuori} other {# senza data, lasciate fuori}}",
+      "failed": "{count, plural, one {# riga non importata} other {# righe non importate}}: rilancia l'import, quelle già fatte non si duplicano.",
+      "toDiary": "Vai al diario",
+      "toInsights": "Vedi gli Insight",
+      "again": "Importa altro"
+    },
+    "errors": {
+      "read": "Non riesco a leggere questo file. Controlla che sia l'esportazione giusta.",
+      "empty": "Non ho trovato niente da importare qui.",
+      "anilistNotFound": "Non trovo questo utente, oppure il profilo è privato.",
+      "anilistDown": "AniList non risponde. Riprova tra poco.",
+      "chunk": "L'importazione si è fermata: controlla la connessione e rilancia. Quello che è già stato importato non si duplica."
     }
   }
 }

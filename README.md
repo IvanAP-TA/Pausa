@@ -127,3 +127,17 @@ Not done: a "where to watch" filter. It needs real TMDB availability data and a 
 ## Tests
 
 `npm test` runs the Serata engine and the `src/lib/core` modules against a real SQLite: `sql.js` (WebAssembly, no native build) with the project's actual migrations applied and foreign keys on, like D1. Core modules take the database as a parameter, so tests and app share the same queries.
+
+## Importing your history
+
+`/<locale>/c/<circle>/import`, linked from the Cerchia page. Three sources, all read in the browser, then sent to the server in small chunks:
+
+- **Letterboxd:** upload the ZIP from *Settings → Data → Export your data* (or `diary.csv`, `ratings.csv`, `reviews.csv`, `watched.csv`). One viewing per diary entry, with rewatch flag, rating, review and watched date; films that only appear in ratings/watched become one viewing dated by when you rated or marked them. Only the ZIP's top-level files are read (`deleted/`, `lists/`… are ignored). With a TMDB token the server matches each film to TMDB (title and year within one year) for cover and localized title; without one, films import with no cover.
+- **AniList:** a username. The browser reads the public list of completed anime straight from AniList's API (the profile must be public while you import); the server then looks up covers and titles by id.
+- **MyAnimeList:** the `.xml` or `.xml.gz` export. Only *Completed* anime are imported; the count of what was left out (watching, planned, on hold, dropped) is shown. Covers and titles come from AniList by MAL id.
+
+How it behaves: imports are **idempotent** (a viewing already logged for the same title and date is skipped, so re-running or overlapping exports add nothing); titles are matched to what the app already has by source id, then by title and year, so imported films join the same title other people logged; imported logs are dated by when they were watched, so they don't flood the feed, and **create no notifications**; they are visible to all the importer's Cerchie, which the page says up front. Items with no date are left out unless the person opts to date them today.
+
+Security: the browser may only send the person's own data and the source id. Posters, TMDB ids and localized titles are looked up by the server (TMDB / AniList) and anything else is dropped, so a member can't make other people's browsers load a URL of their choosing. Cover URLs are only accepted from TMDB paths or `https://s4.anilist.co/`.
+
+Limits: the work is split into chunks of 20 films (each triggers a TMDB lookup) or 30 anime. A test (`import.test.ts`, "D1 limits") records every query of a worst-case chunk and fails if one binds more than 100 variables or a chunk needs more than 45 queries, the limits of D1 and of the free Workers plan. Not done: importing watchlists/lists, MAL "plan to watch", and AniList private profiles.

@@ -58,6 +58,15 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
         <span aria-hidden="true" className="text-muted">→</span>
       </Link>
 
+      <Link href={`/c/${circleId}/import`}
+        className="flex min-h-14 items-center justify-between gap-3 rounded-md border border-rule bg-paper-2 px-4 hover:border-muted">
+        <span>
+          <span className="block font-display text-lg leading-tight">{t("importTitle")}</span>
+          <span className="text-xs text-muted">{t("importBody")}</span>
+        </span>
+        <span aria-hidden="true" className="text-muted">→</span>
+      </Link>
+
       <section className="grid gap-4 rounded-md bg-second-deep p-4 text-on-second">
         <div>
           <h2 className="font-display text-lg">{t("invites.title")}</h2>

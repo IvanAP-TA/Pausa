@@ -92,15 +92,19 @@ export const mediaEntity = sqliteTable("media_entity", {
   kind: text("kind", { enum: ["movie", "tv", "anime"] }).notNull(),
   tmdbId: integer("tmdb_id"),
   anilistId: integer("anilist_id"),
+  malId: integer("mal_id"), // MyAnimeList id, from MAL exports
+  letterboxdUri: text("letterboxd_uri"), // https://boxd.it/..., from Letterboxd exports
   imdbId: text("imdb_id"),
   originalTitle: text("original_title").notNull(),
   year: integer("year"),
   runtimeMin: integer("runtime_min"),
-  posterPath: text("poster_path"), // TMDB path, e.g. "/abc.jpg"
+  posterPath: text("poster_path"), // TMDB path ("/abc.jpg") or a full https URL (AniList covers)
   createdAt: createdAt(),
 }, (t) => [
   uniqueIndex("media_tmdb_uq").on(t.kind, t.tmdbId),
   uniqueIndex("media_anilist_uq").on(t.anilistId),
+  uniqueIndex("media_mal_uq").on(t.malId),
+  uniqueIndex("media_letterboxd_uq").on(t.letterboxdUri),
 ]);
 
 /** Localized titles as TMDB returns them per language. Fallback: original_title. */

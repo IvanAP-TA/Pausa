@@ -155,7 +155,9 @@
       "forbidden": "Only an admin can do that.",
       "last_admin": "You're the only admin: make someone else an admin first.",
       "not_member": "That person is no longer in the Circle."
-    }
+    },
+    "importTitle": "Import your history",
+    "importBody": "From Letterboxd, AniList or MyAnimeList."
   },
   "serata": {
     "title": "Tonight we watch",
@@ -522,6 +524,71 @@
     "footer": {
       "tagline": "The private diary for friend groups.",
       "language": "Language"
+    }
+  },
+  "import": {
+    "title": "Import your history",
+    "lede": "Bring over what you've already watched. You can run it again any time: what's already here isn't duplicated.",
+    "visibility": "What you import shows up in the diary of every Circle you're in, dated when you watched it (not as news from today). Nobody gets a notification. Reviews are only included if you leave the box ticked.",
+    "tabs": {
+      "letterboxd": "Letterboxd",
+      "anilist": "AniList",
+      "mal": "MyAnimeList"
+    },
+    "letterboxd": {
+      "title": "Films from Letterboxd",
+      "steps": [
+        "On Letterboxd go to Settings → Data → Export your data.",
+        "Download the ZIP you get.",
+        "Upload it below (diary.csv, ratings.csv, reviews.csv and watched.csv one by one also work)."
+      ],
+      "pick": "Choose the ZIP or the CSV files",
+      "noCovers": "TMDB search isn't enabled on this server: films import fine, just without posters."
+    },
+    "anilist": {
+      "title": "Anime from AniList",
+      "body": "Your username is all it takes: we read your public list of completed anime straight from AniList. If your profile is private, make it public only for the time of the import.",
+      "user": "AniList username",
+      "find": "Find the list"
+    },
+    "mal": {
+      "title": "Anime from MyAnimeList",
+      "steps": [
+        "On MyAnimeList go to Profile → Export (myanimelist.net/panel.php?go=export).",
+        "Choose “Export My Anime List”: you get an .xml.gz file.",
+        "Upload it here without unzipping it."
+      ],
+      "pick": "Choose the .xml or .xml.gz file"
+    },
+    "reading": "Reading the file…",
+    "found": {
+      "films": "{films, plural, one {# film} other {# films}}, {views, plural, one {# viewing} other {# viewings}}.",
+      "anime": "{count, plural, one {# completed anime} other {# completed anime}}.",
+      "skipped": "Left out: {watching} watching, {planned} planned, {onHold} on hold, {dropped} dropped."
+    },
+    "options": {
+      "reviews": "Import reviews too",
+      "undated": "{count, plural, one {# item has no date} other {# items have no date}}: import them anyway, dated today",
+      "undatedHint": "Otherwise they're left out. Dated today, they count toward this year."
+    },
+    "run": "{count, plural, one {Import # viewing} other {Import # viewings}}",
+    "progress": "{done} of {total}",
+    "done": {
+      "title": "{count, plural, =0 {No new viewings} one {# viewing added} other {# viewings added}}",
+      "newTitles": "{count, plural, one {# new title in Pausa} other {# new titles in Pausa}}",
+      "alreadyHad": "{count, plural, one {# was already there} other {# were already there}}",
+      "undated": "{count, plural, one {# without a date, left out} other {# without a date, left out}}",
+      "failed": "{count, plural, one {# row not imported} other {# rows not imported}}: run the import again, what's already done isn't duplicated.",
+      "toDiary": "Go to the diary",
+      "toInsights": "See the Insights",
+      "again": "Import more"
+    },
+    "errors": {
+      "read": "I can't read this file. Check it's the right export.",
+      "empty": "I found nothing to import here.",
+      "anilistNotFound": "I can't find this user, or the profile is private.",
+      "anilistDown": "AniList isn't responding. Try again shortly.",
+      "chunk": "The import stopped: check your connection and run it again. What was already imported isn't duplicated."
     }
   }
 }
