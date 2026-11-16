@@ -1,0 +1,237 @@
+{
+  "common": {
+    "signOut": "Esci",
+    "back": "Indietro",
+    "language": "Lingua",
+    "change": "Cambia",
+    "theme": "Tema",
+    "themes": {
+      "system": "Automatico",
+      "light": "Chiaro",
+      "dark": "Scuro"
+    }
+  },
+  "tabs": {
+    "diary": "Diario",
+    "serata": "Serata",
+    "log": "Registra una visione",
+    "lists": "Liste",
+    "circle": "Cerchia"
+  },
+  "kind": {
+    "movie": "Film",
+    "tv": "Serie",
+    "anime": "Anime"
+  },
+  "auth": {
+    "title": "La sala è aperta.",
+    "lede": "Il diario privato del tuo gruppo: cosa avete visto, cosa ne pensate, cosa guardare stasera.",
+    "email": "Email",
+    "sendLink": "Mandami il link",
+    "sending": "Invio…",
+    "linkSent": "Controlla la posta: ti abbiamo mandato un link per entrare. Scade tra 15 minuti.",
+    "google": "Continua con Google",
+    "or": "oppure",
+    "error": "Qualcosa non ha funzionato. Riprova tra un attimo."
+  },
+  "home": {
+    "noCircleTitle": "Nessuna Cerchia, per ora.",
+    "noCircleBody": "Crea la tua e manda il link agli amici, oppure entra con un codice invito.",
+    "createLabel": "Nome della Cerchia",
+    "createPlaceholder": "Divano Club",
+    "createCta": "Crea la Cerchia",
+    "joinLabel": "Codice invito",
+    "joinCta": "Entra"
+  },
+  "feed": {
+    "members": "{count, plural, one {# membro} other {# membri}}",
+    "logsThisYear": "{count, plural, one {# visione} other {# visioni}} quest'anno",
+    "isWatching": "sta guardando",
+    "watched": "ha visto",
+    "rewatched": "ha rivisto",
+    "with": "Visto con",
+    "on": "su {platform}",
+    "spoiler": "Contiene spoiler · tocca per leggere",
+    "comments": "{count, plural, =0 {Nessun commento} one {# commento} other {# commenti}}",
+    "react": "Reagisci con {emoji}",
+    "emptyTitle": "Il diario è ancora vuoto.",
+    "emptyBody": "Registra la prima visione: comparirà qui per tutta la Cerchia.",
+    "emptyCta": "Registra una visione",
+    "rating": "{stars} stelle su 5",
+    "stopWatching": "Finito o mollato",
+    "notifications": "Notifiche",
+    "unread": "{count, plural, one {# notifica non letta} other {# notifiche non lette}}"
+  },
+  "log": {
+    "title": "Cosa hai visto?",
+    "search": "Cerca un film, una serie, un anime",
+    "searchCta": "Cerca",
+    "noResults": "Nessun titolo trovato.",
+    "tmdbOff": "Ricerca TMDB non attiva: cerco solo tra i titoli già in Pausa.",
+    "rating": "Voto",
+    "noRating": "Senza voto",
+    "watchedOn": "Visto il",
+    "platform": "Dove",
+    "platformPlaceholder": "Netflix, cinema, MUBI…",
+    "review": "Due righe (facoltative)",
+    "spoilers": "Contiene spoiler",
+    "rewatch": "L'avevo già visto",
+    "with": "Con chi",
+    "submit": "Registra",
+    "saving": "Salvo…",
+    "modeWatched": "Ho visto",
+    "modeWatching": "Sto guardando",
+    "progress": "A che punto sei",
+    "progressPlaceholder": "S1·E3",
+    "setWatching": "Segna come in corso"
+  },
+  "lists": {
+    "title": "Liste",
+    "empty": "Nessuna lista. Iniziate dalla watchlist del gruppo.",
+    "items": "{count, plural, one {# titolo} other {# titoli}}",
+    "by": "di {name}",
+    "kind": {
+      "watchlist": "Watchlist",
+      "list": "Lista",
+      "ranking": "Classifica"
+    },
+    "newTitle": "Nuova lista",
+    "name": "Nome",
+    "create": "Crea",
+    "addTo": "Aggiungi a una lista",
+    "add": "Aggiungi",
+    "personal": "personale",
+    "mine": "Le mie liste",
+    "group": "Della Cerchia",
+    "scopeCircle": "Per la Cerchia",
+    "scopePersonal": "Solo per me",
+    "emptyPersonal": "Nessuna lista personale, per ora."
+  },
+  "circle": {
+    "members": "Membri",
+    "admin": "admin",
+    "inviteTitle": "Invita",
+    "inviteBody": "Manda questo link a chi vuoi nella Cerchia. Entra solo chi ce l'ha.",
+    "copy": "Copia link",
+    "copied": "Copiato",
+    "code": "Codice"
+  },
+  "serata": {
+    "title": "Stasera si guarda",
+    "lede": "Rosa di 2–8 titoli, voto da telefono, risultato in meno di due minuti. Chi non ha un account entra con un nome.",
+    "modeLabel": "Modalità",
+    "mode": {
+      "bracket": "Torneo lampo",
+      "table": "Tavolo"
+    },
+    "modeHint": {
+      "bracket": "Sfide a due, una alla volta. 30 secondi a sfida.",
+      "table": "3 voti a testa e un veto. Un minuto."
+    },
+    "pickTitle": "La rosa",
+    "picked": "{count} di {max}",
+    "search": "Aggiungi un titolo",
+    "emptyPool": "Cerca un titolo, o riempite prima la watchlist del gruppo.",
+    "create": "Apri la Serata",
+    "recent": "Serate recenti",
+    "status": {
+      "lobby": "In attesa di cominciare",
+      "voting": "Si sta votando"
+    },
+    "statusDone": "Scelto: {title}",
+    "round": {
+      "final": "Finale",
+      "semi": "Semifinale",
+      "quarter": "Quarti"
+    },
+    "match": "Sfida {n} di {total}",
+    "pick": "Scegli uno.",
+    "pickedWait": "Fatto. Puoi cambiare idea finché la sfida è aperta.",
+    "vs": "vs",
+    "advance": "Avanti",
+    "inRoom": "In sala · {count}",
+    "guest": "ospite",
+    "voted": "votato",
+    "choosing": "sta scegliendo…",
+    "lobby": {
+      "invite": "Manda il link a chi guarda con te. Basta un nome per entrare.",
+      "share": "Manda il link",
+      "copied": "Link copiato",
+      "shareText": "Stasera si sceglie su Pausa. Entra qui:",
+      "rosa": "{count, plural, one {# titolo in gara} other {# titoli in gara}}",
+      "start": "Si comincia",
+      "wait": "Aspettiamo che {name} cominci."
+    },
+    "table": {
+      "hint": "Metti {dots} voti dove vuoi, anche tutti su uno. Un veto, se c'è qualcosa che proprio no.",
+      "left": "{count, plural, =0 {Voti piazzati.} one {Ti resta # voto} other {Ti restano # voti}}",
+      "add": "Un voto in più a {title}",
+      "remove": "Un voto in meno a {title}",
+      "veto": "Veto",
+      "submit": "Conferma",
+      "done": "Fatto. Aspettiamo gli altri.",
+      "change": "Cambia i voti"
+    },
+    "result": {
+      "kicker": "LA SERATA HA SCELTO",
+      "rounds": "{count, plural, one {# turno} other {# turni}}",
+      "people": "{count, plural, one {# persona} other {# persone}}",
+      "share": "Condividi",
+      "shareText": "Stasera: {title}. Deciso su Pausa.",
+      "copied": "Link copiato",
+      "log": "Registra nel diario",
+      "open": "Apri la Card",
+      "scores": "Com'è andata",
+      "dots": "{count, plural, one {# voto} other {# voti}}",
+      "vetoed": "veto",
+      "saveTitle": "Tieni questa Serata",
+      "saveBody": "Salva l'account con la tua email: ritrovi la Serata e puoi entrare nella Cerchia.",
+      "saveCta": "Salva",
+      "saveSent": "Controlla la posta: il link salva il tuo account.",
+      "joinCircle": "Entra in {name}",
+      "backToCircle": "Torna alla Cerchia",
+      "cta": "Pausa è il diario privato dei gruppi di amici, con un modo veloce per decidere cosa guardare.",
+      "ctaButton": "Prova Pausa",
+      "subtitle": "Stasera si guarda questo."
+    },
+    "join": {
+      "title": "Stasera si sceglie.",
+      "bodyGuest": "Entra con un nome: niente account, niente password.",
+      "bodyMember": "La tua Cerchia sta scegliendo cosa guardare.",
+      "name": "Il tuo nome",
+      "cta": "Entra in sala",
+      "error": "Non sono riuscito a farti entrare. Riprova."
+    }
+  },
+  "join": {
+    "title": "Ti hanno invitato in {name}",
+    "body": "Entra per vedere il diario della Cerchia e aggiungere il tuo.",
+    "cta": "Entra nella Cerchia",
+    "invalid": "Questo invito non è valido o è scaduto."
+  },
+  "tmdb": {
+    "attribution": "Questo prodotto usa l'API di TMDB ma non è approvato né certificato da TMDB."
+  },
+  "comments": {
+    "title": "Commenti",
+    "placeholder": "Scrivi alla Cerchia…",
+    "spoiler": "Contiene spoiler",
+    "send": "Invia",
+    "empty": "Ancora nessun commento. Rompi il ghiaccio."
+  },
+  "notifications": {
+    "title": "Notifiche",
+    "empty": "Niente di nuovo.",
+    "log": "<b>{name}</b> ha visto {title}",
+    "comment": "<b>{name}</b> ha commentato {title}",
+    "reaction": "<b>{name}</b> ha reagito a {title}",
+    "now_watching": "<b>{name}</b> ha iniziato a guardare qualcosa in {circle}",
+    "circle_join": "<b>{name}</b> ora fa parte di {circle}",
+    "serata_invite": "<b>{name}</b> ha aperto una Serata in {circle}"
+  },
+  "email": {
+    "subject": "Il tuo link per entrare in Pausa",
+    "body": "Tocca il link per entrare. Scade tra 15 minuti.",
+    "ignore": "Se non l'hai chiesto tu, ignora questa email."
+  }
+}

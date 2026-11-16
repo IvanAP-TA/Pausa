@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+/* Pausa · light theme "Sottotitoli su carta" (direction D) · dark theme "Sottotitoli" (direction B).
+ * See design/directions-v2.html. Same token names in both themes; only values change.
+ * Contrast (WCAG): light ink 15.9 · muted 6.5 · accent 4.9 (labels/large only) · second-text 7.4
+ *                  dark  ink 15.5 · muted 6.5 · accent 11.5 · on-second 7.3
+ * Text on accent is always text-on-accent. `second` is the secondary colour (green on paper, night blue in the dark). */
+
+@theme {
+  --color-paper: #F2EEE5;        /* page */
+  --color-paper-2: #FBF8F2;      /* cards */
+  --color-paper-3: #E8E2D6;      /* raised / secondary buttons */
+  --color-rule: #D6CFC1;         /* hairlines, empty stars */
+  --color-ink: #151413;
+  --color-muted: #5E5A52;
+
+  --color-accent: #C9361F;       /* tomato: actions, rating, subtitles */
+  --color-accent-hover: #A92C17;
+  --color-on-accent: #FFFFFF;
+
+  --color-second: #1F5C45;       /* bottle green: "visto con", Cerchia */
+  --color-second-deep: #17463A;
+  --color-on-second: #F2EEE5;
+  --color-on-second-muted: #C9DCD2;
+  --color-second-text: #1F5C45;  /* secondary as text: "votato", success */
+
+  /* The share Card is a printed object: same paper look in both themes (never overridden below). */
+  --color-card-paper: #FBF8F2;
+  --color-card-ink: #151413;
+  --color-card-muted: #5E5A52;
+  --color-card-accent: #C9361F;
+  --color-card-rule: #D6CFC1;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+}
+
+@theme inline {
+  --font-display: var(--font-gloock), Georgia, serif;
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Dark ("Sottotitoli"): follows the phone unless the user picked a theme (html[data-theme]). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-paper: #0D1220; --color-paper-2: #141B2E; --color-paper-3: #1C2540; --color-rule: #27314F;
+    --color-ink: #ECEAE3; --color-muted: #9AA0B0;
+    --color-accent: #F7D046; --color-accent-hover: #FFDD66; --color-on-accent: #0D1220;
+    --color-second: #3B4A6B; --color-second-deep: #1C2540; --color-on-second: #ECEAE3; --color-on-second-muted: #B5BBCB;
+    --color-second-text: #F7D046;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --color-paper: #0D1220; --color-paper-2: #141B2E; --color-paper-3: #1C2540; --color-rule: #27314F;
+  --color-ink: #ECEAE3; --color-muted: #9AA0B0;
+  --color-accent: #F7D046; --color-accent-hover: #FFDD66; --color-on-accent: #0D1220;
+  --color-second: #3B4A6B; --color-second-deep: #1C2540; --color-on-second: #ECEAE3; --color-on-second-muted: #B5BBCB;
+  --color-second-text: #F7D046;
+  color-scheme: dark;
+}
+
+@layer base {
+  html, body { overflow-x: clip; }
+  html { color-scheme: light; }
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-style: normal; overflow-wrap: anywhere; }
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+}
+
+@layer components {
+  /* Gloock has a single weight: never let the browser fake a bold. */
+  .font-display { font-synthesis: none; letter-spacing: 0; }
+
+  /* Kept as a hook for page tops; no glow in this direction. */
+  .projector { position: relative; }
+
+  /* Log cards: a thin card on paper. */
+  .ticket { border: 1px solid var(--color-rule); }
+
+  /* Reviews read like subtitles: centred, in the accent colour. In the dark, with a subtitle shadow. */
+  .subtitle { color: var(--color-accent); text-align: center; font-weight: 500; }
+  :root[data-theme="dark"] .subtitle { text-shadow: 0 1px 0 #000, 0 0 2px #000; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .subtitle { text-shadow: 0 1px 0 #000, 0 0 2px #000; } }
+
+  .tabular { font-variant-numeric: tabular-nums; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; animation: none !important; }
+}

@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="it" data-dir="a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pausa · Direzioni v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Martian+Mono:wght@400;500&family=Gloock&family=Instrument+Sans:wght@400;500;600&family=Familjen+Grotesk:wght@500;700&family=Schibsted+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* Pausa · design directions v2 — away from the "generated" look:
+ * no Fraunces/Geist, no warm-charcoal + orange glow, no pills everywhere.
+ * Contrast (WCAG): A text 16.7 accent 6.9 · B text 15.5 accent 12.5 · C text 15.9 accent 4.5 (bold/large only) */
+
+/* ───────── A · Pellicola: film stock. Keeps Mandarin + Forest, but as flat print colours on true black ───────── */
+[data-dir="a"] {
+  --bg: #0B0B0C; --surface: #151516; --surface-2: #1E1E20; --rule: #2C2C2F;
+  --text: #F2ECE0; --muted: #9C978D;
+  --accent: #FF6B35; --on-accent: #0B0B0C;
+  --second: #1E4D3B; --on-second: #F2ECE0;
+  --display: "Archivo", sans-serif; --display-stretch: 125%; --display-weight: 800; --display-case: uppercase; --display-track: -0.01em;
+  --body: "Archivo", sans-serif; --meta: "Martian Mono", monospace;
+  --radius: 2px;
+}
+/* ───────── B · Sottotitoli: the yellow of subtitles on a night-blue screen ───────── */
+[data-dir="b"] {
+  --bg: #0D1220; --surface: #141B2E; --surface-2: #1C2540; --rule: #27314F;
+  --text: #ECEAE3; --muted: #9AA0B0;
+  --accent: #F7D046; --on-accent: #0D1220;
+  --second: #3B4A6B; --on-second: #ECEAE3;
+  --display: "Gloock", serif; --display-stretch: 100%; --display-weight: 400; --display-case: none; --display-track: 0;
+  --body: "Instrument Sans", sans-serif; --meta: "Instrument Sans", sans-serif;
+  --radius: 8px;
+}
+/* ───────── C · Programma: the printed programme of an art-house cinema (light) ───────── */
+[data-dir="c"] {
+  --bg: #F2EEE5; --surface: #FBF8F2; --surface-2: #E8E2D6; --rule: #151413;
+  --text: #151413; --muted: #5E5A52;
+  --accent: #C9361F; --on-accent: #FFFFFF;
+  --second: #1F5C45; --on-second: #F2EEE5;
+  --display: "Familjen Grotesk", sans-serif; --display-stretch: 100%; --display-weight: 700; --display-case: none; --display-track: -0.03em;
+  --body: "Schibsted Grotesk", sans-serif; --meta: "Schibsted Grotesk", sans-serif;
+  --radius: 0px;
+}
+
+/* ───────── D · B's type and gestures on C's paper: Gloock + Instrument Sans, ink, tomato, bottle green ───────── */
+[data-dir="d"] {
+  --bg: #F2EEE5; --surface: #FBF8F2; --surface-2: #E8E2D6; --rule: #D6CFC1;
+  --text: #151413; --muted: #5E5A52;
+  --accent: #C9361F; --on-accent: #FFFFFF;
+  --second: #1F5C45; --on-second: #F2EEE5;
+  --display: "Gloock", serif; --display-stretch: 100%; --display-weight: 400; --display-case: none; --display-track: 0;
+  --body: "Instrument Sans", sans-serif; --meta: "Instrument Sans", sans-serif;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; }
+html, body { overflow-x: clip; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--body); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; transition: background .2s, color .2s; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.d { font-family: var(--display); font-weight: var(--display-weight); font-stretch: var(--display-stretch); text-transform: var(--display-case); letter-spacing: var(--display-track); line-height: 1; font-style: normal; overflow-wrap: anywhere; margin: 0; }
+.meta { font-family: var(--meta); font-size: 12px; color: var(--muted); }
+[data-dir="a"] .meta { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
+
+/* page chrome */
+.top { max-width: 1240px; margin: 0 auto; padding: 48px 16px 20px; display: grid; gap: 18px; }
+.top h1 { font-size: clamp(2rem, 4vw + 1rem, 3.4rem); }
+.lede { margin: 0; max-width: 64ch; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.seg button { border: 1px solid var(--rule); background: transparent; padding: 10px 16px; border-radius: var(--radius); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
+.why { max-width: 1240px; margin: 0 auto; padding: 0 16px 24px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; }
+.why h2 { font-size: 2rem; margin-bottom: 8px; }
+.why p { margin: 0 0 6px; max-width: 66ch; color: var(--muted); }
+.why p strong { color: var(--text); font-weight: 600; }
+.sw { display: flex; gap: 6px; align-items: end; }
+.sw i { display: block; width: 44px; height: 44px; border: 1px solid var(--rule); border-radius: var(--radius); }
+.stage { max-width: 1240px; margin: 0 auto; padding: 0 16px 64px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 1080px) { .stage { grid-template-columns: minmax(0, 1fr); max-width: 420px; } .why { grid-template-columns: minmax(0, 1fr); } }
+.label { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.screen { position: relative; background: var(--bg); border: 1px solid var(--rule); border-radius: calc(var(--radius) + 4px); overflow: hidden; min-height: 660px; display: flex; flex-direction: column; }
+[data-dir="c"] .screen { border-width: 2px; }
+
+/* shared bits */
+.poster { position: relative; aspect-ratio: 2/3; background: var(--p); border-radius: var(--radius); overflow: hidden; }
+.poster::after { content: "poster TMDB"; position: absolute; left: 6px; bottom: 6px; font: 500 8px/1 "Martian Mono", monospace; color: rgb(255 255 255 / .6); }
+.av { width: 26px; height: 26px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 11px; font-weight: 600; color: #fff; flex: none; }
+[data-dir="a"] .av, [data-dir="c"] .av { border-radius: var(--radius); }
+
+.head { padding: 22px 16px 10px; display: flex; justify-content: space-between; align-items: end; gap: 8px; }
+.head .d { font-size: 1.7rem; }
+[data-dir="a"] .head .d { font-size: 1.45rem; }
+[data-dir="c"] .head { border-bottom: 2px solid var(--rule); margin: 0 16px; padding: 22px 0 10px; }
+.now { margin: 10px 16px 0; padding: 10px; display: flex; gap: 10px; align-items: center; background: var(--surface); border-radius: var(--radius); font-size: 13px; }
+.now .poster { width: 30px; flex: none; } .now .poster::after { display: none; }
+.now .live { margin-left: auto; font-family: var(--meta); font-size: 10px; letter-spacing: .06em; color: var(--accent); }
+[data-dir="c"] .now { background: transparent; border-bottom: 1px solid var(--rule); border-radius: 0; margin-top: 0; padding: 10px 0; }
+
+.feed { padding: 14px 16px; display: grid; gap: 14px; flex: 1; }
+.log { background: var(--surface); border-radius: var(--radius); padding: 14px; display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 12px; }
+.who { grid-column: 1/-1; display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.who b { color: var(--text); font-weight: 600; } .who .t { margin-left: auto; }
+.log h3 { font-size: 1.35rem; margin-bottom: 4px; }
+[data-dir="a"] .log h3 { font-size: 1.05rem; }
+.rating { display: flex; gap: 3px; margin: 6px 0; }
+.rating i { width: 12px; height: 12px; background: var(--rule); }
+.rating i.on { background: var(--accent); }
+.rating i.half { background: linear-gradient(90deg, var(--accent) 50%, var(--rule) 50%); }
+[data-dir="b"] .rating i { clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+[data-dir="c"] .rating i { border-radius: 50%; }
+.review { margin: 6px 0 0; font-size: 14px; }
+.with { grid-column: 1/-1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { font-size: 12px; padding: 3px 9px; background: var(--second); color: var(--on-second); border-radius: var(--radius); }
+[data-dir="b"] .chip { border-radius: 999px; }
+.reacts { margin-left: auto; display: flex; gap: 6px; font-size: 12px; color: var(--muted); }
+
+/* A: sprocket holes down both edges of every screen */
+[data-dir="a"] .screen::before, [data-dir="a"] .screen::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 7px; z-index: 2; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, transparent 0 7px, #26262A 7px 15px);
+}
+[data-dir="a"] .screen::before { left: 3px; } [data-dir="a"] .screen::after { right: 3px; }
+[data-dir="a"] .log { border-left: 3px solid var(--accent); }
+/* B: the review reads like a subtitle */
+[data-dir="b"] .review { color: var(--accent); text-align: center; text-shadow: 0 1px 0 #000, 0 0 2px #000; font-weight: 500; grid-column: 1/-1; margin-top: 2px; }
+/* C: printed programme — rules, no cards */
+[data-dir="c"] .log { background: transparent; padding: 0 0 14px; border-bottom: 1px solid var(--rule); border-radius: 0; }
+[data-dir="c"] .feed { gap: 16px; }
+
+.tabs { display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; padding: 8px 6px 12px; border-top: 1px solid var(--rule); font-size: 10.5px; color: var(--muted); text-align: center; background: var(--bg); }
+.tabs .on { color: var(--text); font-weight: 600; }
+.tabs .plus { justify-self: center; width: 46px; height: 46px; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); font-size: 24px; border-radius: var(--radius); }
+[data-dir="b"] .tabs .plus { border-radius: 50%; }
+[data-dir="c"] .tabs { border-top-width: 2px; }
+
+/* serata */
+.sv { padding: 14px 16px; display: grid; gap: 14px; }
+.round { display: flex; justify-content: space-between; align-items: center; }
+.clock { font-family: var(--meta); font-size: 13px; padding: 4px 8px; border: 1px solid var(--rule); border-radius: var(--radius); }
+[data-dir="a"] .clock { background: var(--accent); color: var(--on-accent); border: 0; }
+.bar { display: flex; gap: 4px; } .bar i { flex: 1; height: 4px; background: var(--rule); } .bar i.done { background: var(--second); } .bar i.cur { background: var(--accent); }
+[data-dir="c"] .bar i { height: 6px; }
+.vs { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); gap: 8px; align-items: start; }
+.vs .x { align-self: center; font-family: var(--display); font-stretch: var(--display-stretch); font-weight: var(--display-weight); color: var(--muted); }
+.pick { border: 2px solid transparent; background: transparent; padding: 0; text-align: left; display: grid; gap: 6px; border-radius: calc(var(--radius) + 2px); }
+.pick[aria-pressed="true"] { border-color: var(--accent); }
+.pick b { display: block; font-size: 14px; line-height: 1.2; padding: 0 4px; }
+.pick span { font-size: 12px; color: var(--muted); padding: 0 4px 6px; }
+.room { background: var(--surface); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 8px; font-size: 13px; }
+.room div { display: flex; gap: 8px; align-items: center; } .room .ok { margin-left: auto; color: var(--accent); font-size: 12px; }
+[data-dir="c"] .room { background: transparent; border-top: 2px solid var(--rule); border-radius: 0; padding: 10px 0 0; }
+[data-dir="c"] .room .ok { color: var(--second); }
+
+/* card 9:16 */
+.cw { padding: 14px 16px; display: grid; gap: 12px; }
+.card { aspect-ratio: 9/16; position: relative; overflow: hidden; display: flex; flex-direction: column; border-radius: var(--radius); }
+.card .k { font-size: 11px; letter-spacing: .1em; }
+.btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn { min-height: 44px; border: 1px solid var(--rule); background: transparent; border-radius: var(--radius); font-weight: 600; font-size: 14px; }
+.btn.p { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+[data-dir="b"] .btn { border-radius: 999px; }
+
+/* A card: film frame — poster top, black slate below with mono data */
+[data-dir="a"] .card { background: #000; padding: 14px 18px; gap: 10px; }
+[data-dir="a"] .card .poster { width: 100%; aspect-ratio: 4/5; }
+[data-dir="a"] .card .k { font-family: var(--meta); color: var(--accent); }
+[data-dir="a"] .card .d { font-size: 2.1rem; line-height: .95; }
+[data-dir="a"] .card .data { margin-top: auto; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-family: var(--meta); font-size: 10px; color: var(--muted); text-transform: uppercase; }
+[data-dir="a"] .card .stamp { position: absolute; top: 26px; right: 26px; background: var(--accent); color: var(--on-accent); font-family: var(--meta); font-size: 10px; padding: 6px 8px; transform: rotate(4deg); }
+/* B card: full poster, title as a subtitle line */
+[data-dir="b"] .card { background: var(--p-win); justify-content: flex-end; text-align: center; }
+[data-dir="b"] .card .poster { position: absolute; inset: 0; aspect-ratio: auto; border-radius: 0; }
+[data-dir="b"] .card .cap { position: relative; padding: 70px 18px 22px; background: linear-gradient(to top, rgb(9 12 22 / .95) 60%, transparent); display: grid; gap: 8px; }
+[data-dir="b"] .card .k { color: var(--accent); }
+[data-dir="b"] .card .d { font-size: 2.4rem; }
+[data-dir="b"] .card .sub { color: var(--accent); font-weight: 500; text-shadow: 0 1px 0 #000; }
+[data-dir="b"] .card .data { font-size: 11px; color: var(--muted); }
+/* C card: programme poster — red block, huge title, poster inset */
+[data-dir="c"] .card { background: var(--accent); color: #fff; padding: 18px; gap: 12px; border: 2px solid var(--rule); }
+[data-dir="c"] .card .k { font-weight: 700; }
+[data-dir="c"] .card .d { font-size: 2.7rem; line-height: .9; }
+[data-dir="c"] .card .poster { width: 62%; align-self: flex-end; margin-top: auto; border: 2px solid #151413; }
+[data-dir="c"] .card .data { font-size: 11px; display: grid; gap: 2px; border-top: 2px solid #fff; padding-top: 8px; }
+/* D reuses B's markup (subtitle review, poster card) with its own colours */
+[data-dir="d"] .rating i { clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+[data-dir="d"] .review { color: var(--accent); text-align: center; font-weight: 500; grid-column: 1/-1; margin-top: 2px; }
+[data-dir="d"] .log { border: 1px solid var(--rule); }
+[data-dir="d"] .now { border: 1px solid var(--rule); }
+[data-dir="d"] .chip, [data-dir="d"] .btn { border-radius: 999px; }
+[data-dir="d"] .tabs .plus { border-radius: 50%; }
+[data-dir="d"] .room { border: 1px solid var(--rule); }
+[data-dir="d"] .room .ok { color: var(--second); }
+[data-dir="d"] .card { background: var(--surface); border: 1px solid var(--rule); justify-content: flex-end; text-align: center; }
+[data-dir="d"] .card .poster { position: absolute; inset: 0 0 36% 0; aspect-ratio: auto; border-radius: 0; }
+[data-dir="d"] .card .cap { position: relative; padding: 16px 16px 18px; display: grid; gap: 8px; background: var(--surface); border-top: 3px solid var(--accent); }
+[data-dir="d"] .card .k { color: var(--accent); font-weight: 600; }
+[data-dir="d"] .card .d { font-size: 2.3rem; }
+[data-dir="d"] .card .sub { color: var(--accent); font-weight: 500; }
+[data-dir="d"] .card .data { font-size: 11px; color: var(--muted); }
+[data-dir="d"] .only-b { display: block; }
+[data-dir="d"] .only-b.f { display: flex; }
+[data-dir="d"] .why .only-b { display: none; }
+
+.only-a, .only-b, .only-c, .only-d { display: none; }
+[data-dir="d"] .why .only-d { display: block; }
+[data-dir="a"] .only-a, [data-dir="b"] .only-b, [data-dir="c"] .only-c { display: block; }
+[data-dir="a"] .only-a.f, [data-dir="b"] .only-b.f, [data-dir="c"] .only-c.f { display: flex; }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1 class="d">Pausa · Direzioni v2</h1>
+  <p class="lede">Tre strade lontane dal look "generato" di adesso (serif Fraunces, sfondo marrone, arancione con alone). Stesse schermate, stessi contenuti: cambiano font, colori e un gesto per ciascuna.</p>
+  <div class="seg" role="group" aria-label="Direzione">
+    <button data-set="a">A · Pellicola</button>
+    <button data-set="b">B · Sottotitoli</button>
+    <button data-set="c">C · Programma</button>
+    <button data-set="d">D · B con i colori di C</button>
+  </div>
+</header>
+
+<section class="why">
+  <div class="only-a">
+    <h2 class="d">Pellicola</h2>
+    <p><strong>Idea:</strong> la pellicola e i titoli di coda. Nero vero, testo crema come la luce del proiettore, i bordi perforati della pellicola.</p>
+    <p><strong>Font:</strong> Archivo in versione larga e maiuscola per i titoli (come i credits), Archivo per il testo, Martian Mono per date e dati tecnici.</p>
+    <p><strong>Colori:</strong> tiene Mandarino e Verde della spec, ma come colori stampati e piatti: niente aloni, niente marrone.</p>
+  </div>
+  <div class="only-b">
+    <h2 class="d">Sottotitoli</h2>
+    <p><strong>Idea:</strong> il giallo dei sottotitoli su uno schermo blu notte. Le recensioni si leggono come sottotitoli.</p>
+    <p><strong>Font:</strong> Gloock, un serif da locandina molto contrastato, per i titoli; Instrument Sans per il testo.</p>
+    <p><strong>Colori:</strong> cambia la palette: blu notte + giallo sottotitolo. Più caldo e "cinema", meno brand tech.</p>
+  </div>
+  <div class="only-d">
+    <h2 class="d">Sottotitoli su carta</h2>
+    <p><strong>Idea:</strong> i gesti di B (recensioni come sottotitoli, Card con il poster e la didascalia) sulla carta del programma di sala.</p>
+    <p><strong>Font:</strong> Gloock per i titoli, Instrument Sans per il testo.</p>
+    <p><strong>Colori:</strong> carta, inchiostro, rosso pomodoro per le azioni e i sottotitoli, verde bottiglia per "visto con" e "votato". Card divise da bordi sottili invece delle righe nere di C.</p>
+  </div>
+  <div class="only-c">
+    <h2 class="d">Programma</h2>
+    <p><strong>Idea:</strong> il programma stampato di un cinema d'essai. Chiaro, righe nere, niente card, molto editoriale. Esce dal "tutto scuro" che fanno tutti.</p>
+    <p><strong>Font:</strong> Familjen Grotesk stretta per i titoli, Schibsted Grotesk (nato per i giornali) per il testo.</p>
+    <p><strong>Colori:</strong> carta, inchiostro, rosso pomodoro e verde bottiglia. Rischio: si allontana dal mood "sala buia" della spec.</p>
+  </div>
+  <div class="sw" aria-hidden="true"><i style="background:var(--bg)"></i><i style="background:var(--surface)"></i><i style="background:var(--text)"></i><i style="background:var(--accent)"></i><i style="background:var(--second)"></i></div>
+</section>
+
+<main class="stage">
+  <div>
+    <div class="label">01 · Feed della Cerchia</div>
+    <div class="screen">
+      <div class="head"><p class="d">Divano Club</p><span class="meta">4 membri · 112 visioni</span></div>
+      <div class="now"><span class="poster" style="--p:#6E2F2F"></span><span><b>Sofi</b> sta guardando <b>The Bear</b> <span class="meta">S3·E4</span></span><span class="live">● LIVE</span></div>
+      <div class="feed">
+        <article class="log">
+          <div class="who"><span class="av" style="background:#8A4B2E">G</span><b>Giulia</b> ha visto<span class="t meta">2 h fa</span></div>
+          <span class="poster" style="--p:#3B4A5C"></span>
+          <div><h3 class="d">Past Lives</h3><span class="meta">Film · 2023 · MUBI</span>
+            <div class="rating"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="half"></i></div>
+            <p class="review only-a">Ho pianto in silenzio per venti minuti. Marco ha fatto finta di niente.</p>
+            <p class="review only-c">Ho pianto in silenzio per venti minuti. Marco ha fatto finta di niente.</p>
+          </div>
+          <p class="review only-b">Ho pianto in silenzio per venti minuti. Marco ha fatto finta di niente.</p>
+          <div class="with"><span class="meta">Visto con</span><span class="chip">Marco</span><span class="chip">Luca</span><span class="reacts">😭 3 · 🍿 1 · 1 commento</span></div>
+        </article>
+        <article class="log">
+          <div class="who"><span class="av" style="background:#2D6A4F">M</span><b>Marco</b> ha visto<span class="t meta">ieri</span></div>
+          <span class="poster" style="--p:#4F5B4A"></span>
+          <div><h3 class="d">Anatomia di una caduta</h3><span class="meta">Film · 2023 · Prime Video</span>
+            <div class="rating"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+          </div>
+        </article>
+      </div>
+      <nav class="tabs"><span class="on">Diario</span><span>Serata</span><span class="plus">+</span><span>Liste</span><span>Cerchia</span></nav>
+    </div>
+  </div>
+
+  <div>
+    <div class="label">02 · Serata · Torneo lampo</div>
+    <div class="screen">
+      <div class="head"><p class="d">Stasera si guarda</p></div>
+      <div class="sv">
+        <div class="round"><span class="meta">Semifinale · Sfida 2 di 3</span><span class="clock">0:24</span></div>
+        <div class="bar"><i class="done"></i><i class="cur"></i><i></i></div>
+        <span class="meta">Scegli uno.</span>
+        <div class="vs">
+          <button class="pick" aria-pressed="true"><span class="poster" style="--p:#2F5D62"></span><b>La città incantata</b><span>2001 · 125′</span></button>
+          <span class="x">VS</span>
+          <button class="pick" aria-pressed="false"><span class="poster" style="--p:#8A5A2B"></span><b>Dune - Parte due</b><span>2024 · 166′</span></button>
+        </div>
+        <div class="room">
+          <span class="meta">In sala · 3</span>
+          <div><span class="av" style="background:#8A4B2E">G</span>Giulia<span class="ok">✓ votato</span></div>
+          <div><span class="av" style="background:#2D6A4F">M</span>Marco<span class="ok">✓ votato</span></div>
+          <div><span class="av" style="background:#5A4B6E">A</span>Ale <span class="meta">ospite</span><span class="ok" style="color:var(--muted)">sta scegliendo…</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="label">03 · Card 9:16</div>
+    <div class="screen">
+      <div class="cw">
+        <div class="card only-a f">
+          <span class="poster" style="--p:#2F5D62"></span>
+          <span class="stamp">SCELTO</span>
+          <span class="k">LA SERATA HA SCELTO</span>
+          <p class="d">La città incantata</p>
+          <div class="data"><span>Cerchia</span><span>Divano Club</span><span>Data</span><span>15·11·2026</span><span>Formato</span><span>Torneo · 3 turni · 4 persone</span></div>
+        </div>
+        <div class="card only-b f" style="--p-win:#2F5D62">
+          <span class="poster" style="--p:#2F5D62"></span>
+          <div class="cap"><span class="k">LA SERATA HA SCELTO</span><p class="d">La città incantata</p><span class="sub">— Stasera si guarda questo.</span><span class="data">Divano Club · 15 nov · Torneo lampo · 4 persone</span></div>
+        </div>
+        <div class="card only-c f">
+          <span class="k">LA SERATA HA SCELTO</span>
+          <p class="d">La città incantata</p>
+          <span class="poster" style="--p:#2F5D62"></span>
+          <div class="data"><span>Divano Club · sabato 15 novembre</span><span>Torneo lampo · 3 turni · 4 persone</span></div>
+        </div>
+        <div class="btns"><button class="btn p">Condividi</button><button class="btn">Registra nel diario</button></div>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+const root = document.documentElement;
+function set(d) {
+  root.dataset.dir = d;
+  document.querySelectorAll("[data-set]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.set === d));
+  try { localStorage.setItem("pausa.v2", d); } catch {}
+}
+document.addEventListener("click", (e) => { const b = e.target.closest("[data-set]"); if (b) set(b.dataset.set); });
+let start = "a"; try { start = localStorage.getItem("pausa.v2") || "a"; } catch {}
+set(start);
+</script>
+</body>
+</html>

@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="it" data-dir="a" data-card="c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pausa · Direzioni</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Hallmark · genre: atmospheric · custom (brand-locked palette) · 3 directions: Sala / Cabina / Locandina
+ * paper #0F1115–#14171C · accent Mandarin #FF6B35 · secondary Forest #2D6A4F (surface only)
+ * pre-emit critique: P4 H4 E4 S5 R4 V5 */
+
+:root {
+  /* brand — fixed across directions */
+  --mandarin: #FF6B35;
+  --mandarin-ink: #1A0E08;          /* text on mandarin: dark, never white */
+  --forest: #2D6A4F;
+  --forest-deep: #1B4332;
+  --forest-text: #7CC4A0;
+
+  --font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --font-poster: "Big Shoulders Display", Impact, sans-serif;
+
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
+
+  --ease-out: cubic-bezier(.2,.7,.2,1);
+  --dur: 180ms;
+}
+
+/* ───────── Direction A · Sala ───────── */
+[data-dir="a"] {
+  --paper: #14110F; --paper-2: #1C1815; --paper-3: #26201C; --rule: #3A322C;
+  --ink: #F4EFE9; --muted: #B9AFA5;
+  --radius: 14px; --radius-s: 10px;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-mono: var(--font-body);   /* Sala has no mono: 2+1 faces = Fraunces + Geist + poster outlier */
+  --display-weight: 600; --display-track: -0.01em; --display-case: none;
+}
+[data-dir="a"] .mono, [data-dir="a"] .timer, [data-dir="a"] .card-foot { font-variant-numeric: tabular-nums; }
+/* ───────── Direction B · Cabina ───────── */
+[data-dir="b"] {
+  --paper: #0F1115; --paper-2: #161920; --paper-3: #1E222B; --rule: #2A2F3A;
+  --ink: #F3F4F6; --muted: #A3A9B5;
+  --radius: 4px; --radius-s: 3px;
+  --font-display: "Geist", ui-sans-serif, sans-serif;
+  --display-weight: 600; --display-track: -0.035em; --display-case: none;
+}
+/* ───────── Direction C · Locandina ───────── */
+[data-dir="c"] {
+  --paper: #13141A; --paper-2: #1B1D24; --paper-3: #252832; --rule: #343743;
+  --ink: #F5F3EE; --muted: #ADA9A0;
+  --radius: 0px; --radius-s: 0px;
+  --font-display: "Big Shoulders Display", Impact, sans-serif;
+  --display-weight: 800; --display-track: 0.01em; --display-case: uppercase;
+}
+
+* { box-sizing: border-box; }
+html, body { overflow-x: clip; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--dur) var(--ease-out);
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--mandarin); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); font-size: 0.82em; letter-spacing: 0; }
+.display {
+  font-family: var(--font-display); font-weight: var(--display-weight);
+  letter-spacing: var(--display-track); text-transform: var(--display-case);
+  font-style: normal; line-height: 1.05; overflow-wrap: anywhere; min-width: 0;
+}
+
+/* ───────── page chrome ───────── */
+.top {
+  max-width: 1240px; margin: 0 auto; padding: var(--space-7) var(--space-4) var(--space-5);
+  display: grid; gap: var(--space-5);
+}
+.top h1 { margin: 0; font-size: clamp(2rem, 4vw + 1rem, 3.4rem); }
+.top h1 span { color: var(--mandarin); }
+.lede { margin: 0; max-width: 60ch; color: var(--muted); font-size: 1.05rem; }
+.controls { display: flex; flex-wrap: wrap; gap: var(--space-5); align-items: end; }
+.ctl { display: grid; gap: var(--space-2); }
+.ctl-label { font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 999px; padding: 3px; background: var(--paper-2); }
+.seg button {
+  border: 0; background: transparent; padding: 8px 16px; border-radius: 999px;
+  color: var(--muted); white-space: nowrap; transition: color var(--dur), background var(--dur);
+}
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--mandarin); color: var(--mandarin-ink); font-weight: 600; }
+.dir-note {
+  max-width: 1240px; margin: 0 auto; padding: 0 var(--space-4) var(--space-5);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-5); align-items: start;
+}
+.dir-note h2 { margin: 0 0 var(--space-2); font-size: 1.9rem; }
+.dir-note p { margin: 0; max-width: 62ch; color: var(--muted); }
+.swatches { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.sw { width: 56px; display: grid; gap: 4px; font-size: 10px; color: var(--muted); }
+.sw i { display: block; height: 40px; border-radius: var(--radius-s); border: 1px solid var(--rule); }
+
+.stage {
+  max-width: 1240px; margin: 0 auto; padding: 0 var(--space-4) var(--space-8);
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5);
+}
+.col { display: grid; gap: var(--space-3); align-content: start; min-width: 0; }
+.col-label { font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.screen {
+  position: relative; background: var(--paper); border: 1px solid var(--rule);
+  border-radius: calc(var(--radius) + 6px); overflow: hidden; min-height: 680px;
+  display: flex; flex-direction: column; isolation: isolate;
+}
+@media (max-width: 1080px) { .stage { grid-template-columns: minmax(0, 1fr); max-width: 420px; } .dir-note { grid-template-columns: minmax(0,1fr); } }
+
+/* ───────── shared bits ───────── */
+.poster {
+  position: relative; aspect-ratio: 2 / 3; background: var(--p, #333);
+  border-radius: var(--radius-s); overflow: hidden; display: flex; align-items: end;
+}
+.poster::after {
+  content: "poster TMDB"; position: absolute; top: 6px; left: 6px;
+  font: 500 8px/1 var(--font-mono); color: rgb(255 255 255 / .55); letter-spacing: .05em;
+}
+.poster b {
+  padding: 8px; font-family: var(--font-display); font-weight: var(--display-weight);
+  text-transform: var(--display-case); font-size: 13px; line-height: 1.05; color: #F4F1EC;
+  overflow-wrap: anywhere;
+}
+.avatars { display: flex; }
+.av {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 11px; font-weight: 600; color: #F4F1EC; border: 2px solid var(--paper-2); margin-left: -6px;
+}
+.av:first-child { margin-left: 0; }
+[data-dir="b"] .av, [data-dir="c"] .av { border-radius: var(--radius-s); }
+
+.stars { display: inline-flex; gap: 1px; font-size: 14px; line-height: 1; }
+.st { position: relative; color: var(--rule); }
+.st::after { content: "★"; position: absolute; inset: 0; color: var(--mandarin); width: var(--f); overflow: hidden; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--rule);
+  background: var(--paper-3); font-weight: 600; white-space: nowrap;
+  transition: transform var(--dur) var(--ease-out), background var(--dur);
+}
+.btn:hover { background: var(--rule); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--mandarin); color: var(--mandarin-ink); border-color: var(--mandarin); }
+.btn.primary:hover { background: #FF7F50; }
+[data-dir="b"] .btn { border-radius: var(--radius); }
+[data-dir="c"] .btn { border-radius: 0; text-transform: uppercase; letter-spacing: .06em; font-size: 13px; }
+
+/* ───────── screen 1 · feed ───────── */
+.s-head { padding: var(--space-5) var(--space-4) var(--space-3); display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
+.s-head .display { font-size: 1.6rem; margin: 0; }
+.s-sub { font-size: 12px; color: var(--muted); }
+.now {
+  margin: 0 var(--space-4); padding: var(--space-3); background: var(--paper-2);
+  border-radius: var(--radius); display: flex; gap: var(--space-3); align-items: center;
+}
+.now .poster { width: 36px; flex: none; }
+.now .poster::after, .now .poster b { display: none; }
+.now-txt { font-size: 13px; min-width: 0; }
+.now-txt strong { font-weight: 600; }
+.tally { width: 8px; height: 8px; border-radius: 50%; background: var(--mandarin); flex: none; margin-left: auto; }
+@media (prefers-reduced-motion: no-preference) { .tally { animation: pulse 2.4s var(--ease-out) infinite; } }
+@keyframes pulse { 50% { opacity: .35; } }
+
+.feed { padding: var(--space-4); display: grid; gap: var(--space-4); flex: 1; }
+.log {
+  background: var(--paper-2); border-radius: var(--radius); padding: var(--space-4);
+  display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: var(--space-3); position: relative;
+}
+.log-who { display: flex; align-items: center; gap: var(--space-2); font-size: 13px; color: var(--muted); grid-column: 1 / -1; }
+.log-who strong { color: var(--ink); font-weight: 600; }
+.log-who .t { margin-left: auto; font-size: 12px; }
+.log h3 { margin: 0 0 4px; font-size: 1.2rem; }
+.log p { margin: var(--space-2) 0 0; font-size: 14px; }
+.with { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--space-3); grid-column: 1 / -1; align-items: center; }
+.chip {
+  font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--forest); color: #EAF4EE;
+}
+[data-dir="b"] .chip, [data-dir="c"] .chip { border-radius: var(--radius-s); }
+.reacts { display: flex; gap: 6px; margin-left: auto; }
+.react { border: 1px solid var(--rule); background: transparent; border-radius: 999px; padding: 2px 9px; font-size: 12px; }
+.react[aria-pressed="true"] { border-color: var(--mandarin); color: var(--mandarin); }
+.spoiler {
+  margin-top: var(--space-2); border: 1px dashed var(--rule); border-radius: var(--radius-s);
+  padding: var(--space-3); font-size: 13px; color: var(--muted); background: transparent; width: 100%; text-align: left;
+}
+.spoiler .hidden { display: block; filter: blur(5px); user-select: none; color: var(--ink); margin-top: 4px; }
+.spoiler[aria-expanded="true"] .hidden { filter: none; }
+
+.tabs {
+  position: sticky; bottom: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center; padding: var(--space-2) var(--space-2) var(--space-3);
+  background: color-mix(in oklab, var(--paper) 78%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--rule);
+}
+.tab { border: 0; background: transparent; font-size: 11px; color: var(--muted); padding: 6px 0; display: grid; justify-items: center; gap: 3px; }
+.tab svg { width: 20px; height: 20px; }
+.tab[aria-current="page"] { color: var(--ink); }
+.tab[aria-current="page"] svg { color: var(--mandarin); }
+.tab-log { justify-self: center; width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--mandarin); color: var(--mandarin-ink); display: grid; place-items: center; }
+[data-dir="b"] .tab-log { border-radius: var(--radius); }
+[data-dir="c"] .tab-log { border-radius: 0; }
+
+/* A · Sala: projector bloom + ticket notches */
+[data-dir="a"] .screen::before {
+  content: ""; position: absolute; inset: -30% -20% auto; height: 60%; z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, rgb(255 107 53 / .16), transparent);
+}
+[data-dir="a"] .log {
+  --n: 9px;
+  -webkit-mask: radial-gradient(circle var(--n) at 0 58%, transparent 98%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle var(--n) at 100% 58%, transparent 98%, #000) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle var(--n) at 0 58%, transparent 98%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle var(--n) at 100% 58%, transparent 98%, #000) right / 51% 100% no-repeat;
+}
+[data-dir="a"] .log h3 { font-size: 1.3rem; }
+
+/* B · Cabina: hairlines, timecodes, no fills */
+[data-dir="b"] .log { background: transparent; border: 1px solid var(--rule); }
+[data-dir="b"] .now { background: transparent; border: 1px solid var(--rule); }
+[data-dir="b"] .log-who .t, [data-dir="b"] .s-sub { font-family: var(--font-mono); }
+[data-dir="b"] .tally { border-radius: 2px; box-shadow: 0 0 0 3px rgb(255 107 53 / .18); }
+
+/* C · Locandina: posters lead, title over poster */
+[data-dir="c"] .log { grid-template-columns: minmax(0, 1fr); padding: 0; background: transparent; }
+[data-dir="c"] .log .poster { aspect-ratio: 16 / 10; border-radius: 0; }
+[data-dir="c"] .log .poster b { font-size: 2rem; padding: 12px; }
+[data-dir="c"] .log-who, [data-dir="c"] .log-body, [data-dir="c"] .with { padding: 0 var(--space-1); }
+[data-dir="c"] .log-body h3 { display: none; }
+[data-dir="c"] .s-head .display { font-size: 2.2rem; }
+
+/* ───────── screen 2 · serata ───────── */
+.serata { padding: var(--space-4); display: grid; gap: var(--space-4); flex: 1; align-content: start; }
+.round { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); }
+.timer { position: relative; width: 44px; height: 44px; display: grid; place-items: center; font: 500 12px var(--font-mono); color: var(--ink); }
+.timer svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.vs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--space-2); align-items: center; }
+.vs-x { font-family: var(--font-display); font-weight: var(--display-weight); color: var(--muted); font-size: 14px; text-transform: var(--display-case); }
+.pick { border: 2px solid transparent; background: transparent; padding: 0; border-radius: calc(var(--radius-s) + 2px); display: grid; gap: 6px; text-align: left; transition: border-color var(--dur), transform var(--dur) var(--ease-out); }
+.pick:hover { transform: translateY(-2px); }
+.pick[aria-pressed="true"] { border-color: var(--mandarin); }
+.pick .meta { padding: 0 4px 6px; font-size: 12px; color: var(--muted); }
+.pick .meta strong { display: block; color: var(--ink); font-size: 14px; font-weight: 600; line-height: 1.2; }
+.room { background: var(--paper-2); border-radius: var(--radius); padding: var(--space-3); display: grid; gap: var(--space-2); }
+.room-row { display: flex; align-items: center; gap: var(--space-2); font-size: 13px; }
+.room-row .voted { margin-left: auto; font-size: 12px; color: var(--forest-text); }
+.guest-tag { font-size: 10px; padding: 1px 6px; border: 1px solid var(--rule); border-radius: 999px; color: var(--muted); }
+.bracket { display: flex; gap: 4px; }
+.bracket i { flex: 1; height: 4px; border-radius: 2px; background: var(--rule); }
+.bracket i.done { background: var(--forest); }
+.bracket i.on { background: var(--mandarin); }
+
+/* A: ticket-like room card */
+[data-dir="a"] .serata-title { font-size: 1.8rem; }
+/* B: hairline + leader ring */
+[data-dir="b"] .room { background: transparent; border: 1px solid var(--rule); }
+/* C: letterboard marquee */
+.marquee { display: none; }
+[data-dir="c"] .marquee {
+  display: block; background: #0B0C10; border: 3px solid #2A2C33; padding: var(--space-3);
+  text-align: center; position: relative;
+  background-image: radial-gradient(circle, rgb(255 255 255 / .05) 1px, transparent 1.5px);
+  background-size: 8px 8px;
+}
+[data-dir="c"] .marquee::before, [data-dir="c"] .marquee::after {
+  content: ""; position: absolute; left: 8px; right: 8px; height: 4px;
+  background: radial-gradient(circle, var(--mandarin) 1.6px, transparent 2.2px) 0 0 / 14px 4px repeat-x;
+}
+[data-dir="c"] .marquee::before { top: -9px; } [data-dir="c"] .marquee::after { bottom: -9px; }
+.marquee span { display: block; font-family: var(--font-display); font-weight: 800; text-transform: uppercase; font-size: 1.35rem; line-height: 1.15; letter-spacing: .08em; color: #F4F1EC; }
+[data-dir="c"] .serata-title { display: none; }
+
+/* ───────── screen 3 · card 9:16 ───────── */
+.card-wrap { padding: var(--space-4); display: grid; gap: var(--space-4); flex: 1; align-content: start; }
+.card {
+  aspect-ratio: 9 / 16; border-radius: var(--radius); overflow: hidden; position: relative;
+  display: flex; flex-direction: column; padding: var(--space-5); gap: var(--space-3);
+  background: var(--forest-deep); color: #F1F5F2;
+}
+.card .poster { width: 58%; align-self: center; box-shadow: 0 18px 40px rgb(0 0 0 / .45); }
+.card-kicker { font-size: 12px; letter-spacing: .06em; color: #C7DCCF; }
+.card-title { font-size: 1.9rem; margin: 0; }
+.card-meta { font-size: 12px; color: #C7DCCF; display: grid; gap: 2px; }
+.card-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; font: 500 11px var(--font-mono); color: #C7DCCF; }
+.card-foot b { color: var(--mandarin); font-weight: 500; }
+.card-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-2); }
+
+/* Card styles key off data-card, so the locked combo can pair Sala (app) with the Locandina card */
+/* A · Sala: velvet ticket */
+[data-card="a"] .card { text-align: center; }
+[data-card="a"] .card::before {
+  content: ""; position: absolute; inset: -20% -30% auto; height: 55%; pointer-events: none;
+  background: radial-gradient(closest-side, rgb(255 107 53 / .22), transparent);
+}
+[data-card="a"] .card > * { position: relative; }
+[data-card="a"] .card-meta { justify-items: center; }
+[data-card="a"] .card-sep { border: 0; border-top: 2px dashed rgb(241 245 242 / .3); margin: 4px -24px; }
+/* B · Cabina: black slate with data grid */
+[data-card="b"] .card { background: #0A0C0F; border: 1px solid var(--rule); }
+[data-card="b"] .card-kicker { color: var(--mandarin); font-family: var(--font-mono); letter-spacing: 0; }
+[data-card="b"] .card .poster { width: 100%; aspect-ratio: 16/10; box-shadow: none; }
+[data-card="b"] .card-meta { font-family: var(--font-mono); color: var(--muted); grid-template-columns: auto 1fr; column-gap: 12px; }
+[data-card="b"] .card-sep { border: 0; border-top: 1px solid var(--rule); margin: 0; }
+/* C · Locandina: one-sheet. Title always in the poster face (the page's one outlier moment) */
+[data-card="c"] .card { padding: 0; background: var(--p-win); border-radius: 0; }
+[data-card="c"] .card .poster { position: absolute; inset: 0; width: auto; aspect-ratio: auto; box-shadow: none; border-radius: 0; }
+[data-card="c"] .card .poster b { display: none; }
+[data-card="c"] .card-inner { position: relative; margin-top: auto; padding: var(--space-5); display: grid; gap: var(--space-2);
+  background: linear-gradient(to top, rgb(10 11 14 / .92) 55%, transparent); }
+[data-card="c"] .card-title { font-family: var(--font-poster); font-weight: 800; text-transform: uppercase; letter-spacing: .01em; font-size: 3.2rem; line-height: .92; }
+[data-card="c"] .card-sep { display: none; }
+.card-inner { display: grid; gap: var(--space-3); }
+[data-card="a"] .card-inner, [data-card="b"] .card-inner { display: contents; }
+
+@media (prefers-reduced-motion: reduce) { * { transition-duration: 1ms !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1 class="display">Pausa <span>·</span> <span data-i18n="page.title" style="color:inherit"></span></h1>
+  <p class="lede" data-i18n="page.lede"></p>
+  <div class="controls">
+    <div class="ctl">
+      <span class="ctl-label" data-i18n="ctl.direction"></span>
+      <div class="seg" role="group" id="dirSeg">
+        <button data-set-dir="final">★ <span data-i18n="dir.final.name"></span></button>
+        <button data-set-dir="a">A · <span data-i18n="dir.a.name"></span></button>
+        <button data-set-dir="b">B · <span data-i18n="dir.b.name"></span></button>
+        <button data-set-dir="c">C · <span data-i18n="dir.c.name"></span></button>
+      </div>
+    </div>
+    <div class="ctl">
+      <span class="ctl-label" data-i18n="ctl.lang"></span>
+      <div class="seg" role="group" id="langSeg">
+        <button data-set-lang="it">IT</button>
+        <button data-set-lang="en">EN</button>
+        <button data-set-lang="es">ES</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="dir-note">
+  <div>
+    <h2 class="display" id="dirName"></h2>
+    <p id="dirDesc"></p>
+  </div>
+  <div class="swatches" aria-label="palette">
+    <div class="sw"><i style="background:var(--paper)"></i>paper</div>
+    <div class="sw"><i style="background:var(--paper-2)"></i>paper-2</div>
+    <div class="sw"><i style="background:var(--ink)"></i>ink</div>
+    <div class="sw"><i style="background:var(--mandarin)"></i>mandarin</div>
+    <div class="sw"><i style="background:var(--forest)"></i>forest</div>
+    <div class="sw"><i style="background:var(--forest-text)"></i>forest-txt</div>
+  </div>
+</section>
+
+<main class="stage">
+  <!-- 1 · FEED -->
+  <div class="col">
+    <span class="col-label">01 · <span data-i18n="s.feed"></span></span>
+    <div class="screen">
+      <div class="s-head">
+        <div>
+          <p class="display" style="margin:0;font-size:1.6rem">Divano Club</p>
+          <span class="s-sub" data-i18n="feed.members"></span>
+        </div>
+        <div class="avatars">
+          <span class="av" style="background:#8A4B2E">G</span>
+          <span class="av" style="background:#2D6A4F">M</span>
+          <span class="av" style="background:#4B4F8A">S</span>
+          <span class="av" style="background:#6E5A2B">L</span>
+        </div>
+      </div>
+
+      <div class="now">
+        <span class="poster" style="--p:#6E2F2F"></span>
+        <span class="now-txt"><strong>Sofi</strong> <span data-i18n="feed.now"></span> <strong data-film="bear"></strong> <span class="mono">S3·E4</span></span>
+        <span class="tally" aria-hidden="true"></span>
+      </div>
+
+      <div class="feed">
+        <article class="log">
+          <div class="log-who"><span class="av" style="background:#8A4B2E">G</span><strong>Giulia</strong> <span data-i18n="feed.logged"></span><span class="t" data-rel="-2h"></span></div>
+          <span class="poster" style="--p:#3B4A5C"><b data-film="pastlives"></b></span>
+          <div class="log-body">
+            <h3 class="display" data-film="pastlives"></h3>
+            <span class="stars" data-rating="4.5"></span>
+            <p data-i18n="feed.review1"></p>
+          </div>
+          <div class="with">
+            <span class="s-sub" data-i18n="feed.with"></span>
+            <span class="chip">Marco</span><span class="chip">Luca</span>
+            <span class="reacts">
+              <button class="react" aria-pressed="true">😭 3</button>
+              <button class="react" aria-pressed="false">🍿 1</button>
+            </span>
+          </div>
+        </article>
+
+        <article class="log">
+          <div class="log-who"><span class="av" style="background:#2D6A4F">M</span><strong>Marco</strong> <span data-i18n="feed.logged"></span><span class="t" data-rel="-1d"></span></div>
+          <span class="poster" style="--p:#4F5B4A"><b data-film="anatomy"></b></span>
+          <div class="log-body">
+            <h3 class="display" data-film="anatomy"></h3>
+            <span class="stars" data-rating="4"></span>
+            <button class="spoiler" aria-expanded="false" data-spoiler>
+              <span data-i18n="feed.spoiler"></span>
+              <span class="hidden" data-i18n="feed.review2"></span>
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <nav class="tabs" aria-label="tabs">
+        <button class="tab" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span data-i18n="tab.diary"></span></button>
+        <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h5v4H4zM4 14h5v4H4zM9 8h4v8H9M13 12h7"/></svg><span data-i18n="tab.serata"></span></button>
+        <button class="tab-log" aria-label="+"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 6h14M5 12h14M5 18h9"/></svg><span data-i18n="tab.lists"></span></button>
+        <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="9" r="3"/><circle cx="16" cy="11" r="2.5"/><path d="M3.5 19c.8-3 3-4.5 5.5-4.5s4.7 1.5 5.5 4.5M14 15.2c2.6-.4 5 .9 6 3.8"/></svg><span data-i18n="tab.circle"></span></button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- 2 · SERATA -->
+  <div class="col">
+    <span class="col-label">02 · <span data-i18n="s.serata"></span></span>
+    <div class="screen">
+      <div class="s-head">
+        <div>
+          <p class="display serata-title" style="margin:0;font-size:1.6rem" data-i18n="ser.title"></p>
+          <span class="s-sub">Divano Club · <span data-date></span></span>
+        </div>
+      </div>
+      <div class="serata">
+        <div class="marquee" aria-hidden="true"><span data-i18n="ser.title"></span><span style="color:var(--mandarin)">· · ·</span></div>
+        <div class="round">
+          <span data-i18n="ser.round"></span>
+          <span class="timer"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="19" fill="none" stroke="var(--rule)" stroke-width="3"/><circle cx="22" cy="22" r="19" fill="none" stroke="var(--mandarin)" stroke-width="3" stroke-dasharray="119.4" stroke-dashoffset="40"/></svg>0:24</span>
+        </div>
+        <div class="bracket" aria-hidden="true"><i class="done"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
+        <p style="margin:0;font-size:14px;color:var(--muted)" data-i18n="ser.pick"></p>
+        <div class="vs">
+          <button class="pick" aria-pressed="true" data-pick>
+            <span class="poster" style="--p:#2F5D62"><b data-film="spirited"></b></span>
+            <span class="meta"><strong data-film="spirited"></strong>2001 · 125′</span>
+          </button>
+          <span class="vs-x">vs</span>
+          <button class="pick" aria-pressed="false" data-pick>
+            <span class="poster" style="--p:#8A5A2B"><b data-film="dune2"></b></span>
+            <span class="meta"><strong data-film="dune2"></strong>2024 · 166′</span>
+          </button>
+        </div>
+        <div class="room">
+          <span class="s-sub" data-i18n="ser.room"></span>
+          <div class="room-row"><span class="av" style="background:#8A4B2E">G</span>Giulia<span class="voted">✓ <span data-i18n="ser.voted"></span></span></div>
+          <div class="room-row"><span class="av" style="background:#2D6A4F">M</span>Marco<span class="voted">✓ <span data-i18n="ser.voted"></span></span></div>
+          <div class="room-row"><span class="av" style="background:#5A4B6E">A</span>Ale <span class="guest-tag" data-i18n="ser.guest"></span><span class="voted" style="color:var(--muted)" data-i18n="ser.waiting"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 · CARD -->
+  <div class="col">
+    <span class="col-label">03 · Card 9:16</span>
+    <div class="screen">
+      <div class="card-wrap">
+        <div class="card" style="--p-win:#2F5D62">
+          <span class="poster" style="--p:#2F5D62"><b data-film="spirited"></b></span>
+          <div class="card-inner">
+            <span class="card-kicker" data-i18n="card.kicker"></span>
+            <h2 class="display card-title" data-film="spirited"></h2>
+            <hr class="card-sep">
+            <div class="card-meta">
+              <span>Divano Club</span><span data-date></span>
+              <span data-i18n="card.rounds"></span><span data-i18n="card.votes"></span>
+            </div>
+            <div class="card-foot"><span>pausa.gnagno.org</span><b>▶ Pausa</b></div>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn primary" data-i18n="card.share"></button>
+          <button class="btn" data-i18n="card.log"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const T = {
+  it: {
+    "page.title": "Direzioni di design",
+    "page.lede": "Tre letture della Midnight Screening Room. Stessa palette, stessi contenuti: cambiano carattere, forma e gesto.",
+    "ctl.direction": "Direzione", "ctl.lang": "Lingua",
+    "dir.a.name": "Sala", "dir.b.name": "Cabina", "dir.c.name": "Locandina",
+    "dir.final.name": "Scelta", "dir.final.title": "Sala + Card Locandina",
+    "dir.final.desc": "La direzione bloccata. Tutta l'app vive nella Sala; solo la Card 9:16, l'unica cosa che esce dalla Cerchia, diventa una locandina.",
+    "dir.a.desc": "Il velluto della sala. Serif editoriale, biglietti strappati, la luce del proiettore come unico bagliore.",
+    "dir.b.desc": "La cabina di proiezione. Sans tesa, timecode in mono, spie di stato al posto delle icone.",
+    "dir.c.desc": "Il foyer e i suoi manifesti. Titoli condensati, poster a tutto campo, la lavagna a lettere per la Serata.",
+    "s.feed": "Feed della Cerchia", "s.serata": "Serata · Torneo lampo",
+    "feed.members": "4 membri · 112 film quest'anno",
+    "feed.now": "sta guardando", "feed.logged": "ha visto", "feed.with": "Visto con",
+    "feed.review1": "Ho pianto in silenzio per venti minuti. Marco ha fatto finta di niente.",
+    "feed.spoiler": "Contiene spoiler · tocca per leggere",
+    "feed.review2": "Il finale in tribunale non risponde a niente, ed è proprio quello il punto.",
+    "tab.diary": "Diario", "tab.serata": "Serata", "tab.lists": "Liste", "tab.circle": "Cerchia",
+    "ser.title": "Stasera si guarda", "ser.round": "Quarti · 2 di 4", "ser.pick": "Scegli uno. Hai 24 secondi.",
+    "ser.room": "In sala · 3", "ser.voted": "votato", "ser.guest": "ospite", "ser.waiting": "sta scegliendo…",
+    "card.kicker": "LA SERATA HA SCELTO", "card.rounds": "3 round", "card.votes": "4 voti su 4",
+    "card.share": "Condividi", "card.log": "Registra nel diario"
+  },
+  en: {
+    "page.title": "Design directions",
+    "page.lede": "Three readings of the Midnight Screening Room. Same palette, same content; type, shape and gesture change.",
+    "ctl.direction": "Direction", "ctl.lang": "Language",
+    "dir.a.name": "Sala", "dir.b.name": "Booth", "dir.c.name": "One-sheet",
+    "dir.final.name": "Locked", "dir.final.title": "Sala + One-sheet Card",
+    "dir.final.desc": "The locked direction. The whole app lives in the Sala; only the 9:16 Card, the one thing that leaves the Circle, becomes a one-sheet poster.",
+    "dir.a.desc": "The velvet of the auditorium. Editorial serif, torn ticket stubs, projector light as the only glow.",
+    "dir.b.desc": "The projection booth. Tight sans, mono timecodes, tally lights instead of icons.",
+    "dir.c.desc": "The lobby and its posters. Condensed headlines, full-bleed posters, the letterboard for movie night.",
+    "s.feed": "Circle feed", "s.serata": "Movie night · Lightning bracket",
+    "feed.members": "4 members · 112 films this year",
+    "feed.now": "is watching", "feed.logged": "watched", "feed.with": "Watched with",
+    "feed.review1": "I cried silently for twenty minutes. Marco pretended not to notice.",
+    "feed.spoiler": "Contains spoilers · tap to read",
+    "feed.review2": "The courtroom ending answers nothing, and that is exactly the point.",
+    "tab.diary": "Diary", "tab.serata": "Movie night", "tab.lists": "Lists", "tab.circle": "Circle",
+    "ser.title": "Tonight we watch", "ser.round": "Quarterfinal · 2 of 4", "ser.pick": "Pick one. You have 24 seconds.",
+    "ser.room": "In the room · 3", "ser.voted": "voted", "ser.guest": "guest", "ser.waiting": "choosing…",
+    "card.kicker": "MOVIE NIGHT PICKED", "card.rounds": "3 rounds", "card.votes": "4 of 4 votes",
+    "card.share": "Share", "card.log": "Log to diary"
+  },
+  es: {
+    "page.title": "Direcciones de diseño",
+    "page.lede": "Tres lecturas de la Midnight Screening Room. Misma paleta, mismo contenido: cambian tipografía, forma y gesto.",
+    "ctl.direction": "Dirección", "ctl.lang": "Idioma",
+    "dir.a.name": "Sala", "dir.b.name": "Cabina", "dir.c.name": "Cartel",
+    "dir.final.name": "Elegida", "dir.final.title": "Sala + Card Cartel",
+    "dir.final.desc": "La dirección fijada. Toda la app vive en la Sala; solo la Card 9:16, lo único que sale del Círculo, se convierte en un cartel.",
+    "dir.a.desc": "El terciopelo de la sala. Serif editorial, entradas rasgadas, la luz del proyector como único brillo.",
+    "dir.b.desc": "La cabina de proyección. Sans ajustada, timecode en mono, pilotos de estado en lugar de iconos.",
+    "dir.c.desc": "El vestíbulo y sus carteles. Titulares condensados, pósters a sangre, la marquesina de letras para la noche de cine.",
+    "s.feed": "Feed del Círculo", "s.serata": "Noche de cine · Torneo relámpago",
+    "feed.members": "4 miembros · 112 películas este año",
+    "feed.now": "está viendo", "feed.logged": "vio", "feed.with": "Visto con",
+    "feed.review1": "Lloré en silencio veinte minutos. Marco hizo como si nada.",
+    "feed.spoiler": "Contiene spoilers · toca para leer",
+    "feed.review2": "El final en el juicio no responde nada, y justo de eso se trata.",
+    "tab.diary": "Diario", "tab.serata": "Noche", "tab.lists": "Listas", "tab.circle": "Círculo",
+    "ser.title": "Esta noche vemos", "ser.round": "Cuartos · 2 de 4", "ser.pick": "Elige uno. Tienes 24 segundos.",
+    "ser.room": "En la sala · 3", "ser.voted": "votó", "ser.guest": "invitado", "ser.waiting": "eligiendo…",
+    "card.kicker": "LA NOCHE ELIGIÓ", "card.rounds": "3 rondas", "card.votes": "4 de 4 votos",
+    "card.share": "Compartir", "card.log": "Registrar en el diario"
+  }
+};
+/* Localized titles, as TMDB returns them per language */
+const FILMS = {
+  pastlives: { it: "Past Lives", en: "Past Lives", es: "Vidas pasadas" },
+  anatomy:   { it: "Anatomia di una caduta", en: "Anatomy of a Fall", es: "Anatomía de una caída" },
+  spirited:  { it: "La città incantata", en: "Spirited Away", es: "El viaje de Chihiro" },
+  dune2:     { it: "Dune - Parte due", en: "Dune: Part Two", es: "Dune: Parte dos" },
+  bear:      { it: "The Bear", en: "The Bear", es: "The Bear" }
+};
+const LOCALE = { it: "it-IT", en: "en-US", es: "es-ES" };
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+                set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+let state = { dir: store.get("pausa.dir") || "final", lang: store.get("pausa.lang") || "it" };
+
+function stars(el) {
+  const r = parseFloat(el.dataset.rating); el.innerHTML = "";
+  el.setAttribute("aria-label", r + " / 5");
+  for (let i = 1; i <= 5; i++) {
+    const s = document.createElement("span"); s.className = "st"; s.textContent = "★";
+    s.style.setProperty("--f", r >= i ? "100%" : r >= i - 0.5 ? "50%" : "0%");
+    el.appendChild(s);
+  }
+}
+
+function render() {
+  const { dir, lang } = state, t = T[lang];
+  const isFinal = dir === "final";
+  document.documentElement.dataset.dir = isFinal ? "a" : dir;
+  document.documentElement.dataset.card = isFinal ? "c" : dir;
+  document.documentElement.lang = lang;
+  document.title = "Pausa · " + t["page.title"];
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t[el.dataset.i18n] ?? el.dataset.i18n; });
+  document.querySelectorAll("[data-film]").forEach(el => { el.textContent = FILMS[el.dataset.film][lang]; });
+  const now = new Date("2026-11-14T21:30:00");
+  const df = new Intl.DateTimeFormat(LOCALE[lang], { day: "numeric", month: "short" });
+  document.querySelectorAll("[data-date]").forEach(el => { el.textContent = df.format(now); });
+  const rtf = new Intl.RelativeTimeFormat(LOCALE[lang], { numeric: "auto", style: "short" });
+  document.querySelectorAll("[data-rel]").forEach(el => {
+    const m = el.dataset.rel.match(/(-?\d+)([hd])/);
+    el.textContent = rtf.format(+m[1], m[2] === "h" ? "hour" : "day");
+  });
+  document.getElementById("dirName").textContent = isFinal ? "★ " + t["dir.final.title"] : dir.toUpperCase() + " · " + t["dir." + dir + ".name"];
+  document.getElementById("dirDesc").textContent = t["dir." + dir + ".desc"];
+  document.querySelectorAll("[data-set-dir]").forEach(b => b.setAttribute("aria-pressed", b.dataset.setDir === dir));
+  document.querySelectorAll("[data-set-lang]").forEach(b => b.setAttribute("aria-pressed", b.dataset.setLang === lang));
+}
+
+document.addEventListener("click", e => {
+  const d = e.target.closest("[data-set-dir]"), l = e.target.closest("[data-set-lang]");
+  if (d) { state.dir = d.dataset.setDir; store.set("pausa.dir", state.dir); render(); }
+  if (l) { state.lang = l.dataset.setLang; store.set("pausa.lang", state.lang); render(); }
+  const sp = e.target.closest("[data-spoiler]");
+  if (sp) sp.setAttribute("aria-expanded", sp.getAttribute("aria-expanded") !== "true");
+  const pk = e.target.closest("[data-pick]");
+  if (pk) document.querySelectorAll("[data-pick]").forEach(b => b.setAttribute("aria-pressed", b === pk));
+  const rc = e.target.closest(".react");
+  if (rc) {
+    const on = rc.getAttribute("aria-pressed") !== "true";
+    rc.setAttribute("aria-pressed", on);
+    rc.textContent = rc.textContent.replace(/\d+/, n => +n + (on ? 1 : -1));
+  }
+});
+
+document.querySelectorAll("[data-rating]").forEach(stars);
+render();
+</script>
+</body>
+</html>

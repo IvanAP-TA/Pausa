@@ -1,0 +1,29 @@
+/* Pausa · design tokens v2 (16 Nov 2026) — source of truth is src/app/globals.css; this file mirrors it.
+ * Light: "Sottotitoli su carta" (direction D) · Dark: "Sottotitoli" (direction B). See directions-v2.html.
+ * Fonts: Gloock (display, single weight) + Instrument Sans (text). The 9:16 Card always uses the light paper look.
+ */
+
+:root {
+  /* light (default) */
+  --color-paper: #F2EEE5;   --color-paper-2: #FBF8F2; --color-paper-3: #E8E2D6; --color-rule: #D6CFC1;
+  --color-ink: #151413;     --color-muted: #5E5A52;
+  --color-accent: #C9361F;  --color-accent-hover: #A92C17; --color-on-accent: #FFFFFF;   /* accent text: 4.9:1, labels/large only */
+  --color-second: #1F5C45;  --color-second-deep: #17463A; --color-on-second: #F2EEE5; --color-on-second-muted: #C9DCD2;
+  --color-second-text: #1F5C45;
+
+  /* share Card: fixed in both themes */
+  --color-card-paper: #FBF8F2; --color-card-ink: #151413; --color-card-muted: #5E5A52; --color-card-accent: #C9361F; --color-card-rule: #D6CFC1;
+
+  --font-display: "Gloock", Georgia, serif;
+  --font-sans: "Instrument Sans", system-ui, sans-serif;
+  --radius-sm: 6px; --radius-md: 8px; /* buttons and chips: pill */
+}
+
+/* dark: phone setting, or html[data-theme="dark"] */
+:root[data-theme="dark"] {
+  --color-paper: #0D1220;   --color-paper-2: #141B2E; --color-paper-3: #1C2540; --color-rule: #27314F;
+  --color-ink: #ECEAE3;     --color-muted: #9AA0B0;
+  --color-accent: #F7D046;  --color-accent-hover: #FFDD66; --color-on-accent: #0D1220;
+  --color-second: #3B4A6B;  --color-second-deep: #1C2540; --color-on-second: #ECEAE3; --color-on-second-muted: #B5BBCB;
+  --color-second-text: #F7D046;
+}

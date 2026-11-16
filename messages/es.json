@@ -1,0 +1,237 @@
+{
+  "common": {
+    "signOut": "Salir",
+    "back": "Atrás",
+    "language": "Idioma",
+    "change": "Cambiar",
+    "theme": "Tema",
+    "themes": {
+      "system": "Automático",
+      "light": "Claro",
+      "dark": "Oscuro"
+    }
+  },
+  "tabs": {
+    "diary": "Diario",
+    "serata": "Noche",
+    "log": "Registrar lo que viste",
+    "lists": "Listas",
+    "circle": "Círculo"
+  },
+  "kind": {
+    "movie": "Película",
+    "tv": "Serie",
+    "anime": "Anime"
+  },
+  "auth": {
+    "title": "La sala está abierta.",
+    "lede": "El diario privado de tu grupo: qué visteis, qué os pareció, qué ver esta noche.",
+    "email": "Email",
+    "sendLink": "Envíame el enlace",
+    "sending": "Enviando…",
+    "linkSent": "Revisa tu correo: te enviamos un enlace para entrar. Caduca en 15 minutos.",
+    "google": "Continuar con Google",
+    "or": "o",
+    "error": "Algo falló. Inténtalo de nuevo en un momento."
+  },
+  "home": {
+    "noCircleTitle": "Aún no tienes Círculo.",
+    "noCircleBody": "Crea el tuyo y envía el enlace a tus amigos, o entra con un código de invitación.",
+    "createLabel": "Nombre del Círculo",
+    "createPlaceholder": "Club del Sofá",
+    "createCta": "Crear el Círculo",
+    "joinLabel": "Código de invitación",
+    "joinCta": "Entrar"
+  },
+  "feed": {
+    "members": "{count, plural, one {# miembro} other {# miembros}}",
+    "logsThisYear": "{count, plural, one {# visionado} other {# visionados}} este año",
+    "isWatching": "está viendo",
+    "watched": "vio",
+    "rewatched": "volvió a ver",
+    "with": "Visto con",
+    "on": "en {platform}",
+    "spoiler": "Contiene spoilers · toca para leer",
+    "comments": "{count, plural, =0 {Sin comentarios} one {# comentario} other {# comentarios}}",
+    "react": "Reaccionar con {emoji}",
+    "emptyTitle": "El diario sigue vacío.",
+    "emptyBody": "Registra lo primero que veas: aparecerá aquí para todo el Círculo.",
+    "emptyCta": "Registrar lo que viste",
+    "rating": "{stars} de 5 estrellas",
+    "stopWatching": "Terminado o abandonado",
+    "notifications": "Notificaciones",
+    "unread": "{count, plural, one {# notificación sin leer} other {# notificaciones sin leer}}"
+  },
+  "log": {
+    "title": "¿Qué viste?",
+    "search": "Busca una película, una serie, un anime",
+    "searchCta": "Buscar",
+    "noResults": "No se encontró ningún título.",
+    "tmdbOff": "La búsqueda en TMDB no está activa: solo busco entre los títulos que ya están en Pausa.",
+    "rating": "Nota",
+    "noRating": "Sin nota",
+    "watchedOn": "Visto el",
+    "platform": "Dónde",
+    "platformPlaceholder": "Netflix, cine, Filmin…",
+    "review": "Unas líneas (opcional)",
+    "spoilers": "Contiene spoilers",
+    "rewatch": "Ya la había visto",
+    "with": "Con quién",
+    "submit": "Registrar",
+    "saving": "Guardando…",
+    "modeWatched": "Vi",
+    "modeWatching": "Estoy viendo",
+    "progress": "Por dónde vas",
+    "progressPlaceholder": "T1·E3",
+    "setWatching": "Marcar como en curso"
+  },
+  "lists": {
+    "title": "Listas",
+    "empty": "Aún no hay listas. Empezad por la watchlist del grupo.",
+    "items": "{count, plural, one {# título} other {# títulos}}",
+    "by": "de {name}",
+    "kind": {
+      "watchlist": "Watchlist",
+      "list": "Lista",
+      "ranking": "Ranking"
+    },
+    "newTitle": "Nueva lista",
+    "name": "Nombre",
+    "create": "Crear",
+    "addTo": "Añadir a una lista",
+    "add": "Añadir",
+    "personal": "personal",
+    "mine": "Mis listas",
+    "group": "Del Círculo",
+    "scopeCircle": "Para el Círculo",
+    "scopePersonal": "Solo para mí",
+    "emptyPersonal": "Aún no tienes listas personales."
+  },
+  "circle": {
+    "members": "Miembros",
+    "admin": "admin",
+    "inviteTitle": "Invitar",
+    "inviteBody": "Envía este enlace a quien quieras en el Círculo. Solo entra quien lo tenga.",
+    "copy": "Copiar enlace",
+    "copied": "Copiado",
+    "code": "Código"
+  },
+  "serata": {
+    "title": "Esta noche vemos",
+    "lede": "Una lista de 2–8 títulos, cada uno vota desde su móvil, resultado en menos de dos minutos. Sin cuenta: basta un nombre.",
+    "modeLabel": "Modo",
+    "mode": {
+      "bracket": "Torneo relámpago",
+      "table": "Mesa"
+    },
+    "modeHint": {
+      "bracket": "Duelos, uno a la vez. 30 segundos cada uno.",
+      "table": "3 votos cada uno y un veto. Un minuto."
+    },
+    "pickTitle": "La lista",
+    "picked": "{count} de {max}",
+    "search": "Añadir un título",
+    "emptyPool": "Busca un título, o llenad antes la watchlist del grupo.",
+    "create": "Abrir la noche",
+    "recent": "Noches recientes",
+    "status": {
+      "lobby": "Esperando para empezar",
+      "voting": "Votando"
+    },
+    "statusDone": "Elegida: {title}",
+    "round": {
+      "final": "Final",
+      "semi": "Semifinal",
+      "quarter": "Cuartos"
+    },
+    "match": "Duelo {n} de {total}",
+    "pick": "Elige uno.",
+    "pickedWait": "Hecho. Puedes cambiar de idea mientras el duelo siga abierto.",
+    "vs": "vs",
+    "advance": "Siguiente",
+    "inRoom": "En la sala · {count}",
+    "guest": "invitado",
+    "voted": "votó",
+    "choosing": "eligiendo…",
+    "lobby": {
+      "invite": "Envía el enlace a quien vea contigo. Solo necesita un nombre.",
+      "share": "Enviar el enlace",
+      "copied": "Enlace copiado",
+      "shareText": "Esta noche elegimos en Pausa. Entra aquí:",
+      "rosa": "{count, plural, one {# título en juego} other {# títulos en juego}}",
+      "start": "Empezamos",
+      "wait": "Esperando a que {name} empiece."
+    },
+    "table": {
+      "hint": "Reparte {dots} votos como quieras, incluso todos en uno. Un veto, si hay algo que ni hablar.",
+      "left": "{count, plural, =0 {Votos repartidos.} one {Te queda # voto} other {Te quedan # votos}}",
+      "add": "Un voto más para {title}",
+      "remove": "Un voto menos para {title}",
+      "veto": "Veto",
+      "submit": "Confirmar",
+      "done": "Hecho. Esperando a los demás.",
+      "change": "Cambiar votos"
+    },
+    "result": {
+      "kicker": "LA NOCHE ELIGIÓ",
+      "rounds": "{count, plural, one {# ronda} other {# rondas}}",
+      "people": "{count, plural, one {# persona} other {# personas}}",
+      "share": "Compartir",
+      "shareText": "Esta noche: {title}. Decidido en Pausa.",
+      "copied": "Enlace copiado",
+      "log": "Registrar en el diario",
+      "open": "Abrir la Card",
+      "scores": "Cómo fue",
+      "dots": "{count, plural, one {# voto} other {# votos}}",
+      "vetoed": "veto",
+      "saveTitle": "Guarda esta noche",
+      "saveBody": "Guarda tu cuenta con tu email: volverás a encontrar esta noche y podrás entrar en el Círculo.",
+      "saveCta": "Guardar",
+      "saveSent": "Revisa tu correo: el enlace guarda tu cuenta.",
+      "joinCircle": "Entrar en {name}",
+      "backToCircle": "Volver al Círculo",
+      "cta": "Pausa es el diario privado de los grupos de amigos, con una forma rápida de decidir qué ver.",
+      "ctaButton": "Probar Pausa",
+      "subtitle": "Esta noche, esta."
+    },
+    "join": {
+      "title": "Esta noche elegimos.",
+      "bodyGuest": "Entra con un nombre: sin cuenta, sin contraseña.",
+      "bodyMember": "Tu Círculo está eligiendo qué ver.",
+      "name": "Tu nombre",
+      "cta": "Entrar en la sala",
+      "error": "No pude dejarte entrar. Inténtalo de nuevo."
+    }
+  },
+  "join": {
+    "title": "Te han invitado a {name}",
+    "body": "Entra para ver el diario del Círculo y añadir el tuyo.",
+    "cta": "Entrar en el Círculo",
+    "invalid": "Esta invitación no es válida o ha caducado."
+  },
+  "tmdb": {
+    "attribution": "Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica."
+  },
+  "comments": {
+    "title": "Comentarios",
+    "placeholder": "Escribe al Círculo…",
+    "spoiler": "Contiene spoilers",
+    "send": "Enviar",
+    "empty": "Aún no hay comentarios. Rompe el hielo."
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "Nada nuevo.",
+    "log": "<b>{name}</b> vio {title}",
+    "comment": "<b>{name}</b> comentó {title}",
+    "reaction": "<b>{name}</b> reaccionó a {title}",
+    "now_watching": "<b>{name}</b> empezó a ver algo en {circle}",
+    "circle_join": "<b>{name}</b> entró en {circle}",
+    "serata_invite": "<b>{name}</b> abrió una noche de cine en {circle}"
+  },
+  "email": {
+    "subject": "Tu enlace para entrar en Pausa",
+    "body": "Toca el enlace para entrar. Caduca en 15 minutos.",
+    "ignore": "Si no lo pediste tú, ignora este correo."
+  }
+}
