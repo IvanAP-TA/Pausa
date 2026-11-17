@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
-import { createLog, searchMedia, setNowWatching } from "@/lib/actions";
+import { createLog, getEpisodeLimits, searchMedia, setNowWatching } from "@/lib/actions";
+import type { EpisodeLimits } from "@/lib/core/episodes";
+import { EpisodeFields } from "@/components/episode-fields";
 import type { MediaSummary } from "@/lib/data";
 import { Poster } from "@/components/poster";
 import { Stars } from "@/components/stars";
@@ -22,6 +24,15 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MediaSummary[] | null>(null);
   const [picked, setPicked] = useState<MediaSummary | null>(initialPicked);
+  // Episode counts of the picked series/anime, looked up once it is chosen. Tied to the title so a stale answer is never shown.
+  const [fetched, setFetched] = useState<{ id: string; limits: EpisodeLimits | null } | null>(null);
+  const limits = picked && fetched?.id === picked.id ? fetched.limits : null;
+  useEffect(() => {
+    if (!picked || picked.kind === "movie") return;
+    let live = true;
+    getEpisodeLimits(picked.id).then((l) => { if (live) setFetched({ id: picked.id, limits: l }); }).catch(() => {});
+    return () => { live = false; };
+  }, [picked]);
   const [rating, setRating] = useState(0);
   const [mode, setMode] = useState<"watched" | "watching">("watched");
   const [searching, startSearch] = useTransition();
@@ -108,18 +119,7 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
         {modeToggle}
         <fieldset className="grid gap-1.5">
           <legend className="mb-1 text-sm text-muted">{t("progress")}</legend>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="grid gap-1.5 text-sm text-muted">
-              {t("season")}
-              <input type="number" name="season" min={1} max={99} inputMode="numeric" disabled={picked.kind === "movie"} placeholder={picked.kind === "anime" ? "–" : "1"}
-                className="tabular min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-3 text-ink placeholder:text-muted/60 disabled:opacity-40" />
-            </label>
-            <label className="grid gap-1.5 text-sm text-muted">
-              {t("episode")}
-              <input type="number" name="episode" min={1} max={9999} inputMode="numeric" placeholder="1"
-                className="tabular min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-3 text-ink placeholder:text-muted/60" />
-            </label>
-          </div>
+          <EpisodeFields key={picked.id + (limits ? "k" : "")} limits={limits} seasonName="season" episodeName="episode" disabled={picked.kind === "movie"} />
         </fieldset>
         <Submit label={t("setWatching")} pending={t("saving")} />
       </form>
@@ -155,10 +155,10 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
       </div>
 
       {picked.kind !== "movie" && (
-        <label className="grid gap-1.5 text-sm text-muted sm:max-w-40">
-          {t("seasonLogged")}
-          <input type="number" name="season" min={1} max={99} inputMode="numeric" placeholder={t("wholeShow")} className="tabular min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-3 text-ink placeholder:text-muted/60" />
-        </label>
+        <fieldset className="grid gap-1.5">
+          <legend className="mb-1 text-sm text-muted">{t("episodeLogged")}</legend>
+          <EpisodeFields key={picked.id + (limits ? "k" : "")} limits={limits} seasonName="season" episodeName="logEpisode" optionalSeasonLabel={t("seasonLogged")} />
+        </fieldset>
       )}
 
       <label className="grid gap-1.5 text-sm text-muted">

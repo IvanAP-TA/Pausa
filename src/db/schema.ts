@@ -126,6 +126,10 @@ export const mediaEntity = sqliteTable("media_entity", {
   originalTitle: text("original_title").notNull(),
   year: integer("year"),
   runtimeMin: integer("runtime_min"),
+  /** Episodes in total for series without seasons (AniList anime); seasons have their own rows in media_season. */
+  episodesTotal: integer("episodes_total"),
+  /** When episode counts were last looked up (TMDB / AniList), so a title is not asked again for a month. */
+  detailsCheckedAt: integer("details_checked_at", { mode: "timestamp_ms" }),
   posterPath: text("poster_path"), // TMDB path ("/abc.jpg") or a full https URL (AniList covers)
   createdAt: createdAt(),
 }, (t) => [
@@ -134,6 +138,13 @@ export const mediaEntity = sqliteTable("media_entity", {
   uniqueIndex("media_mal_uq").on(t.malId),
   uniqueIndex("media_letterboxd_uq").on(t.letterboxdUri),
 ]);
+
+/** How many episodes each season has (TMDB). Season 0 (specials) is never stored. */
+export const mediaSeason = sqliteTable("media_season", {
+  mediaId: text("media_id").notNull().references(() => mediaEntity.id, { onDelete: "cascade" }),
+  season: integer("season").notNull(),
+  episodes: integer("episodes").notNull(),
+}, (t) => [primaryKey({ columns: [t.mediaId, t.season] })]);
 
 /** Localized titles as TMDB returns them per language. Fallback: original_title. */
 export const mediaTitle = sqliteTable("media_title", {
@@ -181,6 +192,7 @@ export const log = sqliteTable("log", {
   containsSpoilers: integer("contains_spoilers", { mode: "boolean" }).notNull().default(false),
   platform: text("platform"),
   season: integer("season"), // which season of a series/anime this log is about; null = the whole thing or a film
+  episode: integer("episode"), // a single episode (with `season`): the episode-level diary; null = not an episode log
   isRewatch: integer("is_rewatch", { mode: "boolean" }).notNull().default(false),
   createdAt: createdAt(),
 }, (t) => [index("log_user_idx").on(t.userId, t.createdAt), index("log_media_idx").on(t.mediaId)]);

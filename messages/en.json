@@ -93,7 +93,9 @@
     "season": "Season",
     "episode": "Episode",
     "seasonLogged": "Season (optional)",
-    "wholeShow": "Whole show"
+    "wholeShow": "Whole show",
+    "episodeLogged": "Season and episode (optional)",
+    "seasonOf": "Season {n} ({count} ep.)"
   },
   "lists": {
     "title": "Lists",

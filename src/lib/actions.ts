@@ -11,6 +11,9 @@ import { requireUser } from "./session";
 import { pushNotifications } from "./push";
 import { allow, enforce } from "./limit-guard";
 import { filterRecipients } from "./core/settings";
+import { clampPosition, getEpisodeInfo } from "./core/episodes";
+import { ensureEpisodeLimits } from "./episode-info";
+import { searchAnime } from "./anilist";
 import { getCircleForMember, logVisibleTo, searchLocalMedia, type MediaSummary } from "./data";
 import { searchTmdb } from "./tmdb";
 import { MAX_EPISODE, MAX_SEASON, nextEpisode, nextSeason, setWatching, toPosition } from "./core/progress";
@@ -129,6 +132,7 @@ const logInput = z.object({
   review: z.string().trim().max(4000).transform((v) => v || null),
   platform: z.string().trim().max(60).transform((v) => v || null),
   season: z.number().int().min(1).max(MAX_SEASON).nullable(),
+  episode: z.number().int().min(1).max(MAX_EPISODE).nullable(),
   containsSpoilers: z.boolean(),
   isRewatch: z.boolean(),
   watchedWith: z.array(z.string()).max(20),
@@ -145,6 +149,7 @@ export async function createLog(formData: FormData) {
     review: formData.get("review") ?? "",
     platform: formData.get("platform") ?? "",
     season: toPosition(formData.get("season"), MAX_SEASON),
+    episode: toPosition(formData.get("logEpisode"), MAX_EPISODE),
     containsSpoilers: formData.get("containsSpoilers") === "on",
     isRewatch: formData.get("isRewatch") === "on",
     watchedWith: formData.getAll("watchedWith").map(String),
@@ -161,11 +166,13 @@ export async function createLog(formData: FormData) {
   const watchedWith = input.watchedWith.filter((id) => id !== user.id && memberIds.has(id));
 
   const logId = crypto.randomUUID();
+  // An episode log cannot name an episode that does not exist (when the counts are known).
+  const pos = clampPosition(await getEpisodeInfo(db, input.mediaId), { season: input.season, episode: input.episode });
   const notify = await filterRecipients(db, [...memberIds].filter((id) => id !== user.id), { type: "log", circleId: input.circleId });
   await atomically([
     db.insert(s.log).values({
       id: logId, userId: user.id, mediaId: input.mediaId, watchedOn: input.watchedOn, rating: input.rating,
-      review: input.review, platform: input.platform, season: input.season, containsSpoilers: input.containsSpoilers, isRewatch: input.isRewatch,
+      review: input.review, platform: input.platform, season: pos.season, episode: pos.episode, containsSpoilers: input.containsSpoilers, isRewatch: input.isRewatch,
     }),
     watchedWith.length > 0 && db.insert(s.logWatchedWith).values(watchedWith.map((userId) => ({ logId, userId }))),
     notify.length > 0 && db.insert(s.notification).values(notify.map((userId) => ({ userId, type: "log" as const, actorId: user.id, circleId: input.circleId, logId }))),
@@ -206,15 +213,25 @@ export async function toggleReaction(logId: string, emoji: string) {
 
 /* ───────────── Media ───────────── */
 
+/** For the forms: how many seasons and episodes a series has, when we know. Looked up at most once a month per title. */
+export async function getEpisodeLimits(mediaId: string) {
+  await requireUser();
+  return ensureEpisodeLimits(z.string().min(1).max(64).parse(mediaId));
+}
+
 export async function searchMedia(query: string, localeParam: string): Promise<MediaSummary[]> {
   const user = await requireUser();
   if (!(await allow("search", user.id))) return [];
   const q = z.string().trim().min(1).max(100).safeParse(query);
   if (!q.success) return [];
   const locale = localeFrom(localeParam);
-  const [local, remote] = await Promise.all([searchLocalMedia(q.data, locale), searchTmdb(q.data, locale)]);
+  const [local, remote, anime] = await Promise.all([searchLocalMedia(q.data, locale), searchTmdb(q.data, locale), searchAnime(q.data, locale)]);
   const seen = new Set<string>();
-  return [...local, ...remote].filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true))).slice(0, 12);
+  // The same anime can come from TMDB and from AniList: keep TMDB's (it has streaming data) and add only the ones it lacks.
+  const key = (m: MediaSummary) => `${m.title.toLowerCase()}|${m.year ?? ""}`;
+  const have = new Set([...local, ...remote].map(key));
+  const extra = anime.filter((m) => !have.has(key(m)));
+  return [...local, ...remote, ...extra].filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true))).slice(0, 14);
 }
 
 /* ───────────── Liste ───────────── */
@@ -286,7 +303,8 @@ export async function setNowWatching(formData: FormData) {
   if (!(await getCircleForMember(circleId, user.id))) throw new Error("Not a member of this circle");
 
   const db = await getDb();
-  const { titleChanged } = await setWatching(db, { userId: user.id, mediaId, season, episode });
+  const pos = clampPosition(await getEpisodeInfo(db, mediaId), { season, episode });
+  const { titleChanged } = await setWatching(db, { userId: user.id, mediaId, season: pos.season, episode: pos.episode });
 
   // Notify the Cerchia only when starting a new title, not on every episode bump.
   if (titleChanged) {

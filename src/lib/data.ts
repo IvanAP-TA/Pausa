@@ -73,6 +73,7 @@ export async function getCircleFeed(circleId: string, viewerId: string, locale: 
       containsSpoilers: s.log.containsSpoilers,
       platform: s.log.platform,
       season: s.log.season,
+      episode: s.log.episode,
       isRewatch: s.log.isRewatch,
       createdAt: s.log.createdAt,
       author: { id: s.user.id, name: s.user.name, image: s.user.image },

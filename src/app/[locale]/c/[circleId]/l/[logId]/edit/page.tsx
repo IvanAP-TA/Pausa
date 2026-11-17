@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
 import { getLogInCircle, getMembers } from "@/lib/data";
 import { Poster } from "@/components/poster";
+import { ensureEpisodeLimits } from "@/lib/episode-info";
 import { EditLogForm } from "./edit-form";
 
 export default async function EditLog({ params }: PageProps<"/[locale]/c/[circleId]/l/[logId]/edit">) {
@@ -25,10 +26,11 @@ export default async function EditLog({ params }: PageProps<"/[locale]/c/[circle
       </div>
       <EditLogForm
         showSeason={log.media.kind !== "movie"}
+        limits={log.media.kind === "movie" ? null : await ensureEpisodeLimits(log.media.id)}
         logId={logId}
         circleId={circleId}
         today={new Date().toISOString().slice(0, 10)}
-        initial={{ season: log.season, watchedOn: log.watchedOn, rating: log.rating, review: log.review, platform: log.platform, containsSpoilers: log.containsSpoilers }}
+        initial={{ season: log.season, episode: log.episode, watchedOn: log.watchedOn, rating: log.rating, review: log.review, platform: log.platform, containsSpoilers: log.containsSpoilers }}
         members={members.filter((m) => m.id !== user.id).map((m) => ({ id: m.id, name: m.name }))}
         initialWith={log.watchedWith.map((w) => w.id)}
       />

@@ -86,3 +86,23 @@ describe("storage", () => {
     expect((await getAvailability(db, ["m1"], "IT")).known.get("m1")).toEqual([disney]);
   });
 });
+
+describe("anime streaming sites from AniList", () => {
+  const catalogue: Provider[] = [
+    { id: 8, name: "Netflix", logoPath: null }, { id: 119, name: "Amazon Prime Video", logoPath: null }, { id: 337, name: "Disney Plus", logoPath: null },
+    { id: 283, name: "Crunchyroll", logoPath: null }, { id: 2, name: "Apple TV Store", logoPath: null },
+  ];
+  it("matches loosely, across spellings and accents", async () => {
+    const { matchProviders } = await import("./streaming");
+    expect(matchProviders(["Crunchyroll", "Netflix"], catalogue).map((p) => p.id)).toEqual([8, 283]);
+    expect(matchProviders(["Amazon", "Disney+"], catalogue).map((p) => p.id)).toEqual([119, 337]);
+    expect(matchProviders(["Disney Plus"], catalogue).map((p) => p.id)).toEqual([337]);
+    expect(matchProviders(["CRUNCHYROLL"], catalogue).map((p) => p.id)).toEqual([283]);
+  });
+  it("offers nothing for a service the region does not list, or for nothing", async () => {
+    const { matchProviders } = await import("./streaming");
+    expect(matchProviders(["HIDIVE", "Funimation"], catalogue)).toEqual([]);
+    expect(matchProviders([], catalogue)).toEqual([]);
+    expect(matchProviders(["Netflix"], [])).toEqual([]);
+  });
+});

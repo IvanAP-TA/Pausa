@@ -98,3 +98,28 @@ export async function getAvailability(db: AnyDb, mediaIds: string[], country: st
   for (const r of rows) if (fresh.has(r.mediaId)) known.get(r.mediaId)?.push({ id: r.providerId, name: r.name, logoPath: r.logoPath });
   return { known, stale };
 }
+
+/* ───────────── Anime: where AniList says it streams ───────────── */
+
+/** Lowercase, no accents, no punctuation, "plus" for "+": "Disney+" and "Disney Plus" meet. */
+const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\+/g, " plus ").replace(/[^a-z0-9]+/g, " ").trim();
+
+// AniList names a service one way, TMDB another. Each entry: a normalized fragment of the AniList name -> a fragment of the TMDB name.
+const ALIASES: [string, string][] = [["amazon", "prime video"], ["prime video", "prime video"], ["disney", "disney plus"], ["hbo", "max"], ["max", "max"], ["apple tv", "apple tv"]];
+
+/**
+ * Which of a region's services (the catalogue the person picks from) carry an anime, given the site names of its AniList
+ * streaming links. Names are compared loosely; a service not in the region's catalogue is simply not offered there.
+ */
+export function matchProviders(siteNames: string[], catalogue: Provider[]): Provider[] {
+  const wanted = siteNames.map(norm).filter(Boolean);
+  const out: Provider[] = [];
+  for (const p of catalogue) {
+    const name = norm(p.name);
+    const hit = wanted.some((w) =>
+      w === name || name.startsWith(w) || w.startsWith(name) ||
+      ALIASES.some(([from, to]) => w.includes(from) && name.includes(to)));
+    if (hit && !out.some((o) => o.id === p.id)) out.push(p);
+  }
+  return out;
+}

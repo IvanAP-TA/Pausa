@@ -4,16 +4,19 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { updateLogAction } from "@/lib/manage-actions";
 import { Stars } from "@/components/stars";
+import { EpisodeFields } from "@/components/episode-fields";
+import type { EpisodeLimits } from "@/lib/core/episodes";
 
 type Props = {
   logId: string; circleId: string; today: string;
   showSeason: boolean;
-  initial: { season: number | null; watchedOn: string; rating: number | null; review: string | null; platform: string | null; containsSpoilers: boolean };
+  limits: EpisodeLimits | null;
+  initial: { season: number | null; episode: number | null; watchedOn: string; rating: number | null; review: string | null; platform: string | null; containsSpoilers: boolean };
   members: { id: string; name: string }[];
   initialWith: string[];
 };
 
-export function EditLogForm({ showSeason, logId, circleId, today, initial, members, initialWith }: Props) {
+export function EditLogForm({ limits, showSeason, logId, circleId, today, initial, members, initialWith }: Props) {
   const t = useTranslations("log");
   const tf = useTranslations("feed");
   const te = useTranslations("manage");
@@ -49,10 +52,10 @@ export function EditLogForm({ showSeason, logId, circleId, today, initial, membe
       </div>
 
       {showSeason && (
-        <label className="grid gap-1.5 text-sm text-muted sm:max-w-40">
-          {t("seasonLogged")}
-          <input type="number" name="season" min={1} max={99} inputMode="numeric" defaultValue={initial.season ?? ""} placeholder={t("wholeShow")} className="tabular min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-3 text-ink placeholder:text-muted/60" />
-        </label>
+        <fieldset className="grid gap-1.5">
+          <legend className="mb-1 text-sm text-muted">{t("episodeLogged")}</legend>
+          <EpisodeFields limits={limits} seasonName="season" episodeName="logEpisode" defaultSeason={initial.season} defaultEpisode={initial.episode} optionalSeasonLabel={t("seasonLogged")} />
+        </fieldset>
       )}
 
       <label className="grid gap-1.5 text-sm text-muted">

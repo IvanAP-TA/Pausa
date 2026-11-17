@@ -1,13 +1,11 @@
 import { eq } from "drizzle-orm";
 import { nowWatching } from "../../db/schema";
+import { MAX_EPISODE, MAX_SEASON, advance, getEpisodeInfo, type Position } from "./episodes";
 import type { AnyDb } from "./db-types";
 
 /* "Sto guardando…" with a real position: season and episode, so "+1 episode" is one tap. */
 
-export const MAX_SEASON = 99;
-export const MAX_EPISODE = 9999; // long-running anime
-
-export type Position = { season: number | null; episode: number | null };
+export { MAX_EPISODE, MAX_SEASON, type Position };
 
 /** Reads an old free-text label such as "S3·E4", "s3e4" or "E12" into numbers; null when it holds none. */
 export function parseLegacy(label: string | null | undefined): Position | null {
@@ -39,12 +37,13 @@ export async function setWatching(db: AnyDb, input: { userId: string; mediaId: s
   return { titleChanged: current?.mediaId !== input.mediaId };
 }
 
-/** One tap forward. A legacy label such as "S1·E2" is read first; with no numbers at all it starts at episode 1. Returns the new position, or null if nothing is being watched. */
+/** One tap forward. At the end of a season it moves to the next when the counts are known. A legacy label such as "S1·E2" is read first; with no numbers at all it starts at episode 1. Returns the new position, or null if nothing is being watched. */
 export async function nextEpisode(db: AnyDb, userId: string): Promise<Position | null> {
-  const [row] = await db.select({ season: nowWatching.season, episode: nowWatching.episode, progress: nowWatching.progress }).from(nowWatching).where(eq(nowWatching.userId, userId));
+  const [row] = await db.select({ mediaId: nowWatching.mediaId, season: nowWatching.season, episode: nowWatching.episode, progress: nowWatching.progress }).from(nowWatching).where(eq(nowWatching.userId, userId));
   if (!row) return null;
   const from = row.season || row.episode ? row : (parseLegacy(row.progress) ?? row);
-  const next = { season: from.season, episode: Math.min((from.episode ?? 0) + 1, MAX_EPISODE) };
+  // With known episode counts, the last episode of a season rolls over to the next season.
+  const next = advance(await getEpisodeInfo(db, row.mediaId), { season: from.season, episode: from.episode });
   await db.update(nowWatching).set({ ...next, progress: null, updatedAt: new Date() }).where(eq(nowWatching.userId, userId));
   return next;
 }

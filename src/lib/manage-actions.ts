@@ -16,7 +16,7 @@ import { REPORT_REASONS, createReport, resolveReport } from "./core/moderation";
 import { deleteCircle } from "./core/circles";
 import { NOTIFICATION_TYPES, setCircleProfile, setDisabledTypes, setEmailDigest, setLiveWatching, setMemberPrefs } from "./core/settings";
 import { deleteAccount, updateProfile } from "./core/account";
-import { MAX_SEASON, toPosition } from "./core/progress";
+import { MAX_EPISODE, MAX_SEASON, toPosition } from "./core/progress";
 import {
   deleteComment, deleteList, deleteLog, moveListItem, removeListItem, renameCircle, renameList, updateComment, updateLog,
 } from "./core/content";
@@ -43,6 +43,7 @@ export async function updateLogAction(formData: FormData) {
     review: z.string().trim().max(4000).transform((v) => v || null),
     platform: z.string().trim().max(60).transform((v) => v || null),
     season: z.number().int().min(1).max(MAX_SEASON).nullable(),
+    episode: z.number().int().min(1).max(MAX_EPISODE).nullable(),
     containsSpoilers: z.boolean(),
     watchedWith: z.array(z.string()).max(20),
   }).parse({
@@ -53,6 +54,7 @@ export async function updateLogAction(formData: FormData) {
     review: formData.get("review") ?? "",
     platform: formData.get("platform") ?? "",
     season: toPosition(formData.get("season"), MAX_SEASON),
+    episode: toPosition(formData.get("logEpisode"), MAX_EPISODE),
     containsSpoilers: formData.get("containsSpoilers") === "on",
     watchedWith: formData.getAll("watchedWith").map(String),
   });

@@ -2,7 +2,8 @@ import "server-only";
 import { inArray, sql } from "drizzle-orm";
 import { getDb, schema as s } from "@/db";
 import type { MediaSummary } from "./data";
-import { getAvailability, parseRegionProviders, parseWatchProviders, storeAvailability, type Provider } from "./core/streaming";
+import { getAvailability, matchProviders, parseRegionProviders, parseWatchProviders, storeAvailability, type Provider } from "./core/streaming";
+import { animeStreamingSites } from "./anilist";
 
 /* TMDB: free API is non-commercial and requires attribution (see <TmdbAttribution />). Streaming data is by JustWatch. */
 
@@ -27,7 +28,7 @@ type Db = Awaited<ReturnType<typeof getDb>>;
 
 export const tmdbEnabled = () => Boolean(process.env.TMDB_API_TOKEN);
 
-async function tmdbGet(path: string, params: Record<string, string> = {}): Promise<unknown> {
+export async function tmdbGet(path: string, params: Record<string, string> = {}): Promise<unknown> {
   const url = new URL(`https://api.themoviedb.org/3${path}`);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   // Recommendations, providers and details change slowly: let the platform cache them for a day.
@@ -91,12 +92,22 @@ export async function regionProviders(country: string, locale: string): Promise<
 export async function ensureAvailability(mediaIds: string[], country: string, max = 10) {
   const db = await getDb();
   const { known, stale } = await getAvailability(db, mediaIds, country);
-  if (!tmdbEnabled() || stale.length === 0) return known;
-  const rows = await db.select({ id: s.mediaEntity.id, tmdbId: s.mediaEntity.tmdbId, kind: s.mediaEntity.kind })
+  if (stale.length === 0) return known;
+  const rows = await db.select({ id: s.mediaEntity.id, tmdbId: s.mediaEntity.tmdbId, anilistId: s.mediaEntity.anilistId, kind: s.mediaEntity.kind })
     .from(s.mediaEntity).where(inArray(s.mediaEntity.id, stale.slice(0, max)));
+  // Anime that TMDB does not know come from AniList, which lists streaming sites by name: match them to the region's services.
+  const animeOnly = rows.filter((m) => !m.tmdbId && m.anilistId);
+  const catalogue = animeOnly.length ? await regionProviders(country, "en") : [];
   await Promise.all(rows.map(async (m) => {
-    const type = m.kind === "movie" ? "movie" : "tv";
-    const providers = m.tmdbId ? parseWatchProviders(await tmdbGet(`/${type}/${m.tmdbId}/watch/providers`), country) : [];
+    let providers: Provider[] = [];
+    if (m.tmdbId && tmdbEnabled()) {
+      const type = m.kind === "movie" ? "movie" : "tv";
+      providers = parseWatchProviders(await tmdbGet(`/${type}/${m.tmdbId}/watch/providers`), country);
+    } else if (m.anilistId) {
+      providers = matchProviders(await animeStreamingSites(m.anilistId), catalogue);
+    } else if (!tmdbEnabled()) {
+      return; // nothing can be asked: leave it unknown instead of recording "nowhere"
+    }
     await storeAvailability(db, { mediaId: m.id, country, providers });
     known.set(m.id, providers);
   }));
