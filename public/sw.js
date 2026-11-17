@@ -1,7 +1,24 @@
-/* Pausa service worker: Web Push only. It caches nothing, so it can never serve a stale private page. */
+/* Pausa service worker: Web Push, and one offline page. It caches nothing else, so it can never serve a stale private page. */
 
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+const OFFLINE_CACHE = "pausa-offline-v1";
+const OFFLINE_URL = "/offline.html";
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(OFFLINE_CACHE).then((c) => c.add(OFFLINE_URL)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil((async () => {
+    for (const key of await caches.keys()) if (key !== OFFLINE_CACHE) await caches.delete(key);
+    await self.clients.claim();
+  })());
+});
+
+// Opening a page with no connection shows the offline page instead of the browser's error. Everything else goes straight to the network.
+self.addEventListener("fetch", (event) => {
+  if (event.request.mode !== "navigate") return;
+  event.respondWith(fetch(event.request).catch(async () => (await caches.match(OFFLINE_URL)) || Response.error()));
+});
 
 self.addEventListener("push", (event) => {
   let data = {};

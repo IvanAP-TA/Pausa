@@ -14,13 +14,31 @@ const nextConfig: NextConfig = {
       "*.css": { loaders: ["@tailwindcss/turbopack"], as: "*.css" },
     },
   },
-  // Baseline security headers on every response. (A Content-Security-Policy is deliberately not set yet: the theme bootstrap and
-  // Next's own inline scripts need nonces; add one together with a nonce middleware if the threat model calls for it.)
+  // Security headers on every response. The Content-Security-Policy is static, not nonce-based: a nonce forces every page into
+  // dynamic rendering (no static landing, no cached SEO pages) and cannot be checked on OpenNext/Cloudflare from here. So scripts
+  // allow 'unsafe-inline' (Next's bootstrap and the theme script are inline); everything else is locked down (no plugins, no
+  // framing, no foreign forms/base, only known hosts). See SICUREZZA.md before tightening it to a nonce.
   async headers() {
+    const dev = process.env.NODE_ENV === "development";
+    const csp = [
+      "default-src 'self'",
+      `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""} https://static.cloudflareinsights.com`,
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://image.tmdb.org",
+      "font-src 'self'",
+      `connect-src 'self' https://cloudflareinsights.com${dev ? " ws: wss:" : ""}`,
+      "manifest-src 'self'",
+      "worker-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+    ].join("; ");
     return [
       {
         source: "/:path*",
         headers: [
+          { key: "Content-Security-Policy", value: csp },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

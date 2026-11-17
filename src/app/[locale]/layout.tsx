@@ -7,6 +7,8 @@ import { setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
 import { THEME_COOKIE, parseTheme } from "@/lib/theme";
 import { siteUrl } from "@/lib/site";
+import { splashLinks } from "@/lib/splash";
+import { RegisterSw } from "@/components/register-sw";
 import "../globals.css";
 
 // Display: Gloock (one weight, poster serif). Text: Instrument Sans.
@@ -17,7 +19,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: { default: "Pausa", template: "%s · Pausa" },
   description: "Il diario privato della tua Cerchia.",
-  appleWebApp: { capable: true, title: "Pausa", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Pausa", statusBarStyle: "default", startupImage: splashLinks },
 };
 
 export const viewport: Viewport = {
@@ -49,6 +51,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
         <NextIntlClientProvider>
           <a href="#main" className="skip-link">{skip}</a>
           <div id="main" tabIndex={-1} className="outline-none">{children}</div>
+          <RegisterSw />
         </NextIntlClientProvider>
         {/* Cookie-free, aggregate page-view counting by Cloudflare. Off unless a token is configured. */}
         {process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN && (

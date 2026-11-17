@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Pausa</title>
+    <style>
+      :root { color-scheme: light dark; --bg: #f2eee5; --ink: #151413; --muted: #5e5a52; --accent: #b8301c; --on: #fff; }
+      @media (prefers-color-scheme: dark) { :root { --bg: #0d1220; --ink: #f3f4f6; --muted: #b9bfcc; --accent: #f7d046; --on: #0d1220; } }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; text-align: center; padding: 24px; box-sizing: border-box; }
+      main { max-width: 26rem; }
+      .mark { display: inline-flex; gap: 7px; margin-bottom: 20px; }
+      .mark i { display: block; width: 12px; height: 40px; border-radius: 3px; background: var(--accent); }
+      h1 { margin: 0 0 8px; font: 400 2rem/1.1 Georgia, serif; }
+      p { margin: 0 0 24px; color: var(--muted); line-height: 1.5; }
+      button { min-height: 48px; padding: 0 28px; border: 0; border-radius: 999px; background: var(--accent); color: var(--on); font: 600 16px system-ui, sans-serif; cursor: pointer; }
+      button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark" aria-hidden="true"><i></i><i></i></div>
+      <h1 id="t"></h1>
+      <p id="b"></p>
+      <button id="r" type="button"></button>
+    </main>
+    <script>
+      // The page is cached once and shown with no connection, so it picks its language from the browser.
+      var all = {
+        it: ["Sei offline", "Pausa ha bisogno di una connessione per aprire la tua Cerchia. Riprova appena sei di nuovo online.", "Riprova"],
+        en: ["You are offline", "Pausa needs a connection to open your Cerchia. Try again as soon as you are back online.", "Try again"],
+        es: ["Estás sin conexión", "Pausa necesita conexión para abrir tu Cerchia. Inténtalo de nuevo cuando vuelvas a tener internet.", "Reintentar"],
+      };
+      var lang = (navigator.language || "it").slice(0, 2);
+      var s = all[lang] || all.it;
+      document.documentElement.lang = all[lang] ? lang : "it";
+      document.title = "Pausa · " + s[0];
+      document.getElementById("t").textContent = s[0];
+      document.getElementById("b").textContent = s[1];
+      var r = document.getElementById("r");
+      r.textContent = s[2];
+      r.addEventListener("click", function () { location.reload(); });
+      window.addEventListener("online", function () { location.reload(); });
+    </script>
+  </body>
+</html>
