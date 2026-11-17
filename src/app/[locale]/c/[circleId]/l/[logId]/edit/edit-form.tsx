@@ -60,7 +60,7 @@ export function EditLogForm({ showSeason, logId, circleId, today, initial, membe
         <textarea name="review" rows={4} maxLength={4000} defaultValue={initial.review ?? ""} className="rounded-sm border border-rule bg-paper-2 p-3 text-[15px] text-ink" />
       </label>
 
-      <label className="flex min-h-8 items-center gap-3 text-sm">
+      <label className="flex min-h-10 items-center gap-3 text-sm">
         <input type="checkbox" name="containsSpoilers" defaultChecked={initial.containsSpoilers} className="size-5 accent-[var(--color-accent)]" />{t("spoilers")}
       </label>
 

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, inArray } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import { getDb, schema as s } from "@/db";
 import type { MediaSummary } from "./data";
 import { getAvailability, parseRegionProviders, parseWatchProviders, storeAvailability, type Provider } from "./core/streaming";
@@ -30,41 +30,48 @@ export const tmdbEnabled = () => Boolean(process.env.TMDB_API_TOKEN);
 async function tmdbGet(path: string, params: Record<string, string> = {}): Promise<unknown> {
   const url = new URL(`https://api.themoviedb.org/3${path}`);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${process.env.TMDB_API_TOKEN}` } });
+  // Recommendations, providers and details change slowly: let the platform cache them for a day.
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${process.env.TMDB_API_TOKEN}` }, next: { revalidate: 86_400 } });
   return res.ok ? ((await res.json()) as unknown) : null;
 }
 
-/** Stores one TMDB result as a canonical media_entity (+ localized title) and returns it. */
-async function upsertTmdbResult(db: Db, r: TmdbResult, locale: string): Promise<MediaSummary | null> {
+function toMedia(r: TmdbResult) {
   const isAnime = r.media_type === "tv" && r.genre_ids?.includes(ANIMATION) && r.original_language === "ja";
-  const kind = r.media_type === "movie" ? "movie" : isAnime ? "anime" : "tv";
+  const kind = (r.media_type === "movie" ? "movie" : isAnime ? "anime" : "tv") as "movie" | "tv" | "anime";
   const date = r.release_date || r.first_air_date;
-  const year = date ? Number(date.slice(0, 4)) : null;
   const original = r.original_title ?? r.original_name ?? r.title ?? r.name ?? "";
-  const localized = r.title ?? r.name ?? original;
+  return { kind, tmdbId: r.id, originalTitle: original, localized: r.title ?? r.name ?? original, year: date ? Number(date.slice(0, 4)) : null, posterPath: r.poster_path ?? null };
+}
 
-  await db.insert(s.mediaEntity)
-    .values({ kind, tmdbId: r.id, originalTitle: original, year, posterPath: r.poster_path ?? null })
-    .onConflictDoNothing();
-  const [row] = await db.select({ id: s.mediaEntity.id }).from(s.mediaEntity)
-    .where(and(eq(s.mediaEntity.kind, kind), eq(s.mediaEntity.tmdbId, r.id)));
-  if (!row) return null;
-  await db.insert(s.mediaTitle).values({ mediaId: row.id, locale, title: localized })
-    .onConflictDoUpdate({ target: [s.mediaTitle.mediaId, s.mediaTitle.locale], set: { title: localized } });
-  return { id: row.id, kind, title: localized, year, posterPath: r.poster_path ?? null };
+/**
+ * Stores TMDB results as canonical media_entity rows (+ localized titles) in a handful of queries, not three per title:
+ * D1 allows about 50 queries per request and 100 bound values per statement, so rows go in chunks. Returns them in order.
+ */
+async function upsertTmdbResults(db: Db, results: TmdbResult[], locale: string): Promise<MediaSummary[]> {
+  const rows = [...new Map(results.map(toMedia).map((m) => [m.kind + ":" + m.tmdbId, m])).values()];
+  if (rows.length === 0) return [];
+  for (let i = 0; i < rows.length; i += 12) {
+    await db.insert(s.mediaEntity)
+      .values(rows.slice(i, i + 12).map((m) => ({ kind: m.kind, tmdbId: m.tmdbId, originalTitle: m.originalTitle, year: m.year, posterPath: m.posterPath })))
+      .onConflictDoNothing();
+  }
+  const ids = await db.select({ id: s.mediaEntity.id, kind: s.mediaEntity.kind, tmdbId: s.mediaEntity.tmdbId }).from(s.mediaEntity)
+    .where(inArray(s.mediaEntity.tmdbId, rows.map((m) => m.tmdbId)));
+  const idOf = new Map(ids.map((r) => [r.kind + ":" + r.tmdbId, r.id]));
+  const found = rows.flatMap((m) => { const id = idOf.get(m.kind + ":" + m.tmdbId); return id ? [{ ...m, id }] : []; });
+  for (let i = 0; i < found.length; i += 25) {
+    await db.insert(s.mediaTitle)
+      .values(found.slice(i, i + 25).map((m) => ({ mediaId: m.id, locale, title: m.localized })))
+      .onConflictDoUpdate({ target: [s.mediaTitle.mediaId, s.mediaTitle.locale], set: { title: sql`excluded.title` } });
+  }
+  return found.map((m) => ({ id: m.id, kind: m.kind, title: m.localized, year: m.year, posterPath: m.posterPath }));
 }
 
 /** Searches TMDB and stores results as canonical media_entity rows (+ localized title). */
 export async function searchTmdb(q: string, locale: string): Promise<MediaSummary[]> {
   if (!tmdbEnabled() || q.trim().length < 2) return [];
   const json = (await tmdbGet("/search/multi", { query: q.trim(), language: LANG[locale] ?? "it-IT", include_adult: "false" })) as { results?: TmdbResult[] } | null;
-  const db = await getDb();
-  const out: MediaSummary[] = [];
-  for (const r of (json?.results ?? []).filter((r) => r.media_type === "movie" || r.media_type === "tv").slice(0, 10)) {
-    const m = await upsertTmdbResult(db, r, locale);
-    if (m) out.push(m);
-  }
-  return out;
+  return upsertTmdbResults(await getDb(), (json?.results ?? []).filter((r) => r.media_type === "movie" || r.media_type === "tv").slice(0, 10), locale);
 }
 
 /* ───────────── Streaming availability ───────────── */
@@ -103,13 +110,7 @@ export async function similarTitles(tmdbId: number, kind: "movie" | "tv" | "anim
   if (!tmdbEnabled()) return [];
   const type = kind === "movie" ? "movie" : "tv";
   const json = (await tmdbGet(`/${type}/${tmdbId}/recommendations`, { language: LANG[locale] ?? "it-IT" })) as { results?: TmdbResult[] } | null;
-  const db = await getDb();
-  const out: MediaSummary[] = [];
   // Only titles people actually know and that have a poster: TMDB also recommends obscure TV movies and shorts.
-  const known = (json?.results ?? []).filter((r) => r.poster_path && (r.vote_count ?? 0) >= MIN_VOTES);
-  for (const r of known.slice(0, 12)) {
-    const m = await upsertTmdbResult(db, { ...r, media_type: type }, locale);
-    if (m) out.push(m);
-  }
-  return out;
+  const known = (json?.results ?? []).filter((r) => r.poster_path && (r.vote_count ?? 0) >= MIN_VOTES).slice(0, 12);
+  return upsertTmdbResults(await getDb(), known.map((r) => ({ ...r, media_type: type })), locale);
 }

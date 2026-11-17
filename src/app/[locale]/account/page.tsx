@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { LogoutButton } from "@/components/logout-button";
 import { requireUser } from "@/lib/session";
 import { getMyCircles } from "@/lib/data";
 import { deleteAccountAction, updateProfileAction } from "@/lib/manage-actions";
@@ -10,6 +11,12 @@ import { COUNTRIES, getUserProviders, isCountry } from "@/lib/core/streaming";
 import { regionProviders, tmdbEnabled } from "@/lib/tmdb";
 
 const input = "min-h-12 w-full rounded-sm border border-rule bg-paper-2 px-4";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "account" });
+  return { title: t("title"), robots: { index: false } };
+}
 
 export default async function Account({ params, searchParams }: PageProps<"/[locale]/account">) {
   const { locale } = await params;
@@ -29,10 +36,12 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
   return (
     <main className="projector mx-auto grid max-w-md gap-8 px-4 py-10">
       <header className="grid gap-1">
-        <Link href={circles[0] ? `/c/${circles[0].id}/members` : "/"} className="inline-flex min-h-8 w-fit items-center text-sm text-muted hover:text-ink">← {t("back")}</Link>
+        <Link href={circles[0] ? `/c/${circles[0].id}/members` : "/"} className="inline-flex min-h-10 w-fit items-center text-sm text-muted hover:text-ink">← {t("back")}</Link>
         <h1 className="font-display text-[1.75rem] leading-tight">{t("title")}</h1>
         <p className="text-sm text-muted">{user.email}</p>
       </header>
+
+      <LogoutButton className="min-h-11 w-fit rounded-full border border-rule px-5 text-sm font-semibold hover:bg-paper-2" />
 
       <form action={updateProfileAction} className="grid gap-3">
         <input type="hidden" name="locale" value={locale} />
@@ -116,8 +125,8 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
       </section>
 
       <nav className="flex gap-4 text-sm text-muted" aria-label={t("legal")}>
-        <Link href="/privacy" className="underline underline-offset-4 hover:text-ink">{t("privacy")}</Link>
-        <Link href="/terms" className="underline underline-offset-4 hover:text-ink">{t("terms")}</Link>
+        <Link href="/privacy" className="inline-flex min-h-10 items-center underline underline-offset-4 hover:text-ink">{t("privacy")}</Link>
+        <Link href="/terms" className="inline-flex min-h-10 items-center underline underline-offset-4 hover:text-ink">{t("terms")}</Link>
       </nav>
     </main>
   );

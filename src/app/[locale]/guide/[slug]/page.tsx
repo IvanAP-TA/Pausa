@@ -56,9 +56,9 @@ export default async function GuidePage({ params }: PageProps<"/[locale]/guide/[
     <main className="projector mx-auto grid max-w-2xl gap-8 px-5 py-12">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <nav aria-label="breadcrumb" className="flex items-center gap-2 text-sm text-muted">
-        <Link href="/" className="inline-flex min-h-8 items-center font-display text-lg text-ink">Pausa</Link>
+        <Link href="/" className="inline-flex min-h-10 items-center font-display text-lg text-ink">Pausa</Link>
         <span aria-hidden="true">/</span>
-        <Link href="/guide" className="inline-flex min-h-8 items-center underline-offset-4 hover:text-ink hover:underline">{s.index}</Link>
+        <Link href="/guide" className="inline-flex min-h-10 items-center underline-offset-4 hover:text-ink hover:underline">{s.index}</Link>
       </nav>
       <article className="grid gap-6">
         <header className="grid gap-3">
@@ -82,7 +82,7 @@ export default async function GuidePage({ params }: PageProps<"/[locale]/guide/[
         <p className="text-[16px] leading-relaxed">{g.cta}</p>
         <Link href="/#try" className="inline-flex min-h-12 w-fit items-center rounded-full bg-accent px-6 font-semibold text-on-accent hover:bg-accent-hover">{s.try}</Link>
       </aside>
-      <nav className="flex flex-wrap gap-4 text-sm"><Link href="/guide" className="text-muted underline underline-offset-4 hover:text-ink">← {s.back}</Link></nav>
+      <nav className="flex flex-wrap gap-4 text-sm"><Link href="/guide" className="inline-flex min-h-10 items-center text-muted underline underline-offset-4 hover:text-ink">← {s.back}</Link></nav>
     </main>
   );
 }

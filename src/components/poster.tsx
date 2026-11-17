@@ -15,10 +15,11 @@ type Props = {
 };
 
 export function Poster({ media, size = "md", className = "" }: Props) {
+  // A span is inline by default and aspect-ratio ignores inline boxes: the image variant must be block, the fallback flex.
   const base = `relative aspect-[2/3] overflow-hidden rounded-sm bg-paper-3 ${className}`;
   if (media.posterPath) {
     return (
-      <span className={base}>
+      <span className={`block ${base}`}>
         {/* eslint-disable-next-line @next/next/no-img-element -- TMDB serves pre-sized images; no optimizer on Workers yet */}
         <img
           src={posterUrl(media.posterPath, size === "lg" ? "w500" : size === "md" ? "w342" : "w185")}
@@ -30,7 +31,7 @@ export function Poster({ media, size = "md", className = "" }: Props) {
     );
   }
   return (
-    <span className={`${base} flex items-end`} style={{ backgroundColor: tintFor(media.id) }} aria-hidden="true">
+    <span className={`flex items-end ${base}`} style={{ backgroundColor: tintFor(media.id) }} aria-hidden="true">
       {size !== "sm" && (
         <b className="p-2 font-display text-[13px] font-semibold leading-tight text-[#F4F1EC] [overflow-wrap:anywhere]">
           {media.title}

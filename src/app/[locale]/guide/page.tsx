@@ -24,7 +24,7 @@ export default async function GuideIndex({ params }: PageProps<"/[locale]/guide"
   const s = guideStrings[locale];
   return (
     <main className="projector mx-auto grid max-w-2xl gap-8 px-5 py-12">
-      <Link href="/" className="inline-flex min-h-8 w-fit items-center font-display text-lg text-ink">Pausa</Link>
+      <Link href="/" className="inline-flex min-h-10 w-fit items-center font-display text-lg text-ink">Pausa</Link>
       <header className="grid gap-2">
         <h1 className="font-display text-[2rem] leading-tight">{s.indexTitle}</h1>
         <p className="text-muted">{s.indexLede}</p>

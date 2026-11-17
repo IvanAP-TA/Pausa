@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { and, asc, desc, eq, inArray, like, lt, or, sql } from "drizzle-orm";
 import { getDb, schema as s } from "@/db";
 
@@ -29,7 +30,7 @@ export async function getMyCircles(userId: string) {
 }
 
 /** Returns the circle only if the user is a member. Every circle read goes through this. */
-export async function getCircleForMember(circleId: string, userId: string) {
+export const getCircleForMember = cache(async (circleId: string, userId: string) => {
   const db = await getDb();
   const [row] = await db
     .select({ id: s.circle.id, name: s.circle.name, role: s.circleMember.role })
@@ -37,9 +38,9 @@ export async function getCircleForMember(circleId: string, userId: string) {
     .innerJoin(s.circleMember, and(eq(s.circleMember.circleId, s.circle.id), eq(s.circleMember.userId, userId)))
     .where(eq(s.circle.id, circleId));
   return row ?? null;
-}
+});
 
-export async function getMembers(circleId: string) {
+export const getMembers = cache(async (circleId: string) => {
   const db = await getDb();
   return db
     .select({ id: s.user.id, name: s.user.name, image: s.user.image, role: s.circleMember.role, joinedAt: s.circleMember.joinedAt })
@@ -47,7 +48,7 @@ export async function getMembers(circleId: string) {
     .innerJoin(s.user, eq(s.user.id, s.circleMember.userId))
     .where(eq(s.circleMember.circleId, circleId))
     .orderBy(asc(s.circleMember.joinedAt));
-}
+});
 
 export async function getCircleStats(circleId: string, year: number) {
   const db = await getDb();

@@ -16,7 +16,7 @@ export default async function CircleLayout({ children, params }: LayoutProps<"/[
     <div className="mx-auto flex min-h-dvh max-w-md flex-col lg:max-w-[62rem] lg:flex-row lg:gap-8">
       <CircleMemory circleId={circleId} />
       <div className="projector flex-1 lg:order-2 lg:max-w-[40rem]">{children}</div>
-      <TabBar circleId={circleId} />
+      <TabBar circleId={circleId} me={{ id: user.id, name: user.name, image: user.image }} />
     </div>
   );
 }

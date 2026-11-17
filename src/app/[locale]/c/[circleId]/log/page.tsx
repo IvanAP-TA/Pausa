@@ -4,6 +4,12 @@ import { getMedia, getMembers } from "@/lib/data";
 import { tmdbEnabled } from "@/lib/tmdb";
 import { LogForm } from "./log-form";
 
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "tabs" });
+  return { title: t("log"), robots: { index: false } };
+}
+
 export default async function NewLog({ params, searchParams }: PageProps<"/[locale]/c/[circleId]/log">) {
   const { locale, circleId } = await params;
   // Coming from a Serata: ?media=<winner>&with=<participant ids> prefill the form.

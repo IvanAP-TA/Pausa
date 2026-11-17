@@ -18,6 +18,12 @@ import { AccountControls } from "./account-controls";
 const field = "min-h-11 w-full min-w-0 rounded-sm border border-rule bg-paper-2 px-2 text-sm text-ink";
 const smallBtn = "min-h-9 rounded-full border border-rule px-3 text-xs text-muted hover:text-ink";
 
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "tabs" });
+  return { title: t("circle"), robots: { index: false } };
+}
+
 export default async function Members({ params, searchParams }: PageProps<"/[locale]/c/[circleId]/members">) {
   const { locale, circleId } = await params;
   const { e } = await searchParams;
@@ -204,8 +210,8 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
 
       <AccountControls initialTheme={parseTheme((await cookies()).get(THEME_COOKIE)?.value)} />
       <nav className="flex gap-4 text-xs text-muted" aria-label={tm("legal")}>
-        <Link href="/privacy" className="underline underline-offset-4 hover:text-ink">{tm("privacy")}</Link>
-        <Link href="/terms" className="underline underline-offset-4 hover:text-ink">{tm("terms")}</Link>
+        <Link href="/privacy" className="inline-flex min-h-10 items-center underline underline-offset-4 hover:text-ink">{tm("privacy")}</Link>
+        <Link href="/terms" className="inline-flex min-h-10 items-center underline underline-offset-4 hover:text-ink">{tm("terms")}</Link>
       </nav>
       <TmdbAttribution />
     </main>

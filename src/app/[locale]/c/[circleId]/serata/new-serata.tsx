@@ -111,21 +111,21 @@ export function NewSerata({ circleId, quickPicks, tmdb, services }: { circleId: 
         {pool.length === 0 ? (
           <p className="text-sm text-muted">{t("emptyPool")}</p>
         ) : (
-          <ul className="grid grid-cols-4 gap-2">
+          <ul className="grid grid-cols-4 gap-x-2 gap-y-3 sm:grid-cols-5">
             {pool.map((m) => {
               const n = picked.findIndex((p) => p.id === m.id);
               return (
                 <li key={m.id}>
                   <button type="button" onClick={() => toggle(m)} aria-pressed={n >= 0}
                     disabled={n < 0 && picked.length >= MAX}
-                    className={`relative grid w-full gap-1 rounded-sm text-left transition-opacity disabled:opacity-40 ${n >= 0 ? "" : "opacity-80 hover:opacity-100"}`}>
-                    <span className={`block rounded-sm outline-offset-2 ${n >= 0 ? "outline outline-2 outline-accent" : ""}`}>
+                    className={`group relative grid w-full content-start gap-1.5 rounded-sm text-left transition-opacity disabled:opacity-40 ${n >= 0 ? "" : "opacity-85 hover:opacity-100"}`}>
+                    <span className={`block rounded-sm ring-offset-2 ring-offset-paper transition-shadow ${n >= 0 ? "ring-2 ring-accent" : "group-hover:ring-1 group-hover:ring-muted"}`}>
                       <Poster media={m} size="sm" />
                     </span>
                     {n >= 0 && (
-                      <span className="tabular absolute left-1 top-1 grid size-5 place-items-center rounded-full bg-accent text-[11px] font-semibold text-on-accent">{n + 1}</span>
+                      <span aria-hidden="true" className="tabular pointer-events-none absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-accent text-xs font-bold text-on-accent shadow">{n + 1}</span>
                     )}
-                    <span className="line-clamp-2 text-[11px] leading-tight">{m.title}</span>
+                    <span className={`line-clamp-2 text-xs leading-tight ${n >= 0 ? "font-semibold text-accent" : "text-ink"}`}>{m.title}</span>
                     {on[m.id]?.length ? <span className="truncate text-[10px] text-second-text">{on[m.id].join(", ")}</span> : null}
                   </button>
                 </li>

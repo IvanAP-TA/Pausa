@@ -672,7 +672,10 @@
     "deleteMismatch": "L'email non coincide. Non è stato eliminato niente.",
     "legal": "Note legali",
     "privacy": "Privacy",
-    "terms": "Termini"
+    "terms": "Termini",
+    "logout": "Esci",
+    "loggingOut": "Esco…",
+    "profile": "Il tuo profilo"
   },
   "errors": {
     "notFoundTitle": "Qui non c'è niente",
@@ -708,6 +711,7 @@
     "because": "Perché hai amato {titles}",
     "on": "Sui tuoi servizi: {services}",
     "log": "Segnalo come visto",
-    "credit": "Consigli da TMDB."
+    "credit": "Consigli da TMDB.",
+    "loading": "Cerco idee per te…"
   }
 }

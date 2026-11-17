@@ -36,6 +36,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
+  const skip = ({ it: "Vai al contenuto", en: "Skip to content", es: "Saltar al contenido" } as Record<string, string>)[locale] ?? "Skip to content";
   const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
 
   return (
@@ -45,7 +46,10 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
       className={`${gloock.variable} ${instrument.variable}`}
     >
       <body className="min-h-dvh">
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          <a href="#main" className="skip-link">{skip}</a>
+          <div id="main" tabIndex={-1} className="outline-none">{children}</div>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

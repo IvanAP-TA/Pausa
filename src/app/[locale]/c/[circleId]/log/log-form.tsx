@@ -69,7 +69,7 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
         <p className="font-display text-lg font-semibold leading-tight">{picked.title}</p>
         <p className="text-xs text-muted">{tk(picked.kind)}{picked.year ? ` · ${picked.year}` : ""}</p>
       </div>
-      <button type="button" onClick={() => setPicked(null)} className="min-h-8 text-sm text-muted underline-offset-4 hover:text-ink hover:underline">
+      <button type="button" onClick={() => setPicked(null)} className="min-h-10 text-sm text-muted underline-offset-4 hover:text-ink hover:underline">
         {tc("change")}
       </button>
     </div>
@@ -167,8 +167,8 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
       </label>
 
       <div className="grid gap-3 text-sm">
-        <label className="flex min-h-8 items-center gap-3"><input type="checkbox" name="containsSpoilers" className="size-5 accent-[var(--color-accent)]" />{t("spoilers")}</label>
-        <label className="flex min-h-8 items-center gap-3"><input type="checkbox" name="isRewatch" className="size-5 accent-[var(--color-accent)]" />{t("rewatch")}</label>
+        <label className="flex min-h-10 items-center gap-3"><input type="checkbox" name="containsSpoilers" className="size-5 accent-[var(--color-accent)]" />{t("spoilers")}</label>
+        <label className="flex min-h-10 items-center gap-3"><input type="checkbox" name="isRewatch" className="size-5 accent-[var(--color-accent)]" />{t("rewatch")}</label>
       </div>
 
       {members.length > 0 && (

@@ -12,6 +12,12 @@ import { Poster } from "@/components/poster";
 
 const PAGE = 20;
 
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "tabs" });
+  return { title: t("diary"), robots: { index: false } };
+}
+
 export default async function Feed({ params, searchParams }: PageProps<"/[locale]/c/[circleId]">) {
   const { locale, circleId } = await params;
   const { before: beforeParam } = await searchParams;
@@ -23,7 +29,7 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
   const before = Number.isFinite(beforeMs) ? new Date(beforeMs) : undefined;
 
   const db = await getDb();
-  const [circle, members, stats, watching, feed, unread, t, memories, onboarding, tr] = await Promise.all([
+  const [circle, members, stats, watching, feed, unread, t, memories, onboarding, tr, ta] = await Promise.all([
     getCircleForMember(circleId, user.id),
     getMembers(circleId),
     getCircleStats(circleId, now.getFullYear()),
@@ -35,6 +41,7 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
     before ? Promise.resolve([]) : memoriesFor(db, circleId, now, { locale }),
     before ? Promise.resolve(null) : onboardingFor(db, circleId, user.id),
     getTranslations("retention"),
+    getTranslations("account"),
   ]);
 
   return (
@@ -50,6 +57,9 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
           <div className="flex -space-x-1.5">
             {members.slice(0, 5).map((m) => <Avatar key={m.id} user={m} className="ring-2 ring-paper" />)}
           </div>
+          <Link href="/account" aria-label={ta("profile")} className="grid size-11 place-items-center rounded-full hover:bg-paper-2 lg:hidden">
+            <Avatar user={{ id: user.id, name: user.name, image: user.image }} size={30} />
+          </Link>
           <Link
             href={`/c/${circleId}/notifications`}
             aria-label={unread ? t("unread", { count: unread }) : t("notifications")}

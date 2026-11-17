@@ -111,3 +111,7 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 1ms !important; animation: none !important; }
 }
+
+/* Skip link: first thing a keyboard or screen-reader user reaches; visible only when focused. */
+.skip-link { position: absolute; left: 8px; top: -64px; z-index: 100; padding: 12px 20px; border-radius: 999px; background: var(--color-accent); color: var(--color-on-accent); font-weight: 600; transition: top 0.15s; }
+.skip-link:focus { top: 8px; }

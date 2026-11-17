@@ -17,7 +17,7 @@ export default async function EditLog({ params }: PageProps<"/[locale]/c/[circle
 
   return (
     <main className="grid gap-6 px-4 pb-8 pt-6">
-      <Link href={`/c/${circleId}/l/${logId}`} className="inline-flex min-h-8 w-fit items-center text-sm text-muted hover:text-ink">← {tc("back")}</Link>
+      <Link href={`/c/${circleId}/l/${logId}`} className="inline-flex min-h-10 w-fit items-center text-sm text-muted hover:text-ink">← {tc("back")}</Link>
       <h1 className="font-display text-[1.75rem] leading-tight">{t("editLog")}</h1>
       <div className="flex items-center gap-3 rounded-md bg-paper-2 p-3">
         <Poster media={log.media} size="sm" className="w-12 shrink-0" />

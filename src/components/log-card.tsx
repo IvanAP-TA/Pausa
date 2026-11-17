@@ -62,7 +62,7 @@ export function LogCard({ log, now, circleId }: { log: FeedLog; now: Date; circl
       <footer className="col-span-full flex flex-wrap items-center justify-between gap-2">
         <Reactions logId={log.id} initial={log.reactions} />
         {circleId ? (
-          <Link href={`/c/${circleId}/l/${log.id}`} className="inline-flex min-h-8 items-center text-xs text-muted underline-offset-4 hover:text-ink hover:underline">
+          <Link href={`/c/${circleId}/l/${log.id}`} className="inline-flex min-h-10 items-center text-xs text-muted underline-offset-4 hover:text-ink hover:underline">
             {t("comments", { count: log.commentCount })}
           </Link>
         ) : (

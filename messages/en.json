@@ -672,7 +672,10 @@
     "deleteMismatch": "The email does not match. Nothing was deleted.",
     "legal": "Legal",
     "privacy": "Privacy",
-    "terms": "Terms"
+    "terms": "Terms",
+    "logout": "Log out",
+    "loggingOut": "Logging out…",
+    "profile": "Your profile"
   },
   "errors": {
     "notFoundTitle": "Nothing here",
@@ -708,6 +711,7 @@
     "because": "Because you loved {titles}",
     "on": "On your services: {services}",
     "log": "Log it as watched",
-    "credit": "Suggestions from TMDB."
+    "credit": "Suggestions from TMDB.",
+    "loading": "Looking for ideas for you…"
   }
 }

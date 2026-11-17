@@ -7,6 +7,12 @@ import { tmdbEnabled } from "@/lib/tmdb";
 import { circleServices } from "@/lib/discover";
 import { NewSerata } from "./new-serata";
 
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "tabs" });
+  return { title: t("serata"), robots: { index: false } };
+}
+
 export default async function Serata({ params }: PageProps<"/[locale]/c/[circleId]/serata">) {
   const { locale, circleId } = await params;
   setRequestLocale(locale);

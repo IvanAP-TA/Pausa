@@ -32,7 +32,7 @@ export function Reactions({ logId, initial }: { logId: string; initial: Reaction
             aria-pressed={r?.mine ?? false}
             aria-label={t("react", { emoji })}
             onClick={() => startTransition(async () => { toggle(emoji); await toggleReaction(logId, emoji); })}
-            className={`min-h-8 rounded-full border px-2.5 text-xs transition-colors duration-150 ${
+            className={`min-h-10 rounded-full border px-2.5 text-xs transition-colors duration-150 ${
               r?.mine ? "border-accent text-accent" : "border-rule text-muted hover:text-ink"
             } ${r ? "" : "opacity-60 hover:opacity-100 focus-visible:opacity-100"}`}
           >

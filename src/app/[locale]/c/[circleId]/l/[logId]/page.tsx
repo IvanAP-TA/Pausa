@@ -9,6 +9,12 @@ import { Avatar } from "@/components/avatar";
 import { LogCard } from "@/components/log-card";
 import { Spoiler } from "@/components/spoiler";
 
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "tabs" });
+  return { title: t("diary"), robots: { index: false } };
+}
+
 export default async function LogThread({ params }: PageProps<"/[locale]/c/[circleId]/l/[logId]">) {
   const { locale, circleId, logId } = await params;
   setRequestLocale(locale);
@@ -30,8 +36,9 @@ export default async function LogThread({ params }: PageProps<"/[locale]/c/[circ
 
   return (
     <main className="grid gap-6 px-4 pb-8 pt-6">
-      <Link href={`/c/${circleId}`} className="inline-flex min-h-8 w-fit items-center text-sm text-muted hover:text-ink">← {tc("back")}</Link>
+      <Link href={`/c/${circleId}`} className="inline-flex min-h-10 w-fit items-center text-sm text-muted hover:text-ink">← {tc("back")}</Link>
 
+      <h1 className="sr-only">{log.media.title}</h1>
       <LogCard log={log} now={now} />
 
       {log.author.id === user.id && (
@@ -81,20 +88,20 @@ export default async function LogThread({ params }: PageProps<"/[locale]/c/[circ
                   <div className="mt-1 flex flex-wrap items-start gap-3 text-xs text-muted">
                     {c.author.id === user.id && (
                       <details>
-                        <summary className="inline-flex min-h-8 cursor-pointer list-none items-center marker:content-none hover:text-ink">{tm("edit")}</summary>
+                        <summary className="inline-flex min-h-10 cursor-pointer list-none items-center marker:content-none hover:text-ink">{tm("edit")}</summary>
                         <form action={updateCommentAction} className="mt-1 grid gap-2">
                           <input type="hidden" name="commentId" value={c.id} />
                           <textarea name="body" required maxLength={2000} rows={3} defaultValue={c.body} aria-label={tm("edit")} className="rounded-sm border border-rule bg-paper-2 p-2 text-sm text-ink" />
                           <div className="flex items-center gap-3">
-                            <label className="flex min-h-8 items-center gap-2"><input type="checkbox" name="isSpoiler" defaultChecked={c.isSpoiler} className="size-4 accent-[var(--color-accent)]" />{t("spoiler")}</label>
-                            <button className="min-h-8 rounded-full border border-rule px-3 font-semibold text-ink">{tm("saveChanges")}</button>
+                            <label className="flex min-h-10 items-center gap-2"><input type="checkbox" name="isSpoiler" defaultChecked={c.isSpoiler} className="size-4 accent-[var(--color-accent)]" />{t("spoiler")}</label>
+                            <button className="min-h-10 rounded-full border border-rule px-3 font-semibold text-ink">{tm("saveChanges")}</button>
                           </div>
                         </form>
                       </details>
                     )}
                     <form action={deleteCommentAction}>
                       <input type="hidden" name="commentId" value={c.id} />
-                      <button className="inline-flex min-h-8 items-center hover:text-accent">{tm("delete")}</button>
+                      <button className="inline-flex min-h-10 items-center hover:text-accent">{tm("delete")}</button>
                     </form>
                   </div>
                 )}
@@ -110,7 +117,7 @@ export default async function LogThread({ params }: PageProps<"/[locale]/c/[circ
           <textarea id="body" name="body" required maxLength={2000} rows={3} placeholder={t("placeholder")}
             className="rounded-sm border border-rule bg-paper-2 p-3 text-[15px] placeholder:text-muted/70" />
           <div className="flex items-center justify-between gap-3">
-            <label className="flex min-h-8 items-center gap-2 text-sm text-muted">
+            <label className="flex min-h-10 items-center gap-2 text-sm text-muted">
               <input type="checkbox" name="isSpoiler" className="size-5 accent-[var(--color-accent)]" />{t("spoiler")}
             </label>
             <button className="min-h-11 rounded-full bg-accent px-5 font-semibold text-on-accent hover:bg-accent-hover">{t("send")}</button>

@@ -15,7 +15,7 @@ export default async function ImportPage({ params }: PageProps<"/[locale]/c/[cir
   return (
     <main className="grid gap-6 px-4 pb-10 pt-6">
       <div className="grid gap-3">
-        <Link href={`/c/${circleId}/members`} className="inline-flex min-h-8 w-fit items-center text-sm text-muted hover:text-ink">← {tc("back")}</Link>
+        <Link href={`/c/${circleId}/members`} className="inline-flex min-h-10 w-fit items-center text-sm text-muted hover:text-ink">← {tc("back")}</Link>
         <h1 className="font-display text-[1.9rem] leading-[1.05]">{t("title")}</h1>
         <p className="text-muted">{t("lede")}</p>
       </div>

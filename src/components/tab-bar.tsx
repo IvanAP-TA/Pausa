@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
+import { Avatar } from "./avatar";
+import { LogoutButton } from "./logout-button";
 
 const icons = {
   diary: <path d="M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM9 8h6M9 12h6M9 16h4" />,
@@ -10,8 +12,9 @@ const icons = {
   circle: <path d="M9 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7 1.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM3.5 19c.8-3 3-4.5 5.5-4.5s4.7 1.5 5.5 4.5M14 15.2c2.6-.4 5 .9 6 3.8" />,
 };
 
-export function TabBar({ circleId }: { circleId: string }) {
+export function TabBar({ circleId, me }: { circleId: string; me: { id: string; name: string; image?: string | null } }) {
   const t = useTranslations("tabs");
+  const ta = useTranslations("account");
   const pathname = usePathname();
   const base = `/c/${circleId}`;
 
@@ -49,6 +52,14 @@ export function TabBar({ circleId }: { circleId: string }) {
       </Link>
       {tab("lists", `${base}/lists`)}
       {tab("circle", `${base}/members`)}
+      {/* Desktop only: who you are, and the way out. On phones the same lives in the Cerchia tab and the diary header. */}
+      <div className="hidden lg:mt-auto lg:grid lg:gap-1 lg:border-t lg:border-rule lg:pt-4">
+        <Link href="/account" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-paper-2">
+          <Avatar user={me} size={28} />
+          <span className="min-w-0"><span className="block truncate font-semibold">{me.name}</span><span className="block text-xs text-muted">{ta("profile")}</span></span>
+        </Link>
+        <LogoutButton className="flex min-h-11 items-center rounded-md px-3 text-left text-sm text-muted hover:bg-paper-2 hover:text-ink" />
+      </div>
     </nav>
   );
 }

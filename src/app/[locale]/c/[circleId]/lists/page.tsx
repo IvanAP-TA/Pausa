@@ -10,6 +10,12 @@ type ListRow = Awaited<ReturnType<typeof getCircleLists>>[number];
 
 const small = "inline-flex min-h-9 min-w-9 items-center justify-center rounded-full border border-rule px-2 text-sm text-muted hover:text-ink disabled:opacity-30";
 
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "tabs" });
+  return { title: t("lists"), robots: { index: false } };
+}
+
 export default async function Lists({ params }: PageProps<"/[locale]/c/[circleId]/lists">) {
   const { locale, circleId } = await params;
   setRequestLocale(locale);

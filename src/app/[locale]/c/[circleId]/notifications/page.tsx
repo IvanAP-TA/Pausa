@@ -5,6 +5,12 @@ import { getNotifications } from "@/lib/data";
 import { Avatar } from "@/components/avatar";
 import { MarkRead } from "./mark-read";
 
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "notifications" });
+  return { title: t("title"), robots: { index: false } };
+}
+
 export default async function Notifications({ params }: PageProps<"/[locale]/c/[circleId]/notifications">) {
   const { locale, circleId } = await params;
   setRequestLocale(locale);
@@ -21,7 +27,7 @@ export default async function Notifications({ params }: PageProps<"/[locale]/c/[
   return (
     <main className="grid gap-6 px-4 pb-8 pt-6">
       {hasUnread && <MarkRead />}
-      <Link href={`/c/${circleId}`} className="inline-flex min-h-8 w-fit items-center text-sm text-muted hover:text-ink">← {tc("back")}</Link>
+      <Link href={`/c/${circleId}`} className="inline-flex min-h-10 w-fit items-center text-sm text-muted hover:text-ink">← {tc("back")}</Link>
       <h1 className="font-display text-[1.75rem] font-semibold leading-tight">{t("title")}</h1>
 
       {items.length === 0 ? (

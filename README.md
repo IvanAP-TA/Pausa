@@ -25,7 +25,7 @@ npm run dev
 ```
 
 Open http://localhost:3000 and sign in with a seed email: `giulia@pausa.test`, `marco@pausa.test`, `sofi@pausa.test`, `luca@pausa.test`.
-There is no email provider in dev: **the sign-in link is printed in the `npm run dev` terminal**. Open it in the browser.
+In dev the sign-in page shows four buttons, one per seed person: click one and you are in (no email). That shortcut (`/api/dev/login`) exists only when `NODE_ENV=development`. Typing an email still works too: with no email provider the link is printed in the `npm run dev` terminal.
 
 `npm run db:reset:local` wipes and re-seeds the local DB. On Windows, stop `npm run dev` first (it locks the DB file).
 
