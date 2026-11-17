@@ -27,6 +27,9 @@ export async function sendMagicLinkEmail(email: string, url: string) {
     // Never log sign-in links in production: fail loudly instead.
     if (process.env.NODE_ENV === "production") throw new Error("RESEND_API_KEY is not set");
     console.info(`[pausa] magic link for ${email}: ${url}`);
+    // Kept in memory so /api/dev/login can follow it (development only).
+    const g = globalThis as { __pausaDevLinks?: Record<string, string> };
+    (g.__pausaDevLinks ??= {})[email] = url;
     return;
   }
 

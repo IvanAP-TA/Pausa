@@ -23,6 +23,18 @@ export default async function SignIn({ params, searchParams }: PageProps<"/[loca
         <p className="mt-4 text-muted">{t("lede")}</p>
       </header>
       <SignInForm callbackURL={callbackURL} google={googleEnabled()} />
+      {process.env.NODE_ENV === "development" && (
+        <section aria-label="Dev" className="grid gap-2 rounded-md border border-dashed border-rule p-4">
+          <p className="text-xs text-muted">Solo sviluppo: entra con un utente di prova (nessuna email)</p>
+          <ul className="grid grid-cols-2 gap-2">
+            {[["giulia", "Giulia (admin)"], ["marco", "Marco"], ["sofi", "Sofi"], ["luca", "Luca"]].map(([id, label]) => (
+              <li key={id}>
+                <a href={`/api/dev/login?email=${id}@pausa.test&next=${encodeURIComponent(callbackURL)}`} className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-rule px-3 text-sm font-semibold hover:bg-paper-2">{label}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <TmdbAttribution />
     </main>
   );
