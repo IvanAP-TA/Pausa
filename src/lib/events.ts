@@ -1,5 +1,6 @@
 "use server";
 
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema as s } from "@/db";
 import { getSession } from "./auth";
@@ -11,7 +12,11 @@ export async function trackEvent(name: "card_shared" | "invite_shared", serataCo
     const parsed = z.object({ name: z.enum(["card_shared", "invite_shared"]), code: z.string().min(4).max(16) }).parse({ name, code: serataCode });
     const [session, serata] = await Promise.all([getSession(), getSerataByCode(parsed.code)]);
     if (!session || !serata) return;
-    await (await getDb()).insert(s.event).values({ name: parsed.name, userId: session.user.id, serataId: serata.id });
+    const db = await getDb();
+    // One of each per person per Serata: a script calling this in a loop must not inflate the metrics.
+    const [already] = await db.select({ id: s.event.id }).from(s.event)
+      .where(and(eq(s.event.name, parsed.name), eq(s.event.userId, session.user.id), eq(s.event.serataId, serata.id))).limit(1);
+    if (!already) await db.insert(s.event).values({ name: parsed.name, userId: session.user.id, serataId: serata.id });
   } catch {
     // metrics must never get in the way of sharing
   }

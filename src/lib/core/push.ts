@@ -1,5 +1,5 @@
 import { createTranslator } from "next-intl";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { pushSubscription } from "../../db/schema";
 import type { AnyDb } from "./db-types";
 import it from "../../../messages/it.json";
@@ -40,8 +40,9 @@ export async function saveSubscription(db: AnyDb, input: { userId: string; endpo
     .onConflictDoUpdate({ target: pushSubscription.endpoint, set: { userId: input.userId, p256dh: input.p256dh, auth: input.auth, locale } });
 }
 
-export async function removeSubscription(db: AnyDb, endpoint: string) {
-  await db.delete(pushSubscription).where(eq(pushSubscription.endpoint, endpoint));
+/** Without `userId` (the push service said the endpoint is dead) any owner; with it, only that person's own device. */
+export async function removeSubscription(db: AnyDb, endpoint: string, userId?: string) {
+  await db.delete(pushSubscription).where(userId ? and(eq(pushSubscription.endpoint, endpoint), eq(pushSubscription.userId, userId)) : eq(pushSubscription.endpoint, endpoint));
 }
 
 export async function subscriptionsFor(db: AnyDb, userIds: string[]) {

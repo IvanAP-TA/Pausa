@@ -1,0 +1,8 @@
+Copyright (c) 2026 the owners of the Pausa project. All rights reserved.
+
+This source code is proprietary. No permission is granted to use, copy, modify, merge, publish, distribute,
+sublicense or sell it, in whole or in part, without the written permission of the copyright holders.
+
+NOTE FOR THE PROJECT OWNER: this is a placeholder chosen because no licence was decided. Replace the holder's name with the
+legal owner and, if you want the code to be open source, replace this file with a licence of your choice (for example MIT or
+AGPL-3.0). Third-party components keep their own licences (see package.json and engine/Cargo.toml).

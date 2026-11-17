@@ -51,6 +51,14 @@ describe("subscriptions", () => {
     expect(await subscriptionsFor(db, [])).toEqual([]);
   });
 
+  it("a person can remove only their own device", async () => {
+    await saveSubscription(db, sub("u-ann", "https://push/1"));
+    await removeSubscription(db, "https://push/1", "u-bob"); // someone else: nothing happens
+    expect(await subscriptionsFor(db, ["u-ann"])).toHaveLength(1);
+    await removeSubscription(db, "https://push/1", "u-ann");
+    expect(await subscriptionsFor(db, ["u-ann"])).toHaveLength(0);
+  });
+
   it("removes a dead endpoint and ignores an unknown locale", async () => {
     await saveSubscription(db, sub("u-ann", "https://push/1", "fr"));
     expect((await subscriptionsFor(db, ["u-ann"]))[0].locale).toBe("it");

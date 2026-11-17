@@ -1,0 +1,9 @@
+# One line-ending rule for everybody (the project was started on Windows and on macOS/Linux).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.icns binary
+*.wasm binary
+*.ttf binary
+*.woff2 binary

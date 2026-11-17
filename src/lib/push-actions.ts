@@ -20,6 +20,7 @@ export async function subscribePush(input: z.input<typeof sub>) {
 }
 
 export async function unsubscribePush(endpoint: string) {
-  await requireUser();
-  await removeSubscription(await getDb(), z.string().max(1000).parse(endpoint));
+  const user = await requireUser();
+  // Only your own devices: knowing someone else's endpoint must not let you switch off their notifications.
+  await removeSubscription(await getDb(), z.string().max(1000).parse(endpoint), user.id);
 }
