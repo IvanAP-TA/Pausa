@@ -260,7 +260,15 @@
     "suggestHint": "It starts from the watchlist and from titles the group would love, and drops the ones half of you have already seen.",
     "servicesCommon": "Services you all have: {names} ({setBy} of {members} have set theirs).",
     "servicesNone": "Nobody has set their streaming services yet (it is on the Account page).",
-    "suggestEmpty": "I cannot find enough new titles for everyone. Add some yourself."
+    "suggestEmpty": "I cannot find enough new titles for everyone. Add some yourself.",
+    "invite": {
+      "headline": "{host} invites you to a Serata",
+      "sub": "{mode}, {count} titles in the running. Decided in two minutes.",
+      "cta": "Join with just a name, no account",
+      "title": "You have been invited to a Serata",
+      "titleDone": "Here is what we are watching tonight",
+      "description": "Pausa: pick what to watch together, in two minutes. Just a name."
+    }
   },
   "join": {
     "title": "You're invited to {name}",
@@ -351,6 +359,17 @@
       "unseenBy": "Not seen yet by {names}.",
       "forecast": "Forecast",
       "empty": "It takes more ratings to suggest anything: keep logging and rating."
+    },
+    "yearCard": {
+      "kicker": "Your {year}",
+      "logs": "{count, plural, one {# watch} other {# watches}}",
+      "titles": "{count, plural, one {# different title} other {# different titles}}",
+      "hours": "{count} hours of film",
+      "best": "Title of the year",
+      "share": "Share the card",
+      "preparing": "Preparing…",
+      "failed": "I could not prepare the image. Try again.",
+      "shareText": "Our {year} on Pausa"
     }
   },
   "landing": {
@@ -541,7 +560,8 @@
       "tagline": "The private diary for friend groups.",
       "language": "Language",
       "privacy": "Privacy",
-      "terms": "Terms"
+      "terms": "Terms",
+      "guides": "Guides"
     }
   },
   "import": {

@@ -160,3 +160,31 @@ Limits: the work is split into chunks of 20 films (each triggers a TMDB lookup) 
 - **Episodes and seasons.** "Sto guardando" stores season and episode (`now_watching.season/episode`), with **+1 episode** and **New season** buttons on the feed; old free-text labels such as `S1·E9` are read when you first tap. A log of a series or anime can name its season (`log.season`). Logic in `src/lib/core/progress.ts`, tested. There is no per-episode diary and no episode count from TMDB yet (inputs accept 1..99 seasons, 1..9999 episodes).
 
 Still open: a streaming-services filter and individual recommendations (they need TMDB availability data), web push with a service worker, and launch metrics.
+
+## TMDB token
+
+Put the v4 **API Read Access Token** (themoviedb.org → Settings → API) in `.env.local` as `TMDB_API_TOKEN=...` for local work (the file is git-ignored), and in production with `npx wrangler secret put TMDB_API_TOKEN`. Never paste it in chat or commit it. Without it Pausa still works: search covers only titles already in the database, and the features below show an "off" note.
+
+With the token:
+- **Streaming services in common.** Each person picks their country and services on the Account page (`user_provider`); availability per title is cached for a week (`media_provider`, from TMDB watch providers, data by JustWatch, credit shown on screen). The Serata shows which services everyone has, and the suggested roster drops titles the shared services cannot stream.
+- **For you** (Insights page): TMDB recommendations seeded from the titles you rated 4 stars or more, merged and ranked (`src/lib/core/discovery.ts`), never what you have already logged, with a badge when it is on one of your services.
+
+## Killer features and sharing
+
+- **Fill the roster for us** (new Serata): watchlist + group recommendations, minus titles half of the group has seen, minus what the shared services cannot stream (`src/lib/core/roster.ts`, tested). No token needed for the base roster.
+- **Link previews.** An open Serata link previews as an invitation ("<host> invites you…", mode, a strip of posters) at `/api/serata/<code>/invite`; a finished one as its Card. Neither shows who voted what.
+- **Year card** (9:16, `/api/circle/<id>/year/<year>/card`, members only) with a share button on the Insights page: totals and the title of the year, no individual ratings.
+
+## SEO
+
+Landing in three languages (hreflang, JSON-LD, OG) plus four public guides per language under `/guide` (`src/lib/guides.ts`): choosing a film with friends, bracket vs dot voting, a Letterboxd alternative for friends, how to run a movie night. Each has Article + Breadcrumb JSON-LD, canonical and hreflang, and a call to try a Serata; they are in the sitemap. `public/llms.txt` describes the site for AI crawlers. After deploy: register the domain in Search Console and Bing Webmaster Tools and submit `/sitemap.xml`.
+
+## Native app (Tauri v2)
+
+`src-tauri/` is a thin shell that opens the hosted app (`https://pausa.gnagno.org/it`) in a window, or in a webview on iOS/Android, so there is one UI to maintain. Icons are generated from the PWA icon. Commands:
+
+- `npm run tauri dev` (opens the shell on `http://localhost:3000/it`; run `npm run dev` first)
+- `npm run tauri build` (desktop installer)
+- `npm run tauri android init` / `npm run tauri ios init`, then `... dev` / `... build`, once the Android SDK / Xcode are installed.
+
+Not done yet: native push notifications (they need a Tauri notification plugin plus a server-side sender, not in the web app yet) and store submission. Android needs the Android SDK and NDK; iOS needs a Mac with Xcode.

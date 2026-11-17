@@ -1,0 +1,25 @@
+# Pausa
+
+> Pausa is a private diary for groups of friends (films, series, anime) with a two-minute tool to decide together what to watch, the Serata. Everything about taste, comments and lists stays private to the group; the only thing meant to be shared outside is the result card of a Serata. Available in Italian, English and Spanish.
+
+## Product
+
+- [Home (Italian)](https://pausa.gnagno.org/it): what Pausa is, how the Serata works, try it without an account
+- [Home (English)](https://pausa.gnagno.org/en)
+- [Home (Spanish)](https://pausa.gnagno.org/es)
+
+## Guides
+
+- [How to choose a movie with friends without arguing](https://pausa.gnagno.org/en/guide/choose-a-movie-with-friends)
+- [Knockout bracket or dot voting: which method to pick what to watch](https://pausa.gnagno.org/en/guide/bracket-vs-dot-voting)
+- [A Letterboxd alternative for keeping a film diary with just your friends](https://pausa.gnagno.org/en/guide/letterboxd-alternative-for-friends)
+- [How to organise a movie night with friends, step by step](https://pausa.gnagno.org/en/guide/movie-night-guide)
+
+## Legal
+
+- [Privacy notice](https://pausa.gnagno.org/en/privacy)
+- [Terms of service](https://pausa.gnagno.org/en/terms)
+
+## Notes
+
+Pages under a group (/c/), a Serata (/s/) or sign-in are private and not for indexing. Film data is provided by TMDB and anime data by AniList; streaming availability by JustWatch via TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.

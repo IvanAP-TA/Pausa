@@ -6,9 +6,22 @@ import { JoinGate } from "./join-gate";
 import { SerataRoom } from "./room";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/s/[code]">) {
-  const { locale } = await params;
+  const { locale, code } = await params;
   const t = await getTranslations({ locale, namespace: "serata" });
-  return { title: t("title"), robots: { index: false } };
+  const serata = await getSerataByCode(code);
+  // The link preview: the Card once decided, an invitation while it is open. Neither shows who voted what.
+  const image = !serata ? undefined
+    : serata.status === "done" ? `/api/serata/${serata.code}/card?format=og&locale=${locale}`
+    : `/api/serata/${serata.code}/invite?locale=${locale}`;
+  const title = t(serata?.status === "done" ? "invite.titleDone" : "invite.title");
+  const description = t("invite.description");
+  return {
+    title,
+    description,
+    robots: { index: false },
+    openGraph: { title, description, siteName: "Pausa", ...(image ? { images: [{ url: image, width: 1200, height: 630 }] } : {}) },
+    twitter: { card: "summary_large_image", title, description, ...(image ? { images: [image] } : {}) },
+  };
 }
 
 /** The Serata room. Guest-first: no account needed, just a name. */

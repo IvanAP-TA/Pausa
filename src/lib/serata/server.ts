@@ -233,3 +233,16 @@ export async function getCardData(code: string, locale: string) {
     finishedAt: row.finishedAt ?? row.createdAt,
   };
 }
+
+/** Share-safe data for the invite preview of a Serata that is still open: who hosts, how, and which posters. No votes. */
+export async function getInviteData(code: string, locale: string) {
+  const row = await getSerataByCode(code);
+  if (!row || row.status === "done") return null;
+  const [candidates, participants] = await Promise.all([getCandidates(row.id, locale), getParticipants(row.id)]);
+  return {
+    host: participants.find((p) => p.id === row.hostId)?.name ?? participants[0]?.name ?? "",
+    mode: row.mode,
+    posters: candidates.slice(0, 4).map((c) => c.posterPath).filter((p): p is string => Boolean(p)),
+    count: candidates.length,
+  };
+}

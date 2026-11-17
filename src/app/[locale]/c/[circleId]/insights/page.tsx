@@ -7,6 +7,7 @@ import {
   type TitleVerdict,
 } from "@/lib/core/insights";
 import { personalPicks } from "@/lib/discover";
+import { ShareYear } from "./share-year";
 import { Poster } from "@/components/poster";
 import { Stars } from "@/components/stars";
 
@@ -83,6 +84,7 @@ export default async function Insights({ params, searchParams }: PageProps<"/[lo
           <p className="text-sm text-muted">{t("yearEmpty", { year })}</p>
         ) : (
           <>
+            <ShareYear circleId={circleId} year={year} />
             <div className="grid grid-cols-2 gap-3">
               <p className={stat}><span className="tabular font-display text-[2rem] leading-none">{review.logs}</span><span className="text-sm text-muted">{t("stats.logs", { count: review.logs })}</span></p>
               <p className={stat}><span className="tabular font-display text-[2rem] leading-none">{review.titles}</span><span className="text-sm text-muted">{t("stats.titles")}</span></p>

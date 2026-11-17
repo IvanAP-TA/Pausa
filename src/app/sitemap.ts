@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { routing } from "@/i18n/routing";
 import { siteUrl } from "@/lib/site";
+import { GUIDE_SLUGS } from "@/lib/guides";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const page = (path: string, priority: (locale: string) => number) => {
@@ -9,6 +10,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   };
   return [
     ...page("", (l) => (l === routing.defaultLocale ? 1 : 0.9)),
+    ...page("/guide", () => 0.7),
+    ...GUIDE_SLUGS.flatMap((slug) => page("/guide/" + slug, () => 0.8)),
     ...page("/privacy", () => 0.3),
     ...page("/terms", () => 0.3),
   ];

@@ -240,6 +240,7 @@ export function Landing() {
           </div>
           <div className="grid gap-3 md:justify-items-end">
           <ul className="flex items-center gap-4 text-sm text-muted">
+            <li><Link href="/guide" className="inline-flex min-h-10 items-center underline-offset-4 hover:text-ink hover:underline">{t("footer.guides")}</Link></li>
             <li><Link href="/privacy" className="inline-flex min-h-10 items-center underline-offset-4 hover:text-ink hover:underline">{t("footer.privacy")}</Link></li>
             <li><Link href="/terms" className="inline-flex min-h-10 items-center underline-offset-4 hover:text-ink hover:underline">{t("footer.terms")}</Link></li>
           </ul>

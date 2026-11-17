@@ -46,3 +46,8 @@ next-env.d.ts
 !.dev.vars.example
 .open-next/
 !.env.example
+
+# tauri
+/src-tauri/target/
+/src-tauri/gen/
+/src-tauri/app-icon.png

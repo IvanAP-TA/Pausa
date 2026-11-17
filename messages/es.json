@@ -260,7 +260,15 @@
     "suggestHint": "Parte de la watchlist y de los títulos que el grupo amaría, y quita los que la mitad ya ha visto.",
     "servicesCommon": "Servicios que tenéis todos: {names} ({setBy} de {members} los han indicado).",
     "servicesNone": "Nadie ha indicado aún sus servicios de streaming (se hace en la página Cuenta).",
-    "suggestEmpty": "No encuentro suficientes títulos nuevos para todos. Añade algunos tú."
+    "suggestEmpty": "No encuentro suficientes títulos nuevos para todos. Añade algunos tú.",
+    "invite": {
+      "headline": "{host} te invita a una Serata",
+      "sub": "{mode}, {count} títulos en juego. Se decide en dos minutos.",
+      "cta": "Entra solo con un nombre, sin cuenta",
+      "title": "Te han invitado a una Serata",
+      "titleDone": "Esto es lo que vemos esta noche",
+      "description": "Pausa: elegid juntos qué ver, en dos minutos. Solo un nombre."
+    }
   },
   "join": {
     "title": "Te han invitado a {name}",
@@ -351,6 +359,17 @@
       "unseenBy": "Aún no lo han visto: {names}.",
       "forecast": "Previsión",
       "empty": "Hacen falta más notas para recomendar algo: seguid registrando y puntuando."
+    },
+    "yearCard": {
+      "kicker": "Vuestro {year}",
+      "logs": "{count, plural, one {# visionado} other {# visionados}}",
+      "titles": "{count, plural, one {# título distinto} other {# títulos distintos}}",
+      "hours": "{count} horas de cine",
+      "best": "El título del año",
+      "share": "Compartir la card",
+      "preparing": "Preparando…",
+      "failed": "No pude preparar la imagen. Inténtalo de nuevo.",
+      "shareText": "Nuestro {year} en Pausa"
     }
   },
   "landing": {
@@ -541,7 +560,8 @@
       "tagline": "El diario privado para grupos de amigos.",
       "language": "Idioma",
       "privacy": "Privacidad",
-      "terms": "Términos"
+      "terms": "Términos",
+      "guides": "Guías"
     }
   },
   "import": {

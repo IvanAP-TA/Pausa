@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "tauri": "tauri",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -33,6 +34,7 @@
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.20.17",
     "@tailwindcss/turbopack": "4.3.3",
+    "@tauri-apps/cli": "^2.12.5",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
