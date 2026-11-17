@@ -39,6 +39,7 @@ Stato al 17 novembre 2026, a lavoro di sviluppo concluso. Il codice è pronto pe
 
 - Durable Objects per il realtime della Serata: oggi la Serata si aggiorna con il polling, che regge un gruppo di amici. Da fare solo se il carico cresce.
 - Content-Security-Policy con nonce: oggi la policy è statica (vedi `SICUREZZA.md`). Il nonce obbliga ogni pagina al rendering dinamico e non è verificato su OpenNext/Cloudflare.
+- Se i gruppi diventano molto grandi (migliaia di visioni): calcolare nel database le medie della classifica, degli insight e della pagina persona invece di leggere tutte le visioni a ogni apertura (vedi sezione "Speed" del README).
 - Altre guide SEO oltre alle 8 per lingua, altre fonti di importazione.
 - Verificare con un utente vero l'importazione MyAnimeList (Jikan): il formato della risposta è letto in modo prudente ma non è stato provato dal vivo.
 

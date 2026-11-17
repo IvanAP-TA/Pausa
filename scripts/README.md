@@ -7,3 +7,4 @@
 | `engine-build.cjs` | `npm run engine:build`: recompile the Rust engine to `src/lib/engine/engine.wasm` |
 | `engine-bench.test.ts` | `BENCH=1 npx vitest run scripts/engine-bench.test.ts --reporter=verbose`: Rust vs TypeScript timing |
 | `add-messages.cjs` | merge a JSON file `{ it: {...}, en: {...}, es: {...} }` into `messages/*.json` without touching existing keys |
+| `gen-load-seed.cjs` | `npm run db:seed:load`: writes `seed/load.sql` (a big group, git-ignored) and applies it to the local D1 |

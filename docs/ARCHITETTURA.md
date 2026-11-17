@@ -51,6 +51,8 @@ Browser ──► Worker (worker.ts)
 - **Episodi**: `episodes.ts` (limiti e passaggio di stagione), `progress.ts`, `src/lib/episode-info.ts` (TMDB e AniList, cache nella tabella dei conteggi, migrazione 0011).
 - **Fonti esterne**: `src/lib/tmdb.ts`, `src/lib/anilist.ts` (GraphQL pubblico), Jikan per MyAnimeList; importatori in `import-parsers.ts` (Letterboxd, IMDb, Trakt, AniList, MAL).
 - **PWA**: `public/sw.js` (solo pagina offline e push), `public/offline.html`, `src/app/apple-splash`, `src/components/register-sw.tsx`.
+- **Classifica e liste**: `src/lib/core/ranking.ts` (medie e filtri, pura) e la pagina `/ranking`; importazione di watchlist e liste Letterboxd con `importList` (condivide `resolveMedia` con l'importazione del diario).
+- **Velocità**: `getCircleContext` (una sola query per layout e pagine), `readAll` (letture raggruppate in un batch D1), `LOG_QUERIES=1` per misurare. Dettagli nella sezione "Speed" del README.
 - **Sicurezza HTTP**: header e CSP statica in `next.config.ts`.
 
 ## Come lavorare

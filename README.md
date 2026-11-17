@@ -45,7 +45,8 @@ In dev the sign-in page shows four buttons, one per seed person: click one and y
 | `db:generate` | Generate a migration from `src/db/schema.ts` |
 | `db:migrate:local` / `db:migrate:remote` | Apply migrations to local / production D1 |
 | `db:seed:local`, `db:reset:local` | Seed / wipe + migrate + seed local D1 |
-| `preview` | Build for Workers and run it locally in workerd |
+| `db:seed:load` | Adds a big group ("Gruppone": 11 people, 700 titles, 3300 logs) on top of the seed, to feel the app with realistic volume. `db:reset:local` removes it |
+| `preview` | Build for Workers and run it locally in workerd (production behaviour; the dev sign-in shortcut does not exist there, and it leaves `.next` / `.open-next` behind: delete both before going back to `npm run dev`, or every page errors) |
 | `deploy` | Build for Workers and deploy |
 | `cf-typegen` | Regenerate `cloudflare-env.d.ts` after editing `wrangler.jsonc` |
 
@@ -149,8 +150,19 @@ The "where to watch" filter needs the TMDB token (see "TMDB token").
 
 ## Group ranking and list import
 
-- **Ranking** (`/<locale>/c/<circle>/ranking`, linked from the diary and the Cerchia tab): every title anyone in the Cerchia logged, with each member's latest rating, the group's average and the number of votes. Filters: search, type, who watched it, release year (from / to), minimum votes (starts at 2 from three members up, so one lonely 5★ does not top the list), "only what everyone watched"; sort by average, most rated, release year, recently watched or title; 40 per page, all in the URL. Genre is not filtered: the app does not store it. Logic and tests: `src/lib/core/ranking.ts`.
+- **Ranking** (`/<locale>/c/<circle>/ranking`, its own entry, "Classifica", in the left menu on desktop and the bottom bar on phones): every title anyone in the Cerchia logged, with each member's latest rating, the group's average and the number of votes. Filters: search, type, who watched it, release year (from / to), minimum votes (starts at 2 from three members up, so one lonely 5★ does not top the list), "only what everyone watched"; sort by average, most rated, release year, recently watched or title; 40 per page, all in the URL. Genre is not filtered: the app does not store it. Logic and tests: `src/lib/core/ranking.ts`.
 - **Letterboxd lists and watchlist.** The Letterboxd tab also reads `watchlist.csv` and the `lists/` folder of the export ZIP (or a list CSV picked on its own, from a list's ··· menu → *Export list as CSV*). The person chooses to import them as personal lists or as group lists. Importing again fills the same list (found by owner, Cerchia and name) and adds only what is missing. Code: `letterboxdList` / `letterboxdWatchlist` in `import-parsers.ts`, `importList` in `import.ts` (shares `resolveMedia` with the diary import), `importListChunk` in `src/lib/import/actions.ts`. Letterboxd does not export the *likes*, only links, so those are not imported.
+
+## Speed
+
+`npm run dev` is much slower than the real thing (every route compiles the first time, React ships debug data: a page can be 300+ KB). Judge speed with `npm run preview` or, better, on the deployed Worker. What the code does to stay fast:
+
+- One query for "who am I in this Cerchia" (`getCircleContext` in `src/lib/data.ts`), cached per request and shared by the layout, the feed and the members page.
+- Independent reads travel as one D1 batch (`readAll` in `src/lib/core/db-types.ts`, `db.batch` in the feed): D1 costs a round trip per query, not per row.
+- Slow extras (memories, first steps, TMDB picks) sit behind Suspense, so the page shows before they arrive.
+- Build `Intl` formatters once, never inside a loop (hundreds of `format.number` calls cost over a second).
+- `LOG_QUERIES=1 npm run dev` prints every SQL query with its D1 time.
+- Known next step if groups get big: ranking, insights and the person page read every log of the Cerchia (`loadCircleFacts`). With thousands of logs, compute the averages in SQL and read one page at a time.
 
 ## Tests
 
