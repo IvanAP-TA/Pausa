@@ -10,6 +10,7 @@ import { atomically, getDb, schema as s } from "@/db";
 import { requireUser } from "./session";
 import { pushNotifications } from "./push";
 import { allow, enforce } from "./limit-guard";
+import { filterRecipients } from "./core/settings";
 import { getCircleForMember, logVisibleTo, searchLocalMedia, type MediaSummary } from "./data";
 import { searchTmdb } from "./tmdb";
 import { MAX_EPISODE, MAX_SEASON, nextEpisode, nextSeason, setWatching, toPosition } from "./core/progress";
@@ -47,8 +48,9 @@ export async function joinCircle(formData: FormData) {
   if (!res.already) {
     const others = await db.select({ userId: s.circleMember.userId }).from(s.circleMember)
       .where(and(eq(s.circleMember.circleId, res.circleId), ne(s.circleMember.userId, user.id)));
-    if (others.length) {
-      const rows = others.map((o) => ({ userId: o.userId, type: "circle_join" as const, actorId: user.id, circleId: res.circleId }));
+    const recipients = await filterRecipients(db, others.map((o) => o.userId), { type: "circle_join", circleId: res.circleId });
+    if (recipients.length) {
+      const rows = recipients.map((userId) => ({ userId, type: "circle_join" as const, actorId: user.id, circleId: res.circleId }));
       await db.insert(s.notification).values(rows);
       pushNotifications(rows);
     }
@@ -159,7 +161,7 @@ export async function createLog(formData: FormData) {
   const watchedWith = input.watchedWith.filter((id) => id !== user.id && memberIds.has(id));
 
   const logId = crypto.randomUUID();
-  const notify = [...memberIds].filter((id) => id !== user.id);
+  const notify = await filterRecipients(db, [...memberIds].filter((id) => id !== user.id), { type: "log", circleId: input.circleId });
   await atomically([
     db.insert(s.log).values({
       id: logId, userId: user.id, mediaId: input.mediaId, watchedOn: input.watchedOn, rating: input.rating,
@@ -190,8 +192,11 @@ export async function toggleReaction(logId: string, emoji: string) {
   else {
     await db.insert(s.reaction).values({ logId, userId: user.id, emoji });
     if (row.authorId !== user.id) {
-      await db.insert(s.notification).values({ userId: row.authorId, type: "reaction", actorId: user.id, logId });
-      pushNotifications([{ userId: row.authorId, type: "reaction", actorId: user.id, logId }]);
+      const [to] = await filterRecipients(db, [row.authorId], { type: "reaction" });
+      if (to) {
+        await db.insert(s.notification).values({ userId: to, type: "reaction", actorId: user.id, logId });
+        pushNotifications([{ userId: to, type: "reaction", actorId: user.id, logId }]);
+      }
     }
   }
 
@@ -257,15 +262,16 @@ export async function addComment(formData: FormData) {
   const db = await getDb();
   // Notify the author and everyone already in the thread, except the commenter.
   const thread = await db.selectDistinct({ userId: s.comment.userId }).from(s.comment).where(eq(s.comment.logId, logId));
-  const notify = new Set([row.authorId, ...thread.map((t) => t.userId)]);
-  notify.delete(user.id);
+  const wanted = new Set([row.authorId, ...thread.map((t) => t.userId)]);
+  wanted.delete(user.id);
   // circleId is only a hint for where the notification links; access is still checked on the thread page.
   const circleId = typeof circleHint === "string" && (await getCircleForMember(circleHint, user.id)) ? circleHint : null;
+  const notify = await filterRecipients(db, [...wanted], { type: "comment", circleId });
   await atomically([
     db.insert(s.comment).values({ logId, userId: user.id, body, isSpoiler }),
-    notify.size > 0 && db.insert(s.notification).values([...notify].map((userId) => ({ userId, type: "comment" as const, actorId: user.id, logId, circleId }))),
+    notify.length > 0 && db.insert(s.notification).values(notify.map((userId) => ({ userId, type: "comment" as const, actorId: user.id, logId, circleId }))),
   ]);
-  pushNotifications([...notify].map((userId) => ({ userId, type: "comment" as const, actorId: user.id, logId, circleId })));
+  pushNotifications(notify.map((userId) => ({ userId, type: "comment" as const, actorId: user.id, logId, circleId })));
   revalidatePath(`/[locale]/c/[circleId]/l/[logId]`, "page");
 }
 
@@ -286,8 +292,9 @@ export async function setNowWatching(formData: FormData) {
   if (titleChanged) {
     const others = await db.select({ userId: s.circleMember.userId }).from(s.circleMember)
       .where(and(eq(s.circleMember.circleId, circleId), ne(s.circleMember.userId, user.id)));
-    if (others.length) {
-      const rows = others.map((o) => ({ userId: o.userId, type: "now_watching" as const, actorId: user.id, circleId, mediaId }));
+    const recipients = await filterRecipients(db, others.map((o) => o.userId), { type: "now_watching", circleId });
+    if (recipients.length) {
+      const rows = recipients.map((userId) => ({ userId, type: "now_watching" as const, actorId: user.id, circleId, mediaId }));
       await db.insert(s.notification).values(rows);
       pushNotifications(rows);
     }

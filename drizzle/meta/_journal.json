@@ -71,6 +71,13 @@
       "when": 1794920914448,
       "tag": "0009_invite_use",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1794933954034,
+      "tag": "0010_circle_settings",
+      "breakpoints": true
     }
   ]
 }

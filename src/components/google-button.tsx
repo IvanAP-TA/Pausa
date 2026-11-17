@@ -16,7 +16,7 @@ export function useEmbedded() {
  * "Continue with Google". Shown only where it can work: the page decides whether Google is configured (`enabled`),
  * and it hides itself in in-app browsers. For a guest of a Serata it upgrades the guest to a real account, keeping their votes.
  */
-export function GoogleButton({ callbackURL, enabled, className = "" }: { callbackURL: string; enabled: boolean; className?: string }) {
+export function GoogleButton({ callbackURL, enabled, className = "", hint = true }: { callbackURL: string; enabled: boolean; className?: string; hint?: boolean }) {
   const t = useTranslations("auth");
   const embedded = useEmbedded();
   if (embedded) return null;
@@ -26,7 +26,7 @@ export function GoogleButton({ callbackURL, enabled, className = "" }: { callbac
     return (
       <div className="grid gap-1">
         <button type="button" disabled className={`inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-dashed border-rule px-5 font-semibold opacity-60 ${className}`}>{t("google")}</button>
-        <p className="text-center text-xs text-muted">Solo sviluppo: imposta GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET per attivarlo (docs/DEPLOY.md, sezione 5).</p>
+        {hint && <p className="text-center text-xs text-muted">Solo sviluppo: imposta GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET per attivarlo (docs/DEPLOY.md, sezione 5).</p>}
       </div>
     );
   }

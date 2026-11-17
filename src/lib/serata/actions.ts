@@ -10,6 +10,7 @@ import { getSession } from "@/lib/auth";
 import { getCircleForMember } from "@/lib/data";
 import { pushNotifications } from "@/lib/push";
 import { enforce } from "@/lib/limit-guard";
+import { filterRecipients } from "@/lib/core/settings";
 import { isGuestAvatar, toAvatarImage } from "@/lib/avatars";
 import { requireUser } from "@/lib/session";
 import { DOTS, MAX_CANDIDATES, MIN_CANDIDATES, currentMatch, initBracket, initTable, validBallot, type SerataState } from "./engine";
@@ -59,8 +60,9 @@ export async function createSerata(formData: FormData) {
   const db = await getDb();
   const id = crypto.randomUUID();
   const code = newCode();
-  const others = await db.select({ userId: s.circleMember.userId }).from(s.circleMember)
+  const members = await db.select({ userId: s.circleMember.userId }).from(s.circleMember)
     .where(and(eq(s.circleMember.circleId, circleId), ne(s.circleMember.userId, user.id)));
+  const others = (await filterRecipients(db, members.map((m) => m.userId), { type: "serata_invite", circleId })).map((userId) => ({ userId }));
   await atomically([
     db.insert(s.serata).values({ id, code, circleId, hostId: user.id, mode }),
     db.insert(s.serataCandidate).values(mediaIds.map((mediaId, seed) => ({ serataId: id, mediaId, seed }))),

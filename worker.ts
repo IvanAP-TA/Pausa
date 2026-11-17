@@ -11,6 +11,7 @@ import openNext from "./.open-next/worker.js";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./src/db/schema";
 import { runCleanup } from "./src/lib/core/cleanup";
+import { runDigests } from "./src/lib/core/mailer";
 
 globalThis.__PAUSA_ENGINE__ = engine;
 
@@ -18,8 +19,14 @@ export * from "./.open-next/worker.js";
 
 export default {
   fetch: (...args) => openNext.fetch(...args),
-  // Daily housekeeping (cron trigger in wrangler.jsonc): old guests, expired sessions and sign-in links, stale counters.
-  async scheduled(_event, env, ctx) {
-    ctx.waitUntil(runCleanup(drizzle(env.DB, { schema })).then((r) => console.log("[pausa] cleanup", JSON.stringify(r))));
+  // Two cron triggers (wrangler.jsonc): 03:17 UTC housekeeping (old guests, expired sessions and links, stale counters)
+  // and 17:00 UTC the optional email digest for people with no push on any device.
+  async scheduled(event, env, ctx) {
+    const db = drizzle(env.DB, { schema });
+    if (event.cron === "0 17 * * *") {
+      ctx.waitUntil(runDigests(db, { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM, appUrl: env.BETTER_AUTH_URL ?? "https://pausa.gnagno.org" }).then((r) => console.log("[pausa] digest", JSON.stringify(r))));
+    } else {
+      ctx.waitUntil(runCleanup(db).then((r) => console.log("[pausa] cleanup", JSON.stringify(r))));
+    }
   },
 };

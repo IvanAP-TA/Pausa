@@ -9,6 +9,8 @@ import { MockInvite, MockLogCard, MockMatchup, MockResultCard } from "./mock-ui"
 import { RevealOnScroll } from "./reveal";
 import { SmoothScroll } from "./smooth-scroll";
 import { InstallApp } from "./install-app";
+import { GoogleButton } from "@/components/google-button";
+import { googleEnabled } from "@/lib/auth";
 import { StickyCta } from "./sticky-cta";
 import { TrySerata } from "./try-serata";
 
@@ -104,7 +106,7 @@ export function Landing() {
               <p className="rise mt-6 max-w-xl text-[1.15rem] leading-relaxed text-muted" style={{ ["--d" as string]: "160ms" }}>{t("hero.lede")}</p>
               <div className="rise mt-9 flex flex-wrap gap-3" style={{ ["--d" as string]: "280ms" }}>
                 <a href={signIn} className={btnPrimary}>{t("hero.cta")}</a>
-                <a href="#try" className={btnGhost}>{t("hero.secondary")}</a>
+                <GoogleButton callbackURL={`/${locale}`} enabled={googleEnabled()} hint={false} className="px-6 text-[17px]" />
                 <InstallApp className={btnGhost} />
               </div>
               <p className="rise mt-5 max-w-md text-sm text-muted" style={{ ["--d" as string]: "380ms" }}>{t("hero.note")}</p>

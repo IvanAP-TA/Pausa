@@ -7,6 +7,7 @@ import { formatProgress } from "@/lib/core/progress";
 import { Suspense } from "react";
 import { getDb } from "@/db";
 import { memoriesFor, onboardingFor } from "@/lib/core/retention";
+import { COVER_GLYPH, getCircleSettings } from "@/lib/core/settings";
 import { Avatar } from "@/components/avatar";
 import { LogCard } from "@/components/log-card";
 import { Poster } from "@/components/poster";
@@ -29,23 +30,26 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
   const beforeMs = typeof beforeParam === "string" ? Number(beforeParam) : NaN;
   const before = Number.isFinite(beforeMs) ? new Date(beforeMs) : undefined;
 
-  const [circle, members, stats, watching, feed, unread, t, ta] = await Promise.all([
+  const [circle, members, stats, watching, feed, unread, t, ta, about] = await Promise.all([
     getCircleForMember(circleId, user.id),
     getMembers(circleId),
     getCircleStats(circleId, now.getFullYear()),
-    getNowWatching(circleId, locale),
+    getNowWatching(circleId, locale, user.id),
     // One extra row tells us whether there is a next page.
     getCircleFeed(circleId, user.id, locale, PAGE + 1, undefined, before),
     getUnreadCount(user.id),
     getTranslations("feed"),
     getTranslations("account"),
+    getDb().then((db) => getCircleSettings(db, circleId, user.id)),
   ]);
+  const coverGlyph = about?.cover ? COVER_GLYPH[about.cover] : null;
 
   return (
     <main className="grid gap-4 pb-6">
       <header className="flex items-center justify-between gap-3 px-4 pt-6">
         <div className="min-w-0">
-          <h1 className="font-display text-[1.75rem] font-semibold leading-tight">{circle!.name}</h1>
+          <h1 className="font-display text-[1.75rem] font-semibold leading-tight">{coverGlyph && <span aria-hidden="true" className="mr-2">{coverGlyph}</span>}{circle!.name}</h1>
+          {about?.description && <p className="mt-0.5 max-w-prose text-sm text-muted [overflow-wrap:anywhere]">{about.description}</p>}
           <p className="text-xs text-muted">
             {t("members", { count: members.length })} · {t("logsThisYear", { count: stats.logsThisYear })}
           </p>

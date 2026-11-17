@@ -320,7 +320,14 @@
   "email": {
     "subject": "Tu enlace para entrar en Pausa",
     "body": "Toca el enlace para entrar. Caduca en 15 minutos.",
-    "ignore": "Si no lo pediste tú, ignora este correo."
+    "ignore": "Si no lo pediste tú, ignora este correo.",
+    "digest": {
+      "subject": "Lo que te perdiste en Pausa",
+      "intro": "Desde la última vez en tus Cerchie:",
+      "more": "…y {count} más.",
+      "open": "Abrir Pausa",
+      "settings": "Puedes desactivar este email en la página Cuenta."
+    }
   },
   "insights": {
     "title": "Insights",
@@ -779,5 +786,46 @@
     "iosHint": "En iPhone, primero añade Pausa a la pantalla de inicio (Compartir → Añadir a pantalla de inicio), luego ábrela desde ahí y activa las notificaciones.",
     "off": "Las notificaciones no están configuradas en este servidor.",
     "failed": "No pude activarlas. Inténtalo de nuevo."
+  },
+  "settings": {
+    "title": "Ajustes de la Cerchia",
+    "saved": "Guardado.",
+    "mine": "Para ti",
+    "mute": "Silenciar esta Cerchia",
+    "muteHint": "Sin notificaciones ni push desde aquí.",
+    "hideWatching": "Ocultar quién está viendo qué",
+    "hideWatchingHint": "Ya no ves «fulano está viendo…» ni recibes avisos sobre eso.",
+    "group": "Para todo el grupo (solo admins)",
+    "live": "Mostrar quién está viendo qué, en directo",
+    "liveHint": "Si lo apagas, nadie en esta Cerchia ve «fulano está viendo el episodio N» y nadie recibe avisos.",
+    "description": "Descripción",
+    "cover": "Imagen",
+    "noCover": "Ninguna",
+    "save": "Guardar",
+    "covers": {
+      "popcorn": "Palomitas",
+      "clapper": "Claqueta",
+      "moon": "Luna",
+      "sofa": "Sofá",
+      "star": "Estrella",
+      "ghost": "Fantasma",
+      "rocket": "Cohete",
+      "heart": "Corazón"
+    }
+  },
+  "notifPrefs": {
+    "title": "Qué avisos quieres",
+    "body": "Valen para la bandeja de notificaciones y para el push.",
+    "save": "Guardar avisos",
+    "types": {
+      "log": "Alguien registra una visión",
+      "comment": "Un comentario en una conversación que sigo",
+      "reaction": "Una reacción a un registro mío",
+      "now_watching": "Alguien empieza a ver un título",
+      "serata_invite": "Se abre una Serata",
+      "circle_join": "Alguien entra en una Cerchia"
+    },
+    "digest": "Resumen diario por email",
+    "digestHint": "Un email al día con lo que te perdiste, solo si no tienes el push activo en ningún dispositivo."
   }
 }

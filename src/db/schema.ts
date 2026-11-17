@@ -17,6 +17,9 @@ export const user = sqliteTable("user", {
   isAnonymous: integer("is_anonymous", { mode: "boolean" }).default(false),
   locale: text("locale"), // "it" | "en" | "es", null = follow browser
   country: text("country"), // ISO 3166-1 alpha-2, for streaming availability (TMDB watch region)
+  /** Opt-in daily email with what happened while you were away, for people who have no push on any device. */
+  emailDigest: integer("email_digest", { mode: "boolean" }).notNull().default(false),
+  digestSentAt: integer("digest_sent_at", { mode: "timestamp_ms" }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -70,6 +73,11 @@ export const rateLimit = sqliteTable("rate_limit", {
 export const circle = sqliteTable("circle", {
   id: id(),
   name: text("name").notNull(),
+  description: text("description"),
+  /** One of the preset covers in lib/core/settings.ts (no uploads: nothing to host, nothing to moderate). */
+  cover: text("cover"),
+  /** Admin switch: when off, nobody in the Cerchia sees or is told "X is watching episode N". */
+  liveWatching: integer("live_watching", { mode: "boolean" }).notNull().default(true),
   createdBy: text("created_by").notNull().references(() => user.id),
   createdAt: createdAt(),
 });
@@ -98,6 +106,10 @@ export const circleMember = sqliteTable("circle_member", {
   circleId: text("circle_id").notNull().references(() => circle.id, { onDelete: "cascade" }),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   role: text("role", { enum: ["admin", "member"] }).notNull().default("member"),
+  /** Personal: no notifications or push from this Cerchia. */
+  muted: integer("muted", { mode: "boolean" }).notNull().default(false),
+  /** Personal: do not show or notify me about what others are watching live in this Cerchia. */
+  hideWatching: integer("hide_watching", { mode: "boolean" }).notNull().default(false),
   joinedAt: integer("joined_at", { mode: "timestamp_ms" }).notNull().default(now),
 }, (t) => [primaryKey({ columns: [t.circleId, t.userId] }), index("member_user_idx").on(t.userId)]);
 
@@ -323,3 +335,9 @@ export const report = sqliteTable("report", {
   resolvedAt: integer("resolved_at", { mode: "timestamp_ms" }),
   resolution: text("resolution", { enum: ["dismissed", "removed"] }),
 }, (t) => [index("report_open_idx").on(t.resolvedAt, t.createdAt), uniqueIndex("report_once_uq").on(t.reporterId, t.kind, t.targetId)]);
+
+/** Notification types a person switched off (default is on, so no row = on). Applies to the inbox and to push. */
+export const notificationOff = sqliteTable("notification_off", {
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+}, (t) => [primaryKey({ columns: [t.userId, t.type] })]);

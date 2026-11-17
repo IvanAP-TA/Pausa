@@ -192,8 +192,12 @@ export async function getUnreadCount(userId: string) {
   return row?.n ?? 0;
 }
 
-export async function getNowWatching(circleId: string, locale: string) {
+export async function getNowWatching(circleId: string, locale: string, viewerId: string) {
   const db = await getDb();
+  const [c] = await db.select({ live: s.circle.liveWatching }).from(s.circle).where(eq(s.circle.id, circleId));
+  const [me] = await db.select({ hide: s.circleMember.hideWatching }).from(s.circleMember)
+    .where(and(eq(s.circleMember.circleId, circleId), eq(s.circleMember.userId, viewerId)));
+  if (!c?.live || me?.hide) return [];
   return db
     .select({ user: { id: s.user.id, name: s.user.name, image: s.user.image }, progress: s.nowWatching.progress, season: s.nowWatching.season, episode: s.nowWatching.episode, updatedAt: s.nowWatching.updatedAt, media: mediaFields(locale) })
     .from(s.nowWatching)

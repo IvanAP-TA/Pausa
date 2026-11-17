@@ -320,7 +320,14 @@
   "email": {
     "subject": "Your Pausa sign-in link",
     "body": "Tap the link to sign in. It expires in 15 minutes.",
-    "ignore": "If you didn't ask for this, ignore this email."
+    "ignore": "If you didn't ask for this, ignore this email.",
+    "digest": {
+      "subject": "What you missed on Pausa",
+      "intro": "Since last time in your Cerchie:",
+      "more": "…and {count} more.",
+      "open": "Open Pausa",
+      "settings": "You can turn this email off on the Account page."
+    }
   },
   "insights": {
     "title": "Insights",
@@ -779,5 +786,46 @@
     "iosHint": "On iPhone, first add Pausa to the Home Screen (Share → Add to Home Screen), then reopen it from there and turn notifications on.",
     "off": "Notifications are not set up on this server.",
     "failed": "I could not turn them on. Try again."
+  },
+  "settings": {
+    "title": "Cerchia settings",
+    "saved": "Saved.",
+    "mine": "For you",
+    "mute": "Mute this Cerchia",
+    "muteHint": "No notifications and no push from here.",
+    "hideWatching": "Hide who is watching what",
+    "hideWatchingHint": "You no longer see \"X is watching…\" and get no alerts about it.",
+    "group": "For the whole group (admins only)",
+    "live": "Show who is watching what, live",
+    "liveHint": "If you turn it off, nobody in this Cerchia sees \"X is watching episode N\" and nobody is alerted.",
+    "description": "Description",
+    "cover": "Picture",
+    "noCover": "None",
+    "save": "Save",
+    "covers": {
+      "popcorn": "Popcorn",
+      "clapper": "Clapperboard",
+      "moon": "Moon",
+      "sofa": "Sofa",
+      "star": "Star",
+      "ghost": "Ghost",
+      "rocket": "Rocket",
+      "heart": "Heart"
+    }
+  },
+  "notifPrefs": {
+    "title": "Which alerts you want",
+    "body": "They apply to the notification inbox and to push.",
+    "save": "Save alerts",
+    "types": {
+      "log": "Someone logs a watch",
+      "comment": "A comment in a conversation I follow",
+      "reaction": "A reaction to one of my logs",
+      "now_watching": "Someone starts watching a title",
+      "serata_invite": "A Serata opens",
+      "circle_join": "Someone joins a Cerchia"
+    },
+    "digest": "Daily email summary",
+    "digestHint": "One email a day with what you missed, only if you have push turned on on no device."
   }
 }

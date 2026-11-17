@@ -320,7 +320,14 @@
   "email": {
     "subject": "Il tuo link per entrare in Pausa",
     "body": "Tocca il link per entrare. Scade tra 15 minuti.",
-    "ignore": "Se non l'hai chiesto tu, ignora questa email."
+    "ignore": "Se non l'hai chiesto tu, ignora questa email.",
+    "digest": {
+      "subject": "Cosa ti sei perso su Pausa",
+      "intro": "Dall'ultima volta nelle tue Cerchie:",
+      "more": "…e altre {count} novità.",
+      "open": "Apri Pausa",
+      "settings": "Puoi disattivare questa email dalla pagina Account."
+    }
   },
   "insights": {
     "title": "Insight",
@@ -779,5 +786,46 @@
     "iosHint": "Su iPhone prima aggiungi Pausa alla schermata Home (Condividi → Aggiungi alla schermata Home), poi riapri da lì e attiva le notifiche.",
     "off": "Le notifiche non sono configurate su questo server.",
     "failed": "Non sono riuscito ad attivarle. Riprova."
+  },
+  "settings": {
+    "title": "Impostazioni della Cerchia",
+    "saved": "Salvato.",
+    "mine": "Per te",
+    "mute": "Silenzia questa Cerchia",
+    "muteHint": "Nessuna notifica e nessun avviso push da qui.",
+    "hideWatching": "Nascondi chi sta guardando cosa",
+    "hideWatchingHint": "Non vedi più «tizio sta guardando…» e non ricevi avvisi su questo.",
+    "group": "Per tutto il gruppo (solo admin)",
+    "live": "Mostra chi sta guardando cosa in diretta",
+    "liveHint": "Se lo spegni, in questa Cerchia nessuno vede «tizio sta guardando episodio X» e nessuno riceve avvisi.",
+    "description": "Descrizione",
+    "cover": "Immagine",
+    "noCover": "Nessuna",
+    "save": "Salva",
+    "covers": {
+      "popcorn": "Popcorn",
+      "clapper": "Ciak",
+      "moon": "Luna",
+      "sofa": "Divano",
+      "star": "Stella",
+      "ghost": "Fantasma",
+      "rocket": "Razzo",
+      "heart": "Cuore"
+    }
+  },
+  "notifPrefs": {
+    "title": "Che avvisi vuoi",
+    "body": "Valgono per la casella delle notifiche e per le push.",
+    "save": "Salva gli avvisi",
+    "types": {
+      "log": "Qualcuno registra una visione",
+      "comment": "Un commento in una conversazione che seguo",
+      "reaction": "Una reazione a una mia visione",
+      "now_watching": "Qualcuno inizia a guardare un titolo",
+      "serata_invite": "Una Serata si apre",
+      "circle_join": "Qualcuno entra in una Cerchia"
+    },
+    "digest": "Riepilogo giornaliero per email",
+    "digestHint": "Una mail al giorno con ciò che ti sei perso, solo se non hai le notifiche push attive su nessun dispositivo."
   }
 }

@@ -7,6 +7,10 @@ import { requireUser } from "@/lib/session";
 import { getMyCircles } from "@/lib/data";
 import { deleteAccountAction, updateProfileAction } from "@/lib/manage-actions";
 import { saveServicesAction } from "@/lib/discover-actions";
+import { saveNotificationPrefsAction } from "@/lib/manage-actions";
+import { NOTIFICATION_TYPES, getDisabledTypes } from "@/lib/core/settings";
+import { user as userTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { countryOf } from "@/lib/discover";
 import { getDb } from "@/db";
 import { COUNTRIES, getUserProviders, isCountry } from "@/lib/core/streaming";
@@ -32,6 +36,10 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
     getDb().then((db) => peopleBrought(db, user.id)),
   ]);
   const myServices = mineByUser.get(user.id) ?? [];
+  const prefsDb = await getDb();
+  const disabled = await getDisabledTypes(prefsDb, user.id);
+  const [{ digest }] = await prefsDb.select({ digest: userTable.emailDigest }).from(userTable).where(eq(userTable.id, user.id));
+  const tn = await getTranslations("notifPrefs");
   // ?country= shows another region's services before saving.
   const picked = typeof countryParam === "string" && isCountry(countryParam) ? countryParam : await countryOf(user.id, locale);
   const catalogue = await regionProviders(picked, locale);
@@ -78,6 +86,24 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
       {pushEnabled() ? <PushToggle publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!} /> : (
         <p className="text-sm text-muted">{(await getTranslations("pushSettings"))("off")}</p>
       )}
+
+      <form action={saveNotificationPrefsAction} className="grid gap-3 rounded-md border border-rule p-4">
+        <input type="hidden" name="locale" value={locale} />
+        <div>
+          <h2 className="font-display text-lg">{tn("title")}</h2>
+          <p className="text-sm text-muted">{tn("body")}</p>
+        </div>
+        <ul className="grid gap-1">
+          {NOTIFICATION_TYPES.map((n) => (
+            <li key={n}><label className="flex min-h-10 items-center gap-3 text-sm"><input type="checkbox" name={`type_${n}`} defaultChecked={!disabled.has(n)} className="size-5 accent-[var(--color-accent)]" />{tn(`types.${n}`)}</label></li>
+          ))}
+        </ul>
+        <label className="flex min-h-10 items-start gap-3 text-sm border-t border-rule pt-3">
+          <input type="checkbox" name="emailDigest" defaultChecked={digest} className="mt-0.5 size-5 accent-[var(--color-accent)]" />
+          <span>{tn("digest")}<span className="block text-xs text-muted">{tn("digestHint")}</span></span>
+        </label>
+        <button className="min-h-11 w-fit rounded-full border border-rule bg-paper-3 px-5 text-sm font-semibold hover:bg-rule">{tn("save")}</button>
+      </form>
 
       <section className="grid gap-3">
         <div>

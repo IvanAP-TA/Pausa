@@ -14,6 +14,7 @@ import { isOperator } from "./operator";
 import { enforce } from "./limit-guard";
 import { REPORT_REASONS, createReport, resolveReport } from "./core/moderation";
 import { deleteCircle } from "./core/circles";
+import { NOTIFICATION_TYPES, setCircleProfile, setDisabledTypes, setEmailDigest, setLiveWatching, setMemberPrefs } from "./core/settings";
 import { deleteAccount, updateProfile } from "./core/account";
 import { MAX_SEASON, toPosition } from "./core/progress";
 import {
@@ -202,4 +203,45 @@ export async function deleteCircleAction(formData: FormData) {
   await deleteCircle(await getDb(), { circleId, actorId: user.id });
   revalidatePath("/", "layout");
   redirect(`/${locale}`);
+}
+
+/* ───────────── Settings: Cerchia and notifications ───────────── */
+
+function backToSettings(formData: FormData, circleId: string, saved = true): never {
+  redirect(`/${localeFrom(formData.get("locale"))}/c/${circleId}/members${saved ? "?saved=1" : ""}#settings`);
+}
+
+/** Admin: the Cerchia's profile (description, cover) and the live-watching switch, saved together. */
+export async function saveCircleSettingsAction(formData: FormData) {
+  const user = await requireUser();
+  const circleId = id.parse(formData.get("circleId"));
+  const db = await getDb();
+  const profile = await setCircleProfile(db, {
+    circleId, actorId: user.id,
+    description: z.string().max(600).parse(formData.get("description") ?? ""),
+    cover: String(formData.get("cover") ?? "") || null,
+  });
+  if ("error" in profile) redirect(`/${localeFrom(formData.get("locale"))}/c/${circleId}/members?e=forbidden`);
+  await setLiveWatching(db, { circleId, actorId: user.id, enabled: formData.get("liveWatching") === "on" });
+  revalidatePath("/[locale]/c/[circleId]", "layout");
+  backToSettings(formData, circleId);
+}
+
+/** Everyone: mute this Cerchia, hide its live watching. */
+export async function saveMemberPrefsAction(formData: FormData) {
+  const user = await requireUser();
+  const circleId = id.parse(formData.get("circleId"));
+  await setMemberPrefs(await getDb(), { circleId, userId: user.id, muted: formData.get("muted") === "on", hideWatching: formData.get("hideWatching") === "on" });
+  revalidatePath("/[locale]/c/[circleId]", "layout");
+  backToSettings(formData, circleId);
+}
+
+/** The Account page: which kinds of notice to receive, and the optional email digest. Checked = on. */
+export async function saveNotificationPrefsAction(formData: FormData) {
+  const user = await requireUser();
+  const db = await getDb();
+  const off = NOTIFICATION_TYPES.filter((t) => formData.get(`type_${t}`) !== "on");
+  await setDisabledTypes(db, user.id, [...off]);
+  await setEmailDigest(db, user.id, formData.get("emailDigest") === "on", localeFrom(formData.get("locale")));
+  redirect(`/${localeFrom(formData.get("locale"))}/account?saved=1`);
 }
