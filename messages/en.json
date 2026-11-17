@@ -420,8 +420,8 @@
       "language": "Language"
     },
     "hero": {
-      "title": "The private diary for your friend group. And the end of “what should we watch?”",
-      "lede": "Films, series and anime you watched together, with everyone's ratings. And when evening comes, a two-minute movie night picks for the group.",
+      "title": "What are we watching tonight? Decided in two minutes.",
+      "lede": "The private diary of films, series and anime for your friend group: everyone's ratings in one place, and a movie night that picks for you.",
       "cta": "Create your Circle",
       "secondary": "Try a movie night",
       "note": "All you need is an email, no password. Your friends can vote without an account."
@@ -628,7 +628,8 @@
       "steps": [
         "On Letterboxd go to Settings → Data → Export your data.",
         "Download the ZIP you get.",
-        "Upload it below (diary.csv, ratings.csv, reviews.csv and watched.csv one by one also work)."
+        "Upload it below (diary.csv, ratings.csv, reviews.csv and watched.csv one by one also work).",
+        "For lists: open each list on Letterboxd → ··· → Export list as CSV, or use the ZIP (watchlist and the lists/ folder)."
       ],
       "pick": "Choose the ZIP or the CSV files",
       "noCovers": "TMDB search isn't enabled on this server: films import fine, just without posters."
@@ -675,7 +676,10 @@
       "failed": "{count, plural, one {# row not imported} other {# rows not imported}}: run the import again, what's already done isn't duplicated.",
       "toDiary": "Go to the diary",
       "toInsights": "See the Insights",
-      "again": "Import more"
+      "again": "Import more",
+      "lists": "{count, plural, one {# list} other {# lists}} with {items} films added",
+      "listsOnly": "Lists imported",
+      "toLists": "See the lists"
     },
     "errors": {
       "read": "I can't read this file. Check it's the right export.",
@@ -703,6 +707,13 @@
         "2": "Upload it here, whole or just the watched-… and ratings-… files."
       },
       "pick": "Choose the ZIP or the .json files"
+    },
+    "lists": {
+      "include": "{count, plural, one {Also import # list} other {Also import # lists}} ({items} films)",
+      "scope": "Where to put them",
+      "scope_personal": "Personal lists: only you see them",
+      "scope_group": "Group lists: the whole Cerchia sees them",
+      "run": "{count, plural, one {Import # film into the lists} other {Import # films into the lists}}"
     }
   },
   "manage": {
@@ -888,5 +899,48 @@
     "recent": "Latest logs",
     "noLogs": "No logs yet.",
     "all": "See all their logs"
+  },
+  "ranking": {
+    "title": "Ranking",
+    "lede": "Every title in the group, with everyone's rating and the average.",
+    "linkTitle": "Group ranking",
+    "linkBody": "Every film with everyone's ratings and the average",
+    "count": "{count, plural, one {# title} other {# titles}}",
+    "filters": {
+      "title": "Filters",
+      "q": "Search a title",
+      "kind": "Type",
+      "any": "All",
+      "by": "Watched by",
+      "everyone": "Anyone",
+      "from": "Released from",
+      "to": "Released until",
+      "votes": "Ratings",
+      "anyVotes": "Even with none",
+      "atLeast": "At least {count}",
+      "sort": "Sort by",
+      "everyoneSaw": "Only titles everyone watched",
+      "apply": "Apply",
+      "reset": "Clear filters"
+    },
+    "sort": {
+      "avg": "Average rating",
+      "votes": "Most rated",
+      "year": "Release year",
+      "recent": "Watched recently",
+      "title": "Title"
+    },
+    "position": "Position {n}",
+    "who": "The group's ratings",
+    "noRating": "watched, not rated",
+    "rated": "{stars, plural, one {# star} other {# stars}}",
+    "notRated": "No ratings",
+    "avgLabel": "Average {stars} stars out of 5",
+    "votes": "{count, plural, one {# rating} other {# ratings}}",
+    "pages": "Pages",
+    "prev": "Previous",
+    "next": "Next",
+    "empty": "No titles match these filters.",
+    "emptyAll": "Nothing to rank yet: log a viewing with a rating."
   }
 }

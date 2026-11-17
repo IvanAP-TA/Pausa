@@ -71,6 +71,29 @@ npx wrangler secret put TMDB_API_TOKEN
 npx wrangler secret put VAPID_PRIVATE_KEY
 ```
 
+## 2b. Resend: cosa fare, passo per passo
+
+Resend è il servizio che spedisce le email di accesso (e il riepilogo giornaliero). Senza, in produzione nessuno entra.
+
+1. Crea l'account su resend.com (il piano gratuito basta per cominciare).
+2. **Domains → Add Domain**: aggiungi `pausa.gnagno.org` (o `gnagno.org`). Resend mostra 3-4 record DNS (SPF, DKIM, e uno MX per i rimbalzi). Aggiungili dove è gestito il DNS (Cloudflare → DNS → Records, con la nuvola **grigia**, "solo DNS") e premi **Verify**. Di solito servono pochi minuti.
+3. **API Keys → Create API Key**, permesso "Sending access", dominio quello verificato. Copia la chiave (si vede una volta sola).
+4. `npx wrangler secret put RESEND_API_KEY` e incolla la chiave.
+5. `EMAIL_FROM` (variabile in `wrangler.jsonc`): un indirizzo del dominio verificato, es. `Pausa <accesso@pausa.gnagno.org>`.
+6. Prova: registrati dal sito con la tua email, il link deve arrivare entro un minuto (guarda anche in spam la prima volta).
+
+## 2c. Segreti di GitHub (solo se il deploy parte da GitHub Actions)
+
+Il file `.github/workflows/deploy.yml` si avvia a mano (Actions → Deploy → Run workflow). Settings → Secrets and variables → Actions, meglio dentro l'*environment* **production** (Settings → Environments), perché il workflow lo usa:
+
+| Nome | Tipo | Valore | Quando |
+|---|---|---|---|
+| `CLOUDFLARE_API_TOKEN` | secret | token Cloudflare con i permessi *Workers Scripts: Edit*, *D1: Edit*, *Workers Routes: Edit* (dash.cloudflare.com → My Profile → API Tokens → Create Token → "Edit Cloudflare Workers" + D1) | dopo aver creato l'account Cloudflare |
+| `CLOUDFLARE_ACCOUNT_ID` | secret | l'id dell'account (barra laterale destra della dashboard) | idem |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | **variable** (non secret) | la chiave pubblica di `node scripts/vapid.cjs` | si può già mettere: generala una volta e tieni la privata per il passo successivo |
+
+Gli altri segreti (`BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `TMDB_API_TOKEN`, `VAPID_PRIVATE_KEY`, `GOOGLE_CLIENT_SECRET`) **non vanno su GitHub**: vivono dentro Cloudflare, impostati con `wrangler secret put`, e il deploy non li tocca.
+
 ## 3. Primo deploy
 
 ```bash

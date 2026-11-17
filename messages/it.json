@@ -420,8 +420,8 @@
       "language": "Lingua"
     },
     "hero": {
-      "title": "Il diario privato del vostro gruppo. E la fine del «che guardiamo?»",
-      "lede": "Film, serie e anime visti insieme, con i voti di tutti. E quando arriva la sera, una Serata di due minuti sceglie per il gruppo.",
+      "title": "Cosa guardiamo stasera? Deciso in due minuti.",
+      "lede": "Il diario privato di film, serie e anime per il tuo gruppo di amici: i voti di tutti in un posto solo, e una Serata che sceglie per voi.",
       "cta": "Crea la tua Cerchia",
       "secondary": "Prova la Serata",
       "note": "Ti basta l'email, niente password. I tuoi amici possono votare anche senza account."
@@ -628,7 +628,8 @@
       "steps": [
         "Su Letterboxd vai in Settings → Data → Export your data.",
         "Scarica lo ZIP che ti arriva.",
-        "Caricalo qui sotto (va bene anche diary.csv, ratings.csv, reviews.csv e watched.csv a mano)."
+        "Caricalo qui sotto (va bene anche diary.csv, ratings.csv, reviews.csv e watched.csv a mano).",
+        "Per le liste: apri ogni lista su Letterboxd → ··· → Export list as CSV, oppure usa lo ZIP (watchlist e cartella lists/)."
       ],
       "pick": "Scegli lo ZIP o i file CSV",
       "noCovers": "Su questo server la ricerca TMDB non è attiva: i film si importano lo stesso, ma senza locandina."
@@ -675,7 +676,10 @@
       "failed": "{count, plural, one {# riga non importata} other {# righe non importate}}: rilancia l'import, quelle già fatte non si duplicano.",
       "toDiary": "Vai al diario",
       "toInsights": "Vedi gli Insight",
-      "again": "Importa altro"
+      "again": "Importa altro",
+      "lists": "{count, plural, one {# lista} other {# liste}} con {items} film aggiunti",
+      "listsOnly": "Liste importate",
+      "toLists": "Vedi le liste"
     },
     "errors": {
       "read": "Non riesco a leggere questo file. Controlla che sia l'esportazione giusta.",
@@ -703,6 +707,13 @@
         "2": "Caricalo qui, intero o con i file watched-… e ratings-…"
       },
       "pick": "Scegli lo ZIP o i file .json"
+    },
+    "lists": {
+      "include": "{count, plural, one {Importa anche # lista} other {Importa anche # liste}} ({items} film)",
+      "scope": "Dove metterle",
+      "scope_personal": "Liste personali: le vedi solo tu",
+      "scope_group": "Liste del gruppo: le vede tutta la Cerchia",
+      "run": "{count, plural, one {Importa # film nelle liste} other {Importa # film nelle liste}}"
     }
   },
   "manage": {
@@ -888,5 +899,48 @@
     "recent": "Ultime visioni",
     "noLogs": "Ancora nessuna visione.",
     "all": "Vedi tutte le sue visioni"
+  },
+  "ranking": {
+    "title": "Classifica",
+    "lede": "Tutti i titoli del gruppo, con il voto di ognuno e la media.",
+    "linkTitle": "Classifica del gruppo",
+    "linkBody": "Ogni film con i voti di tutti e la media",
+    "count": "{count, plural, one {# titolo} other {# titoli}}",
+    "filters": {
+      "title": "Filtri",
+      "q": "Cerca un titolo",
+      "kind": "Tipo",
+      "any": "Tutti",
+      "by": "Visto da",
+      "everyone": "Chiunque",
+      "from": "Uscito dal",
+      "to": "Uscito fino al",
+      "votes": "Voti",
+      "anyVotes": "Anche senza voti",
+      "atLeast": "Almeno {count}",
+      "sort": "Ordina per",
+      "everyoneSaw": "Solo titoli visti da tutti",
+      "apply": "Applica",
+      "reset": "Azzera i filtri"
+    },
+    "sort": {
+      "avg": "Media voti",
+      "votes": "Più votati",
+      "year": "Anno di uscita",
+      "recent": "Visti di recente",
+      "title": "Titolo"
+    },
+    "position": "Posizione {n}",
+    "who": "Voti del gruppo",
+    "noRating": "visto, senza voto",
+    "rated": "{stars, plural, one {# stella} other {# stelle}}",
+    "notRated": "Nessun voto",
+    "avgLabel": "Media {stars} stelle su 5",
+    "votes": "{count, plural, one {# voto} other {# voti}}",
+    "pages": "Pagine",
+    "prev": "Prima",
+    "next": "Dopo",
+    "empty": "Nessun titolo con questi filtri.",
+    "emptyAll": "Ancora niente da classificare: registrate una visione con un voto."
   }
 }

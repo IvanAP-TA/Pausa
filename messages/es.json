@@ -420,8 +420,8 @@
       "language": "Idioma"
     },
     "hero": {
-      "title": "El diario privado de tu grupo de amigos. Y el fin del «¿qué vemos?»",
-      "lede": "Películas, series y anime vistos juntos, con las notas de todos. Y cuando llega la noche, una noche de cine de dos minutos elige por el grupo.",
+      "title": "¿Qué vemos esta noche? Decidido en dos minutos.",
+      "lede": "El diario privado de películas, series y anime para tu grupo de amigos: las notas de todos en un solo sitio, y una noche de cine que elige por vosotros.",
       "cta": "Crea tu Círculo",
       "secondary": "Prueba la noche de cine",
       "note": "Solo necesitas tu email, sin contraseña. Tus amigos pueden votar sin cuenta."
@@ -628,7 +628,8 @@
       "steps": [
         "En Letterboxd ve a Settings → Data → Export your data.",
         "Descarga el ZIP que te llega.",
-        "Súbelo aquí abajo (también sirven diary.csv, ratings.csv, reviews.csv y watched.csv sueltos)."
+        "Súbelo aquí abajo (también sirven diary.csv, ratings.csv, reviews.csv y watched.csv sueltos).",
+        "Para las listas: abre cada lista en Letterboxd → ··· → Export list as CSV, o usa el ZIP (watchlist y la carpeta lists/)."
       ],
       "pick": "Elige el ZIP o los archivos CSV",
       "noCovers": "En este servidor la búsqueda en TMDB no está activa: las películas se importan igual, pero sin póster."
@@ -675,7 +676,10 @@
       "failed": "{count, plural, one {# fila no importada} other {# filas no importadas}}: repite la importación, lo que ya está hecho no se duplica.",
       "toDiary": "Ir al diario",
       "toInsights": "Ver los Insights",
-      "again": "Importar más"
+      "again": "Importar más",
+      "lists": "{count, plural, one {# lista} other {# listas}} con {items} películas añadidas",
+      "listsOnly": "Listas importadas",
+      "toLists": "Ver las listas"
     },
     "errors": {
       "read": "No puedo leer este archivo. Comprueba que sea la exportación correcta.",
@@ -703,6 +707,13 @@
         "2": "Súbelo aquí, entero o solo los archivos watched-… y ratings-…"
       },
       "pick": "Elige el ZIP o los archivos .json"
+    },
+    "lists": {
+      "include": "{count, plural, one {Importar también # lista} other {Importar también # listas}} ({items} películas)",
+      "scope": "Dónde ponerlas",
+      "scope_personal": "Listas personales: solo tú las ves",
+      "scope_group": "Listas del grupo: las ve toda la Cerchia",
+      "run": "{count, plural, one {Importar # película en las listas} other {Importar # películas en las listas}}"
     }
   },
   "manage": {
@@ -888,5 +899,48 @@
     "recent": "Últimos registros",
     "noLogs": "Aún no hay registros.",
     "all": "Ver todos sus registros"
+  },
+  "ranking": {
+    "title": "Clasificación",
+    "lede": "Todos los títulos del grupo, con la nota de cada uno y la media.",
+    "linkTitle": "Clasificación del grupo",
+    "linkBody": "Cada película con las notas de todos y la media",
+    "count": "{count, plural, one {# título} other {# títulos}}",
+    "filters": {
+      "title": "Filtros",
+      "q": "Buscar un título",
+      "kind": "Tipo",
+      "any": "Todos",
+      "by": "Visto por",
+      "everyone": "Cualquiera",
+      "from": "Estrenado desde",
+      "to": "Estrenado hasta",
+      "votes": "Notas",
+      "anyVotes": "Incluso sin notas",
+      "atLeast": "Al menos {count}",
+      "sort": "Ordenar por",
+      "everyoneSaw": "Solo títulos vistos por todos",
+      "apply": "Aplicar",
+      "reset": "Quitar filtros"
+    },
+    "sort": {
+      "avg": "Nota media",
+      "votes": "Más votados",
+      "year": "Año de estreno",
+      "recent": "Vistos hace poco",
+      "title": "Título"
+    },
+    "position": "Posición {n}",
+    "who": "Notas del grupo",
+    "noRating": "visto, sin nota",
+    "rated": "{stars, plural, one {# estrella} other {# estrellas}}",
+    "notRated": "Sin notas",
+    "avgLabel": "Media {stars} estrellas de 5",
+    "votes": "{count, plural, one {# nota} other {# notas}}",
+    "pages": "Páginas",
+    "prev": "Anterior",
+    "next": "Siguiente",
+    "empty": "Ningún título coincide con estos filtros.",
+    "emptyAll": "Aún no hay nada que clasificar: registra una visión con nota."
   }
 }

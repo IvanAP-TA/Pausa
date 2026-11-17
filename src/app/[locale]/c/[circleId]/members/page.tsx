@@ -31,7 +31,7 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
   setRequestLocale(locale);
   const user = await requireUser();
   const now = new Date();
-  const [circle, members, myCircles, invites, t, tm, format, settings, ts] = await Promise.all([
+  const [circle, members, myCircles, invites, t, tm, format, settings, ts, tr] = await Promise.all([
     getCircleForMember(circleId, user.id),
     getMembers(circleId),
     getMyCircles(user.id),
@@ -41,6 +41,7 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
     getFormatter(),
     getDb().then((db) => getCircleSettings(db, circleId, user.id)),
     getTranslations("settings"),
+    getTranslations("ranking"),
   ]);
   const isAdmin = circle!.role === "admin";
   const active = invites.filter((i) => i.state === "active");
@@ -128,6 +129,15 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
           </form>
         )}
       </section>
+
+      <Link href={`/c/${circleId}/ranking`}
+        className="flex min-h-14 items-center justify-between gap-3 rounded-md border border-rule bg-paper-2 px-4 hover:border-muted">
+        <span>
+          <span className="block font-display text-lg leading-tight">{tr("linkTitle")}</span>
+          <span className="text-xs text-muted">{tr("linkBody")}</span>
+        </span>
+        <span aria-hidden="true" className="text-muted">→</span>
+      </Link>
 
       <Link href={`/c/${circleId}/insights`}
         className="flex min-h-14 items-center justify-between gap-3 rounded-md border border-rule bg-paper-2 px-4 hover:border-muted">

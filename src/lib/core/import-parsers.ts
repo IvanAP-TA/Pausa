@@ -378,3 +378,35 @@ export function jikanRows(pages: JikanPage[]) {
   }
   return { rows, undated: rows.filter((r) => r.watchedOn === null).length };
 }
+
+/* ───────────── Letterboxd lists and watchlist ───────────── */
+
+export type ImportList = { name: string; description: string | null; kind: "watchlist" | "list"; rows: ImportRow[] };
+
+const BOXD = /^https:\/\/boxd\.it\/[A-Za-z0-9]+$/;
+const listRow = (title: string | undefined, year: string | undefined, uri: string | undefined): ImportRow | null => {
+  if (!title) return null;
+  return { source: "letterboxd", kind: "movie", title, year: toYear(year), rating: null, watchedOn: null, rewatch: false, review: null, letterboxdUri: uri && BOXD.test(uri) ? uri : null };
+};
+
+/** watchlist.csv: Date,Name,Year,Letterboxd URI. The date is when the film was added, which the app does not keep. */
+export function letterboxdWatchlist(csv: string): ImportList | null {
+  const rows = parseCsv(csv).flatMap((r) => listRow(r["Name"], r["Year"], r["Letterboxd URI"]) ?? []);
+  return rows.length ? { name: "Watchlist", description: null, kind: "watchlist", rows } : null;
+}
+
+/**
+ * One list export (lists/<name>.csv): a banner line ("Letterboxd list export v7"), a header and one row with the list's
+ * Date, Name, Tags, URL, Description, a blank line, then "Position,Name,Year,URL,Description" with one row per film.
+ */
+export function letterboxdList(csv: string): ImportList | null {
+  const text = csv.replace(/^﻿/, "");
+  const at = text.search(/^Position,/m);
+  if (at < 0) return null;
+  const head = parseCsv(text.slice(0, at).replace(/^Letterboxd list export[^\n]*\n/, ""))[0];
+  const items = parseCsv(text.slice(at));
+  const rows = items.flatMap((r) => listRow(r["Name"], r["Year"], r["URL"]) ?? []);
+  const name = (head?.["Name"] ?? "").trim();
+  if (!name || rows.length === 0) return null;
+  return { name: name.slice(0, 80), description: head?.["Description"] ? head["Description"].slice(0, 500) : null, kind: "list", rows };
+}

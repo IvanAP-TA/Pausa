@@ -4,7 +4,8 @@ import { z } from "zod";
 import { hasLocale } from "next-intl";
 import { getDb } from "@/db";
 import { routing } from "@/i18n/routing";
-import { CHUNK_LIMIT, importRows, type ImportResult } from "@/lib/core/import";
+import { CHUNK_LIMIT, importList, importRows, type ImportResult, type ListImportResult } from "@/lib/core/import";
+import { getCircleForMember } from "@/lib/data";
 import type { ImportRow } from "@/lib/core/import-parsers";
 import { requireUser } from "@/lib/session";
 import { enrichAnime, enrichMovies } from "./enrich";
@@ -39,6 +40,16 @@ const payload = z.object({
   locale: z.string(),
 });
 
+const listPayload = z.object({
+  name: z.string().trim().min(1).max(80),
+  description: z.string().max(500).nullable(),
+  kind: z.enum(["watchlist", "list"]),
+  circleId: z.string().min(1).max(64).nullable(),
+  offset: z.number().int().min(0).max(5000),
+  rows: z.array(row).min(1).max(CHUNK_LIMIT),
+  locale: z.string(),
+});
+
 export type ImportChunkResult = ({ ok: true } & ImportResult) | { ok: false; error: "invalid" | "failed" };
 
 /** Imports one chunk (≤ CHUNK_LIMIT rows) of the signed-in person's history. The browser calls this repeatedly. */
@@ -65,6 +76,29 @@ export async function importChunk(input: unknown): Promise<ImportChunkResult> {
     return { ok: true, ...result };
   } catch (e) {
     console.error("[import] chunk failed", e);
+    return { ok: false, error: "failed" };
+  }
+}
+
+export type ListChunkResult = ({ ok: true } & ListImportResult) | { ok: false; error: "invalid" | "failed" };
+
+/** Adds one chunk of one list to the person's own lists (circleId null) or to a group list of a Cerchia they belong to. */
+export async function importListChunk(input: unknown): Promise<ListChunkResult> {
+  const user = await requireUser();
+  if (!(await allow("importRows", user.id))) return { ok: false, error: "invalid" };
+  const parsed = listPayload.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const { rows, name, description, kind, circleId, offset, locale: rawLocale } = parsed.data;
+  if (circleId && !(await getCircleForMember(circleId, user.id))) return { ok: false, error: "invalid" };
+  const locale = hasLocale(routing.locales, rawLocale) ? rawLocale : routing.defaultLocale;
+  const clean: ImportRow[] = rows.map((r) => ({ ...r, letterboxdUri: r.letterboxdUri ?? null, anilistId: null, malId: null, imdbId: null, tmdbId: null }));
+  try {
+    const result = await importList(await getDb(), user.id, { name, description, kind, circleId, rows: clean, offset }, {
+      enrich: async (unknown) => (unknown.length ? enrichMovies(unknown, locale) : []),
+    });
+    return { ok: true, ...result };
+  } catch (e) {
+    console.error("[import] list chunk failed", e);
     return { ok: false, error: "failed" };
   }
 }

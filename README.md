@@ -147,6 +147,11 @@ The "where to watch" filter needs the TMDB token (see "TMDB token").
 - **Feed search and filters** (`?q=`, kind, person, rating, streaming service): `src/lib/data.ts` `getCircleFeed`, UI in `c/[circleId]/filter-bar.tsx`.
 - **Landing.** The hero has the Google sign-in button; "Prova la Serata" lives only in the navbar.
 
+## Group ranking and list import
+
+- **Ranking** (`/<locale>/c/<circle>/ranking`, linked from the diary and the Cerchia tab): every title anyone in the Cerchia logged, with each member's latest rating, the group's average and the number of votes. Filters: search, type, who watched it, release year (from / to), minimum votes (starts at 2 from three members up, so one lonely 5★ does not top the list), "only what everyone watched"; sort by average, most rated, release year, recently watched or title; 40 per page, all in the URL. Genre is not filtered: the app does not store it. Logic and tests: `src/lib/core/ranking.ts`.
+- **Letterboxd lists and watchlist.** The Letterboxd tab also reads `watchlist.csv` and the `lists/` folder of the export ZIP (or a list CSV picked on its own, from a list's ··· menu → *Export list as CSV*). The person chooses to import them as personal lists or as group lists. Importing again fills the same list (found by owner, Cerchia and name) and adds only what is missing. Code: `letterboxdList` / `letterboxdWatchlist` in `import-parsers.ts`, `importList` in `import.ts` (shares `resolveMedia` with the diary import), `importListChunk` in `src/lib/import/actions.ts`. Letterboxd does not export the *likes*, only links, so those are not imported.
+
 ## Tests
 
 `npm test` runs the Serata engine and the `src/lib/core` modules against a real SQLite: `sql.js` (WebAssembly, no native build) with the project's actual migrations applied and foreign keys on, like D1. Core modules take the database as a parameter, so tests and app share the same queries.

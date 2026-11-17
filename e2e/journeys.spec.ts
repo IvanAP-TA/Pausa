@@ -3,9 +3,21 @@ import { CIRCLE, signInAs } from "./helpers";
 
 test("the landing explains the product and offers the app", async ({ page }) => {
   await page.goto("/it");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("diario privato");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Cosa guardiamo stasera");
   await expect(page.getByRole("button", { name: "Scarica l'app" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Guide" }).first()).toBeVisible();
+});
+
+test("the group ranking lists every title with each person's rating and the average", async ({ page }) => {
+  await signInAs(page, "giulia", `/it/c/${CIRCLE}/ranking`);
+  await expect(page.getByRole("heading", { level: 1, name: "Classifica" })).toBeVisible();
+  const first = page.getByRole("listitem").filter({ has: page.getByRole("heading", { level: 2 }) }).first();
+  await expect(first.getByRole("heading", { level: 2 })).toBeVisible();
+  await expect(first).toContainText("vot");
+  // A release-year filter narrows the list, and there is always a way back.
+  await page.goto(`/it/c/${CIRCLE}/ranking?from=2099`);
+  await expect(page.getByText("Nessun titolo con questi filtri.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Azzera i filtri" })).toBeVisible();
 });
 
 test("the language switch keeps you on the page", async ({ page }) => {

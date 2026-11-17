@@ -10,9 +10,9 @@
  *   per request, so the caller sends the file piece by piece.
  */
 
-import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
-import { log, mediaEntity, mediaTitle } from "../../db/schema";
+import { list, listItem, log, mediaEntity, mediaTitle } from "../../db/schema";
 import type { AnyDb } from "./db-types";
 import type { ImportRow } from "./import-parsers";
 
@@ -108,25 +108,14 @@ async function findExisting(db: AnyDb, rows: ImportRow[]) {
   return found;
 }
 
-export async function importRows(db: AnyDb, userId: string, input: ImportRow[], opts: ImportOptions): Promise<ImportResult> {
-  const result: ImportResult = { imported: 0, alreadyHad: 0, newTitles: 0, undatedSkipped: 0, invalid: 0 };
-
-  // 1. Validate and settle dates.
-  let rows: ImportRow[] = [];
-  for (const r of input) {
-    if (!r.title.trim()) { result.invalid++; continue; }
-    if (r.watchedOn === null) {
-      if (!opts.includeUndated) { result.undatedSkipped++; continue; }
-      rows.push({ ...r, watchedOn: opts.today });
-    } else rows.push(r);
-  }
-  if (rows.length === 0) return result;
-
+/** Finds or creates the title of every row (looking new ones up through `enrich`). Returns the rows as enriched and each row's media id. */
+export async function resolveMedia(db: AnyDb, input: ImportRow[], enrich?: ImportOptions["enrich"]) {
+  let rows = input;
   // 2. Which titles does the app already have? Look the rest up (TMDB / AniList) only if there's something new.
   let existing = await findExisting(db, rows);
   const unknown = rows.filter((r) => !existing.has(r));
-  if (unknown.length && opts.enrich) {
-    const enriched = await opts.enrich(unknown);
+  if (unknown.length && enrich) {
+    const enriched = await enrich(unknown);
     const swap = new Map(unknown.map((r, i) => [r, enriched[i] ?? r]));
     rows = rows.map((r) => swap.get(r) ?? r);
     existing = await findExisting(db, rows); // enrichment may have revealed ids the app already knows
@@ -146,7 +135,7 @@ export async function importRows(db: AnyDb, userId: string, input: ImportRow[], 
   }
   const newMedia = [...created.values()];
   await inChunks(newMedia, 7, async (part) => { await db.insert(mediaEntity).values(part).onConflictDoNothing(); });
-  result.newTitles = newMedia.length;
+  
 
   const mediaIdOf = new Map<ImportRow, string>();
   for (const [r, m] of existing) mediaIdOf.set(r, m.id);
@@ -193,6 +182,29 @@ export async function importRows(db: AnyDb, userId: string, input: ImportRow[], 
   }
   await inChunks([...titleRows.values()], 30, async (part) => { await db.insert(mediaTitle).values(part).onConflictDoNothing(); });
 
+
+  return { rows, mediaIdOf, newTitles: newMedia.length };
+}
+
+export async function importRows(db: AnyDb, userId: string, input: ImportRow[], opts: ImportOptions): Promise<ImportResult> {
+  const result: ImportResult = { imported: 0, alreadyHad: 0, newTitles: 0, undatedSkipped: 0, invalid: 0 };
+
+  // 1. Validate and settle dates.
+  let rows: ImportRow[] = [];
+  for (const r of input) {
+    if (!r.title.trim()) { result.invalid++; continue; }
+    if (r.watchedOn === null) {
+      if (!opts.includeUndated) { result.undatedSkipped++; continue; }
+      rows.push({ ...r, watchedOn: opts.today });
+    } else rows.push(r);
+  }
+  if (rows.length === 0) return result;
+
+  const resolved = await resolveMedia(db, rows, opts.enrich);
+  rows = resolved.rows;
+  const mediaIdOf = resolved.mediaIdOf;
+  result.newTitles = resolved.newTitles;
+
   // 4. The viewings themselves.
   const targets = uniq([...mediaIdOf.values()]);
   const have = new Set<string>();
@@ -215,5 +227,59 @@ export async function importRows(db: AnyDb, userId: string, input: ImportRow[], 
   }
   await inChunks(toInsert, 8, async (part) => { await db.insert(log).values(part); });
   result.imported = toInsert.length;
+  return result;
+}
+
+/* ───────────── Lists ───────────── */
+
+export type ListImportInput = {
+  name: string;
+  description: string | null;
+  kind: "watchlist" | "list";
+  /** null: a personal list; a Cerchia id: a group list (the caller has checked the person belongs to it). */
+  circleId: string | null;
+  rows: ImportRow[];
+  /** Position of the first row in the whole list: a long list arrives in several chunks. */
+  offset: number;
+};
+
+export type ListImportResult = { added: number; alreadyHad: number; newTitles: number; invalid: number; listId: string };
+
+/**
+ * Adds one chunk of a list. The list is found by owner + Cerchia + name (or created), so running the import again,
+ * or sending the next chunk, fills the same list and adds only what is missing.
+ */
+export async function importList(db: AnyDb, userId: string, input: ListImportInput, opts: { enrich?: ImportOptions["enrich"] } = {}): Promise<ListImportResult> {
+  const name = input.name.trim().slice(0, 80);
+  const where = and(eq(list.ownerId, userId), eq(list.name, name), eq(list.kind, input.kind), input.circleId ? eq(list.circleId, input.circleId) : isNull(list.circleId));
+  let [found] = await db.select({ id: list.id }).from(list).where(where);
+  if (!found) {
+    const id = crypto.randomUUID();
+    await db.insert(list).values({ id, circleId: input.circleId, ownerId: userId, kind: input.kind, name, description: input.description?.slice(0, 500) ?? null });
+    found = { id };
+  }
+  const result: ListImportResult = { added: 0, alreadyHad: 0, newTitles: 0, invalid: 0, listId: found.id };
+  const rows = input.rows.filter((r) => r.title.trim());
+  result.invalid = input.rows.length - rows.length;
+  if (rows.length === 0) return result;
+
+  const resolved = await resolveMedia(db, rows, opts.enrich);
+  result.newTitles = resolved.newTitles;
+
+  const have = new Set<string>();
+  const ids = uniq([...resolved.mediaIdOf.values()]);
+  await inChunks(ids, 90, async (part) => {
+    for (const i of await db.select({ mediaId: listItem.mediaId }).from(listItem).where(and(eq(listItem.listId, found.id), inArray(listItem.mediaId, part)))) have.add(i.mediaId);
+  });
+  const toInsert: (typeof listItem.$inferInsert)[] = [];
+  resolved.rows.forEach((r, i) => {
+    const mediaId = resolved.mediaIdOf.get(r);
+    if (!mediaId) { result.invalid++; return; }
+    if (have.has(mediaId)) { result.alreadyHad++; return; }
+    have.add(mediaId);
+    toInsert.push({ listId: found.id, mediaId, position: input.offset + i, addedBy: userId });
+  });
+  await inChunks(toInsert, 15, async (part) => { await db.insert(listItem).values(part).onConflictDoNothing(); });
+  result.added = toInsert.length;
   return result;
 }
