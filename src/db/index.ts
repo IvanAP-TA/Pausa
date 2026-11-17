@@ -8,7 +8,8 @@ import * as schema from "./schema";
 /** D1 is bound per request on Workers: one client per request, shared by every query in it. */
 export const getDb = cache(async () => {
   const { env } = await getCloudflareContext({ async: true });
-  return drizzle(env.DB, { schema });
+  // LOG_QUERIES=1 prints every query (development aid: count them per page, D1 allows ~50 per request).
+  return drizzle(env.DB, { schema, logger: process.env.LOG_QUERIES ? { logQuery: (q) => console.log("[sql]", q.slice(0, 110).replace(/\s+/g, " ")) } : false });
 });
 
 export type Db = Awaited<ReturnType<typeof getDb>>;

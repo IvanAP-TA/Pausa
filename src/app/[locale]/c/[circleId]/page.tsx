@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/session";
 import { getCircleFeed, getCircleForMember, getCircleStats, getMembers, getNowWatching, getUnreadCount } from "@/lib/data";
 import { advanceWatching, clearNowWatching } from "@/lib/actions";
 import { formatProgress } from "@/lib/core/progress";
+import { Suspense } from "react";
 import { getDb } from "@/db";
 import { memoriesFor, onboardingFor } from "@/lib/core/retention";
 import { Avatar } from "@/components/avatar";
@@ -28,8 +29,7 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
   const beforeMs = typeof beforeParam === "string" ? Number(beforeParam) : NaN;
   const before = Number.isFinite(beforeMs) ? new Date(beforeMs) : undefined;
 
-  const db = await getDb();
-  const [circle, members, stats, watching, feed, unread, t, memories, onboarding, tr, ta] = await Promise.all([
+  const [circle, members, stats, watching, feed, unread, t, ta] = await Promise.all([
     getCircleForMember(circleId, user.id),
     getMembers(circleId),
     getCircleStats(circleId, now.getFullYear()),
@@ -38,9 +38,6 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
     getCircleFeed(circleId, user.id, locale, PAGE + 1, undefined, before),
     getUnreadCount(user.id),
     getTranslations("feed"),
-    before ? Promise.resolve([]) : memoriesFor(db, circleId, now, { locale }),
-    before ? Promise.resolve(null) : onboardingFor(db, circleId, user.id),
-    getTranslations("retention"),
     getTranslations("account"),
   ]);
 
@@ -112,45 +109,10 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
         </ul>
       )}
 
-      {onboarding && !onboarding.done && (
-        <section aria-labelledby="first-steps" className="mx-4 grid gap-2 rounded-md bg-second-deep p-4 text-on-second">
-          <h2 id="first-steps" className="font-display text-lg">{tr("firstStepsTitle")}</h2>
-          <ul className="grid gap-1.5 text-sm">
-            {([
-              ["hasLog", tr("stepLog"), `/c/${circleId}/log`],
-              ["hasCompany", tr("stepInvite"), `/c/${circleId}/members`],
-              ["hasSerata", tr("stepSerata"), `/c/${circleId}/serata`],
-            ] as const).map(([key, label, href]) => (
-              <li key={key}>
-                {onboarding[key] ? (
-                  <span className="flex min-h-9 items-center gap-2 text-on-second-muted line-through"><span aria-hidden="true">✓</span>{label}</span>
-                ) : (
-                  <Link href={href} className="flex min-h-9 items-center gap-2 font-semibold underline-offset-4 hover:underline"><span aria-hidden="true">○</span>{label}</Link>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {memories.length > 0 && (
-        <section aria-labelledby="memories" className="mx-4 grid gap-3">
-          <h2 id="memories" className="font-display text-lg">{tr("memoriesTitle")}</h2>
-          <ul className="grid gap-2">
-            {memories.map((m) => (
-              <li key={m.logId}>
-                <Link href={`/c/${circleId}/l/${m.logId}`} className="flex gap-3 rounded-md border border-rule bg-paper-2 p-3 hover:border-muted">
-                  <Poster media={{ id: m.mediaId, title: m.title, posterPath: m.posterPath }} size="sm" className="w-12 shrink-0" />
-                  <span className="min-w-0 text-[13px]">
-                    <span className="text-xs text-accent">{tr("yearsAgo", { count: m.yearsAgo })}</span>
-                    <span className="block"><strong className="font-semibold">{m.author.name}</strong> {tr("saw")} <strong className="font-semibold">{m.title}</strong></span>
-                    {m.review && <span className="subtitle mt-1 block line-clamp-2 text-[13px]">{m.review}</span>}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {!before && (
+        <Suspense fallback={null}>
+          <Extras circleId={circleId} userId={user.id} locale={locale} now={now} />
+        </Suspense>
       )}
 
       {feed.length === 0 && before ? (
@@ -174,5 +136,56 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
         </div>
       )}
     </main>
+  );
+}
+
+/** First steps and memories: nice to have, never in the way. They stream in after the feed. */
+async function Extras({ circleId, userId, locale, now }: { circleId: string; userId: string; locale: string; now: Date }) {
+  const db = await getDb();
+  const [memories, onboarding, tr] = await Promise.all([memoriesFor(db, circleId, now, { locale }), onboardingFor(db, circleId, userId), getTranslations("retention")]);
+  return (
+    <>
+        {onboarding && !onboarding.done && (
+          <section aria-labelledby="first-steps" className="mx-4 grid gap-2 rounded-md bg-second-deep p-4 text-on-second">
+            <h2 id="first-steps" className="font-display text-lg">{tr("firstStepsTitle")}</h2>
+            <ul className="grid gap-1.5 text-sm">
+              {([
+                ["hasLog", tr("stepLog"), `/c/${circleId}/log`],
+                ["hasCompany", tr("stepInvite"), `/c/${circleId}/members`],
+                ["hasSerata", tr("stepSerata"), `/c/${circleId}/serata`],
+              ] as const).map(([key, label, href]) => (
+                <li key={key}>
+                  {onboarding[key] ? (
+                    <span className="flex min-h-9 items-center gap-2 text-on-second-muted line-through"><span aria-hidden="true">✓</span>{label}</span>
+                  ) : (
+                    <Link href={href} className="flex min-h-9 items-center gap-2 font-semibold underline-offset-4 hover:underline"><span aria-hidden="true">○</span>{label}</Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {memories.length > 0 && (
+          <section aria-labelledby="memories" className="mx-4 grid gap-3">
+            <h2 id="memories" className="font-display text-lg">{tr("memoriesTitle")}</h2>
+            <ul className="grid gap-2">
+              {memories.map((m) => (
+                <li key={m.logId}>
+                  <Link href={`/c/${circleId}/l/${m.logId}`} className="flex gap-3 rounded-md border border-rule bg-paper-2 p-3 hover:border-muted">
+                    <Poster media={{ id: m.mediaId, title: m.title, posterPath: m.posterPath }} size="sm" className="w-12 shrink-0" />
+                    <span className="min-w-0 text-[13px]">
+                      <span className="text-xs text-accent">{tr("yearsAgo", { count: m.yearsAgo })}</span>
+                      <span className="block"><strong className="font-semibold">{m.author.name}</strong> {tr("saw")} <strong className="font-semibold">{m.title}</strong></span>
+                      {m.review && <span className="subtitle mt-1 block line-clamp-2 text-[13px]">{m.review}</span>}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+    </>
   );
 }
