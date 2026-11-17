@@ -45,6 +45,14 @@ Browser ──► Worker (worker.ts)
 9. **Stili.** Colori e caratteri sono token in `src/app/globals.css`; il tema chiaro e scuro sono due set di token. La Card condivisibile ha colori fissi (`card-*`).
 10. **Convenzioni.** Italiano nell'interfaccia di default; codice e commenti in inglese; nessuna dipendenza nuova senza motivo.
 
+## Moduli aggiunti per ultimi
+
+- **Impostazioni e notifiche**: `src/lib/core/settings.ts` (silenzio, "sta guardando" per Cerchia e per persona, tipi di notifica), `digest.ts` e `mailer.ts` (riepilogo email), usati da `src/lib/actions.ts` (`filterRecipients`) e dal cron di `worker.ts`. Migrazione 0010.
+- **Episodi**: `episodes.ts` (limiti e passaggio di stagione), `progress.ts`, `src/lib/episode-info.ts` (TMDB e AniList, cache nella tabella dei conteggi, migrazione 0011).
+- **Fonti esterne**: `src/lib/tmdb.ts`, `src/lib/anilist.ts` (GraphQL pubblico), Jikan per MyAnimeList; importatori in `import-parsers.ts` (Letterboxd, IMDb, Trakt, AniList, MAL).
+- **PWA**: `public/sw.js` (solo pagina offline e push), `public/offline.html`, `src/app/apple-splash`, `src/components/register-sw.tsx`.
+- **Sicurezza HTTP**: header e CSP statica in `next.config.ts`.
+
 ## Come lavorare
 
 ```bash

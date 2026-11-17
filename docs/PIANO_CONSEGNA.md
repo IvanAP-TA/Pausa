@@ -1,5 +1,7 @@
 # Piano di consegna
 
+> **Stato: eseguito.** Il codice descritto qui è tutto fatto (Rust/WebAssembly, lancio sicuro, test, documentazione) e anche le funzioni della vecchia lista "Poi". Per ciò che resta davvero vedi `COSA_MANCA.md`; questo file resta come storia delle decisioni.
+
 Obiettivo: finire tutto il codice e consegnare a un'altra persona un repository che lei possa mettere online (database compreso) senza chiedere a noi. Questo piano sostituisce l'ordine di `COSA_MANCA.md`.
 
 **Chi**: *io* = lavoro di codice; *tu* = decisione o accesso tuo; *altra persona* = la persona che metterà online il progetto.

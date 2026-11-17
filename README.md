@@ -96,7 +96,7 @@ Done:
 - IT / EN / ES throughout
 
 Needs your accounts before the first deploy: Resend key + verified sender, Google OAuth keys, TMDB read token, D1 database id.
-Not in Phase 1: push notifications and offline support (service worker).
+Push notifications and the offline page came later (see "Settings, notifications and the PWA").
 
 ## Phase 2: Serata
 
@@ -129,7 +129,23 @@ The logic is in `src/lib/core/circles.ts`.
 
 `/<locale>/c/<circle>/insights`, linked from the Cerchia page: Year in Review (watches, titles, hours of films, average rating, title of the year, most active, busiest month, top platform, who watches together most), taste similarity between members, titles you agree and split on, and "worth watching together".
 All of it is computed from the Cerchia's own logs and ratings (`src/lib/core/insights.ts`), with these rules: similarity needs at least 3 shared rated titles, hours count films only (series store a per-episode runtime), recommendations come from your own ratings weighted by taste (an opposite-taste rating counts mirrored), and someone already watching a title isn't offered it.
-Not done: a "where to watch" filter. It needs real TMDB availability data and a key.
+The "where to watch" filter needs the TMDB token (see "TMDB token").
+
+## Settings, notifications and the PWA
+
+- **Cerchia settings** (members page, admins): description and cover image, and a switch that turns off the live "X is watching episode N" notices for the whole Cerchia. Each person can also switch off their own live notices, and **mute** a Cerchia (nothing from it is notified). Logic and tests: `src/lib/core/settings.ts`.
+- **Notification preferences** (Account page): per type (log, comment, reaction, watching, new member, Serata) and per channel (inbox, push). `filterRecipients` in `src/lib/actions.ts` is applied at every place that notifies.
+- **Email fallback / daily digest**: people who opt in get one email a day with what they missed, sent by the scheduled handler in `worker.ts` (cron `0 17 * * *`, needs `RESEND_API_KEY`; a second cron `17 3 * * *` does the cleanup). Code: `src/lib/core/digest.ts`, `mailer.ts`.
+- **Offline page and iPhone splash**: `public/sw.js` caches only `/offline.html` (never a private page) and handles push; `src/app/apple-splash/[size]` draws the splash images for each iPhone size (`src/lib/splash.ts`); `RegisterSw` registers the worker.
+- **Content-Security-Policy**: static, set in `next.config.ts` (no nonce, on purpose: see `docs/SICUREZZA.md`).
+
+## Episodes and people
+
+- **Episode diary.** A log of a series or anime can carry season and episode. Season and episode counts come from TMDB (series) and AniList (anime), cached in `media_episodes` (migration 0011); the inputs stop at the real last episode, and finishing the last episode of a season rolls over to the next (`src/lib/core/episodes.ts`, `progress.ts`, `src/lib/episode-info.ts`).
+- **AniList and MyAnimeList.** AniList (GraphQL, public, no key) searches anime and gives covers, titles, episode totals and the official streaming sites (`src/lib/anilist.ts`); MyAnimeList lists are read by username through Jikan (public) or from the XML export. The Jikan response shape has not been tried against the live API: test it once.
+- **Person page** (`/c/<circle>/p/<user>`, members only): their logs, favourites, stats, taste similarity with you, what they are watching now.
+- **Feed search and filters** (`?q=`, kind, person, rating, streaming service): `src/lib/data.ts` `getCircleFeed`, UI in `c/[circleId]/filter-bar.tsx`.
+- **Landing.** The hero has the Google sign-in button; "Prova la Serata" lives only in the navbar.
 
 ## Tests
 
@@ -137,7 +153,7 @@ Not done: a "where to watch" filter. It needs real TMDB availability data and a 
 
 ## Importing your history
 
-`/<locale>/c/<circle>/import`, linked from the Cerchia page. Three sources, all read in the browser, then sent to the server in small chunks:
+`/<locale>/c/<circle>/import`, linked from the Cerchia page. Five sources (Letterboxd, IMDb, Trakt, AniList, MyAnimeList), all read in the browser, then sent to the server in small chunks:
 
 - **Letterboxd:** upload the ZIP from *Settings → Data → Export your data* (or `diary.csv`, `ratings.csv`, `reviews.csv`, `watched.csv`). One viewing per diary entry, with rewatch flag, rating, review and watched date; films that only appear in ratings/watched become one viewing dated by when you rated or marked them. Only the ZIP's top-level files are read (`deleted/`, `lists/`… are ignored). With a TMDB token the server matches each film to TMDB (title and year within one year) for cover and localized title; without one, films import with no cover.
 - **AniList:** a username. The browser reads the public list of completed anime straight from AniList's API (the profile must be public while you import); the server then looks up covers and titles by id.
@@ -166,7 +182,7 @@ Limits: the work is split into chunks of 20 films (each triggers a TMDB lookup) 
 
 - **Episodes and seasons.** "Sto guardando" stores season and episode (`now_watching.season/episode`), with **+1 episode** and **New season** buttons on the feed; old free-text labels such as `S1·E9` are read when you first tap. A log of a series or anime can name its season (`log.season`). Logic in `src/lib/core/progress.ts`, tested. There is no per-episode diary and no episode count from TMDB yet (inputs accept 1..99 seasons, 1..9999 episodes).
 
-Still open: a streaming-services filter and individual recommendations (they need TMDB availability data), web push with a service worker, and launch metrics.
+Streaming filters, individual recommendations, web push and launch metrics are done (sections below).
 
 ## TMDB token
 
@@ -184,7 +200,7 @@ With the token:
 
 ## SEO
 
-Landing in three languages (hreflang, JSON-LD, OG) plus four public guides per language under `/guide` (`src/lib/guides.ts`): choosing a film with friends, bracket vs dot voting, a Letterboxd alternative for friends, how to run a movie night. Each has Article + Breadcrumb JSON-LD, canonical and hreflang, and a call to try a Serata; they are in the sitemap. `public/llms.txt` describes the site for AI crawlers. After deploy: register the domain in Search Console and Bing Webmaster Tools and submit `/sitemap.xml`.
+Landing in three languages (hreflang, JSON-LD, OG) plus eight public guides per language under `/guide` (`src/lib/guides.ts`): choosing a film with friends, bracket vs dot voting, a Letterboxd alternative for friends, how to run a movie night. Each has Article + Breadcrumb JSON-LD, canonical and hreflang, and a call to try a Serata; they are in the sitemap. `public/llms.txt` describes the site for AI crawlers. After deploy: register the domain in Search Console and Bing Webmaster Tools and submit `/sitemap.xml`.
 
 ## Native app (Tauri v2)
 
