@@ -1,5 +1,5 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getDb, schema as s } from "@/db";
 import { getCircleLists, type MediaSummary } from "./data";
 import { rankDiscovery, topSeeds, type Ranked } from "./core/discovery";
@@ -25,7 +25,7 @@ export type Pick = Ranked & { on: Provider[] };
 export async function personalPicks(userId: string, locale: string, limit = 8): Promise<{ enabled: boolean; seeded: number; picks: Pick[] }> {
   if (!tmdbEnabled()) return { enabled: false, seeded: 0, picks: [] };
   const db = await getDb();
-  const { seeds, logged } = await topSeeds(db, userId, 5);
+  const { seeds, logged } = await topSeeds(db, userId, 5, locale);
   if (seeds.length === 0) return { enabled: true, seeded: 0, picks: [] };
 
   const lists = await Promise.all(seeds.map(async (seed) => ({ seed, candidates: await similarTitles(seed.tmdbId, seed.kind, locale) })));
@@ -67,7 +67,25 @@ export async function suggestedRoster(circleId: string, viewerId: string, locale
   const candidateIds = [...new Set([...watchlist.map((w) => w.id), ...recommended.map((r) => r.id)])].slice(0, 30);
   const availability = services.common.length ? await ensureAvailability(candidateIds, country) : new Map<string, Provider[]>();
 
-  const titles = buildRoster({ watchlist, recommended, seenBy, people: people.length, common: services.common, availability });
+  let titles = buildRoster({ watchlist, recommended, seenBy, people: people.length, common: services.common, availability });
+
+  // Not enough in what the group already has: top up with TMDB suggestions seeded from the titles the group rated best.
+  if (titles.length < 6 && tmdbEnabled()) {
+    const avg = new Map<string, { sum: number; n: number }>();
+    for (const f of facts) if (f.rating !== null) { const a = avg.get(f.mediaId) ?? { sum: 0, n: 0 }; a.sum += f.rating; a.n += 1; avg.set(f.mediaId, a); }
+    const best = [...avg].map(([id, a]) => ({ id, score: a.sum / a.n })).filter((x) => x.score >= 8).sort((a, b) => b.score - a.score).slice(0, 3);
+    if (best.length) {
+      const rows = await db.select({ id: s.mediaEntity.id, tmdbId: s.mediaEntity.tmdbId, kind: s.mediaEntity.kind }).from(s.mediaEntity).where(inArray(s.mediaEntity.id, best.map((b) => b.id)));
+      const lists = await Promise.all(rows.filter((r) => r.tmdbId).map(async (r) => ({
+        seed: { mediaId: r.id, title: "", rating: Math.round(best.find((b) => b.id === r.id)!.score) },
+        candidates: await similarTitles(r.tmdbId!, r.kind, locale),
+      })));
+      const extra = rankDiscovery(lists, new Set(seenBy.keys()), 12).map((r) => r.candidate);
+      const extraAvail = services.common.length ? await ensureAvailability(extra.map((e) => e.id), country) : new Map<string, Provider[]>();
+      for (const [id, v] of extraAvail) availability.set(id, v);
+      titles = buildRoster({ watchlist: [...watchlist, ...extra], recommended, seenBy, people: people.length, common: services.common, availability });
+    }
+  }
   const on: Record<string, string[]> = {};
   for (const t of titles) on[t.id] = onServices(availability.get(t.id), services.common).map((p) => p.name);
   return { titles, on };

@@ -1,5 +1,5 @@
-import { desc, eq } from "drizzle-orm";
-import { log, mediaEntity } from "../../db/schema";
+import { desc, eq, sql } from "drizzle-orm";
+import { log, mediaEntity, mediaTitle } from "../../db/schema";
 import type { AnyDb } from "./db-types";
 
 /* Individual recommendations: what to watch next, from what this person loved. The candidates come from TMDB's
@@ -15,10 +15,10 @@ export const SEED_MIN_RATING = 8; // 4 stars or more
  * The titles a person loved most, as seeds: latest rating per title (a rewatch can change your mind), best first, newest
  * first among ties, only titles TMDB knows. `limit` keeps the number of TMDB calls small.
  */
-export async function topSeeds(db: AnyDb, userId: string, limit = 5): Promise<{ seeds: Seed[]; logged: Set<string> }> {
+export async function topSeeds(db: AnyDb, userId: string, limit = 5, locale = "it"): Promise<{ seeds: Seed[]; logged: Set<string> }> {
   const rows = await db.select({
     mediaId: log.mediaId, rating: log.rating, watchedOn: log.watchedOn, createdAt: log.createdAt,
-    title: mediaEntity.originalTitle, tmdbId: mediaEntity.tmdbId, kind: mediaEntity.kind,
+    title: sql<string>`coalesce((select ${mediaTitle.title} from ${mediaTitle} where ${mediaTitle.mediaId} = ${mediaEntity.id} and ${mediaTitle.locale} = ${locale}), ${mediaEntity.originalTitle})`, tmdbId: mediaEntity.tmdbId, kind: mediaEntity.kind,
   }).from(log).innerJoin(mediaEntity, eq(mediaEntity.id, log.mediaId)).where(eq(log.userId, userId)).orderBy(desc(log.watchedOn), desc(log.createdAt));
 
   const logged = new Set(rows.map((r) => r.mediaId));

@@ -8,6 +8,7 @@ import { getAvailability, parseRegionProviders, parseWatchProviders, storeAvaila
 
 const LANG: Record<string, string> = { it: "it-IT", en: "en-US", es: "es-ES" };
 const ANIMATION = 16;
+const MIN_VOTES = 500; // recommendations with fewer votes are too obscure to suggest
 
 type TmdbResult = {
   id: number;
@@ -19,6 +20,7 @@ type TmdbResult = {
   genre_ids?: number[];
   origin_country?: string[];
   original_language?: string;
+  vote_count?: number;
 };
 
 type Db = Awaited<ReturnType<typeof getDb>>;
@@ -103,7 +105,9 @@ export async function similarTitles(tmdbId: number, kind: "movie" | "tv" | "anim
   const json = (await tmdbGet(`/${type}/${tmdbId}/recommendations`, { language: LANG[locale] ?? "it-IT" })) as { results?: TmdbResult[] } | null;
   const db = await getDb();
   const out: MediaSummary[] = [];
-  for (const r of (json?.results ?? []).slice(0, 12)) {
+  // Only titles people actually know and that have a poster: TMDB also recommends obscure TV movies and shorts.
+  const known = (json?.results ?? []).filter((r) => r.poster_path && (r.vote_count ?? 0) >= MIN_VOTES);
+  for (const r of known.slice(0, 12)) {
     const m = await upsertTmdbResult(db, { ...r, media_type: type }, locale);
     if (m) out.push(m);
   }
