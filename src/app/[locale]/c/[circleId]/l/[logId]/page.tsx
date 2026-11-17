@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/session";
 import { getComments, getListTargets, getLogInCircle } from "@/lib/data";
 import { addComment, addToList } from "@/lib/actions";
 import { deleteCommentAction, deleteLogAction, updateCommentAction } from "@/lib/manage-actions";
+import { ReportForm } from "@/components/report-form";
 import { Avatar } from "@/components/avatar";
 import { LogCard } from "@/components/log-card";
 import { Spoiler } from "@/components/spoiler";
@@ -41,6 +42,7 @@ export default async function LogThread({ params }: PageProps<"/[locale]/c/[circ
       <h1 className="sr-only">{log.media.title}</h1>
       <LogCard log={log} now={now} />
 
+      {log.author.id !== user.id && <ReportForm kind="log" targetId={logId} back={`/${locale}/c/${circleId}/l/${logId}`} />}
       {log.author.id === user.id && (
         <div className="flex flex-wrap items-center gap-2">
           <Link href={`/c/${circleId}/l/${logId}/edit`} className="inline-flex min-h-9 items-center rounded-full border border-rule px-4 text-sm font-semibold hover:bg-paper-2">{tm("edit")}</Link>
@@ -84,6 +86,7 @@ export default async function LogThread({ params }: PageProps<"/[locale]/c/[circ
                   <time className="tabular" dateTime={c.createdAt.toISOString()}>{format.relativeTime(c.createdAt, now)}</time>
                 </p>
                 {c.isSpoiler ? <Spoiler label={tf("spoiler")}>{c.body}</Spoiler> : <p className="mt-0.5 text-sm [overflow-wrap:anywhere]">{c.body}</p>}
+                {c.author.id !== user.id && <ReportForm kind="comment" targetId={c.id} back={`/${locale}/c/${circleId}/l/${logId}`} />}
                 {(c.author.id === user.id || log.author.id === user.id) && (
                   <div className="mt-1 flex flex-wrap items-start gap-3 text-xs text-muted">
                     {c.author.id === user.id && (

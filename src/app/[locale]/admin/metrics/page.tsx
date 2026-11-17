@@ -3,15 +3,9 @@ import { setRequestLocale } from "next-intl/server";
 import { getDb } from "@/db";
 import { getSession } from "@/lib/auth";
 import { computeMetrics } from "@/lib/core/metrics";
+import { isOperator } from "@/lib/operator";
 
 export const metadata = { title: "Metriche", robots: { index: false } };
-
-/** Emails allowed to see this page (env ADMIN_EMAILS, comma-separated). In development the first seed person may. */
-function allowed(email: string) {
-  const list = (process.env.ADMIN_EMAILS ?? (process.env.NODE_ENV === "development" ? "giulia@pausa.test" : ""))
-    .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
-  return list.includes(email.toLowerCase());
-}
 
 const pct = (v: number | null) => (v === null ? "n.d." : `${Math.round(v * 100)}%`);
 const num = (v: number | null, digits = 1) => (v === null ? "n.d." : v.toFixed(digits));
@@ -21,7 +15,7 @@ export default async function Metrics({ params }: PageProps<"/[locale]/admin/met
   const { locale } = await params;
   setRequestLocale(locale);
   const session = await getSession();
-  if (!session || (session.user as { isAnonymous?: boolean | null }).isAnonymous || !allowed(session.user.email)) notFound();
+  if (!session || (session.user as { isAnonymous?: boolean | null }).isAnonymous || !isOperator(session.user.email)) notFound();
   const m = await computeMetrics(await getDb());
 
   const rows: { label: string; value: string; note: string }[] = [

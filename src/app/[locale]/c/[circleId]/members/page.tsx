@@ -9,7 +9,7 @@ import { EXPIRY_CHOICES, MAX_USES_CHOICES, listInvites } from "@/lib/core/circle
 import {
   createInviteAction, leaveCircleAction, removeMemberAction, revokeInviteAction, setMemberRoleAction,
 } from "@/lib/actions";
-import { renameCircleAction } from "@/lib/manage-actions";
+import { deleteCircleAction, renameCircleAction } from "@/lib/manage-actions";
 import { Avatar } from "@/components/avatar";
 import { TmdbAttribution } from "@/components/tmdb-attribution";
 import { CopyInvite } from "./copy-invite";
@@ -50,7 +50,7 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
       <input type="hidden" name="circleId" value={circleId} />
     </>
   );
-  const error = typeof e === "string" && ["forbidden", "last_admin", "not_member"].includes(e) ? e : null;
+  const error = typeof e === "string" && ["forbidden", "last_admin", "not_member", "confirm"].includes(e) ? e : null;
 
   return (
     <main className="grid gap-8 px-4 pb-8 pt-6">
@@ -199,6 +199,19 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
           <button className="min-h-11 w-fit rounded-full border border-accent px-5 text-sm font-semibold text-accent">{t("leave.confirm")}</button>
         </form>
       </details>
+
+      {isAdmin && (
+        <details className="rounded-md border border-rule p-3">
+          <summary className="min-h-10 cursor-pointer list-none text-sm text-muted marker:content-none hover:text-accent">{tm("deleteCircle")}</summary>
+          <form action={deleteCircleAction} className="mt-3 grid gap-3">
+            {hidden}
+            <p className="text-sm text-muted">{tm("deleteCircleWarn")}</p>
+            <label htmlFor="del-name" className="text-sm">{tm("deleteCircleConfirm", { name: circle!.name })}</label>
+            <input id="del-name" name="name" required autoComplete="off" className={field} />
+            <button className="min-h-11 w-fit rounded-full bg-accent px-5 text-sm font-semibold text-on-accent">{tm("deleteCircleGo")}</button>
+          </form>
+        </details>
+      )}
 
       <Link href="/account" className="flex min-h-14 items-center justify-between gap-3 rounded-md border border-rule bg-paper-2 px-4 hover:border-muted">
         <span>

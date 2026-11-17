@@ -170,3 +170,14 @@ export async function listMembersWithRole(db: AnyDb, circleId: string) {
   return db.select({ userId: circleMember.userId, role: circleMember.role }).from(circleMember)
     .where(eq(circleMember.circleId, circleId)).orderBy(asc(circleMember.joinedAt));
 }
+
+/**
+ * An admin closes the Cerchia for everyone. Members, invites and group lists go with it (ON DELETE CASCADE); each person's own
+ * logs stay theirs (a log belongs to its author, not to a Cerchia); Serate keep their result but lose the Cerchia link.
+ */
+export async function deleteCircle(db: AnyDb, input: { circleId: string; actorId: string }) {
+  const role = await memberRole(db, input.circleId, input.actorId);
+  if (role !== "admin") return { error: "forbidden" as const };
+  await db.delete(circle).where(eq(circle.id, input.circleId));
+  return { ok: true as const };
+}

@@ -10,6 +10,10 @@ import { getDb } from "@/db";
 import { getAuth } from "./auth";
 import { requireUser } from "./session";
 import { getCircleForMember } from "./data";
+import { isOperator } from "./operator";
+import { enforce } from "./limit-guard";
+import { REPORT_REASONS, createReport, resolveReport } from "./core/moderation";
+import { deleteCircle } from "./core/circles";
 import { deleteAccount, updateProfile } from "./core/account";
 import { MAX_SEASON, toPosition } from "./core/progress";
 import {
@@ -161,4 +165,41 @@ export async function deleteAccountAction(formData: FormData) {
   await auth.api.signOut({ headers: await headers() });
   await deleteAccount(await getDb(), user.id);
   redirect(`/${locale}?deleted=1`);
+}
+
+/* ───────────── Moderation ───────────── */
+
+export async function reportAction(formData: FormData) {
+  const user = await requireUser();
+  await enforce("report", user.id);
+  const input = z.object({
+    kind: z.enum(["comment", "log"]),
+    targetId: id,
+    reason: z.enum(REPORT_REASONS as [string, ...string[]]),
+    note: z.string().trim().max(500).optional(),
+  }).parse({ kind: formData.get("kind"), targetId: formData.get("targetId"), reason: formData.get("reason"), note: formData.get("note") ?? undefined });
+  await createReport(await getDb(), { reporterId: user.id, kind: input.kind, targetId: input.targetId, reason: input.reason as (typeof REPORT_REASONS)[number], note: input.note });
+  const back = String(formData.get("back") ?? "");
+  redirect(back.startsWith("/") && !back.startsWith("//") ? `${back}${back.includes("?") ? "&" : "?"}reported=1` : "/");
+}
+
+/** Operator pages only: anyone else gets the same 404 as a page that does not exist. */
+export async function resolveReportAction(formData: FormData) {
+  const user = await requireUser();
+  if (!isOperator(user.email)) throw new Error("Not found");
+  await resolveReport(await getDb(), { reportId: id.parse(formData.get("reportId")), action: z.enum(["dismiss", "remove"]).parse(formData.get("action")) });
+  revalidatePath("/[locale]/admin/reports", "page");
+}
+
+/** Closing a Cerchia is not undoable: the admin types its name back. */
+export async function deleteCircleAction(formData: FormData) {
+  const user = await requireUser();
+  const circleId = id.parse(formData.get("circleId"));
+  const locale = localeFrom(formData.get("locale"));
+  const circle = await getCircleForMember(circleId, user.id);
+  if (!circle || circle.role !== "admin") redirect(`/${locale}/c/${circleId}/members?e=forbidden`);
+  if (String(formData.get("name") ?? "").trim() !== circle.name) redirect(`/${locale}/c/${circleId}/members?e=confirm`);
+  await deleteCircle(await getDb(), { circleId, actorId: user.id });
+  revalidatePath("/", "layout");
+  redirect(`/${locale}`);
 }

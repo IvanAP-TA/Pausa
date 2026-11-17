@@ -164,7 +164,8 @@
     "errors": {
       "forbidden": "Solo un admin puede hacerlo.",
       "last_admin": "Eres el único admin: nombra antes a otro admin.",
-      "not_member": "Esa persona ya no está en el Círculo."
+      "not_member": "Esa persona ya no está en el Círculo.",
+      "confirm": "El nombre no coincide. No se eliminó nada."
     },
     "importTitle": "Importa tu historial",
     "importBody": "Desde Letterboxd, AniList o MyAnimeList."
@@ -672,7 +673,24 @@
     "accountBody": "Nombre, tus datos, eliminación",
     "legal": "Aviso legal",
     "privacy": "Privacidad",
-    "terms": "Términos"
+    "terms": "Términos",
+    "deleteCircle": "Eliminar la Cerchia",
+    "deleteCircleWarn": "La Cerchia desaparece para todos, con sus miembros, invitaciones y listas de grupo. Los registros de cada uno siguen siendo de quien los escribió. No se puede deshacer.",
+    "deleteCircleConfirm": "Para confirmar, escribe el nombre de la Cerchia ({name}).",
+    "deleteCircleGo": "Eliminar para siempre",
+    "report": {
+      "button": "Denunciar",
+      "reason": "Motivo",
+      "note": "Nota (opcional)",
+      "send": "Enviar la denuncia",
+      "thanks": "Gracias, hemos recibido la denuncia.",
+      "reasons": {
+        "abuse": "Ofensivo o acoso",
+        "spam": "Spam",
+        "privacy": "Revela datos privados",
+        "other": "Otro"
+      }
+    }
   },
   "account": {
     "back": "Volver",

@@ -298,3 +298,21 @@ export const event = sqliteTable("event", {
   serataId: text("serata_id").references(() => serata.id, { onDelete: "cascade" }),
   createdAt: createdAt(),
 }, (t) => [index("event_name_idx").on(t.name, t.createdAt)]);
+
+/* ───────────── Moderation ───────────── */
+
+/** A member flags a comment or a log for the operators. Open until an operator dismisses it or removes the content. */
+export const report = sqliteTable("report", {
+  id: id(),
+  reporterId: text("reporter_id").references(() => user.id, { onDelete: "set null" }),
+  kind: text("kind", { enum: ["comment", "log"] }).notNull(),
+  targetId: text("target_id").notNull(),
+  circleId: text("circle_id").references(() => circle.id, { onDelete: "cascade" }),
+  reason: text("reason", { enum: ["spam", "abuse", "privacy", "other"] }).notNull().default("other"),
+  note: text("note"),
+  /** Snapshot of the reported text, so a report still makes sense after the author edits or deletes it. */
+  excerpt: text("excerpt"),
+  createdAt: createdAt(),
+  resolvedAt: integer("resolved_at", { mode: "timestamp_ms" }),
+  resolution: text("resolution", { enum: ["dismissed", "removed"] }),
+}, (t) => [index("report_open_idx").on(t.resolvedAt, t.createdAt), uniqueIndex("report_once_uq").on(t.reporterId, t.kind, t.targetId)]);
