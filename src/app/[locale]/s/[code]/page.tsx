@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { getSession } from "@/lib/auth";
+import { getSession, googleEnabled } from "@/lib/auth";
 import { getRoomView, getSerataByCode, isParticipant } from "@/lib/serata/server";
 import { JoinGate } from "./join-gate";
 import { SerataRoom } from "./room";
@@ -43,5 +43,5 @@ export default async function SerataPage({ params }: PageProps<"/[locale]/s/[cod
 
   const view = await getRoomView(serata.code, session!.user.id, locale);
   const isGuest = Boolean((session!.user as { isAnonymous?: boolean | null }).isAnonymous);
-  return <SerataRoom initial={view!} meId={session!.user.id} isGuest={isGuest} />;
+  return <SerataRoom initial={view!} meId={session!.user.id} isGuest={isGuest} google={googleEnabled()} />;
 }

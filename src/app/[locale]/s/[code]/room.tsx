@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { forceAdvance, startSerata, submitBallot, tick, voteBracket } from "@/lib/serata/actions";
 import { trackEvent } from "@/lib/events";
+import { GoogleButton } from "@/components/google-button";
 import { DOTS, MATCH_MS, TABLE_MS } from "@/lib/serata/engine";
 import type { RoomView } from "@/lib/serata/server";
 import type { MediaSummary } from "@/lib/data";
@@ -70,7 +71,7 @@ function useCountdown(deadline: number | null, initialNow: number, serverNow: ()
 
 /* ───────────── room ───────────── */
 
-export function SerataRoom({ initial, meId, isGuest }: { initial: RoomView; meId: string; isGuest: boolean }) {
+export function SerataRoom({ initial, meId, isGuest, google }: { initial: RoomView; meId: string; isGuest: boolean; google: boolean }) {
   const locale = useLocale();
   const t = useTranslations("serata");
   const { view, refresh, serverNow } = useRoom(initial, locale);
@@ -107,7 +108,7 @@ export function SerataRoom({ initial, meId, isGuest }: { initial: RoomView; meId
         <TableVote candidates={view.candidates} mine={view.table.myBallot} pending={pending}
           onSubmit={(dots, veto) => run(() => submitBallot(view.code, dots, veto))} />
       )}
-      {view.status === "done" && view.result && <Result view={view} meId={meId} isGuest={isGuest} />}
+      {view.status === "done" && view.result && <Result view={view} meId={meId} isGuest={isGuest} google={google} />}
 
       {view.status !== "done" && (
         <section className="grid gap-2 rounded-md bg-paper-2 p-3" aria-live="polite">
@@ -302,7 +303,7 @@ function TableVote({ candidates, mine, pending, onSubmit }: {
   );
 }
 
-function Result({ view, meId, isGuest }: { view: RoomView; meId: string; isGuest: boolean }) {
+function Result({ view, meId, isGuest, google }: { view: RoomView; meId: string; isGuest: boolean; google: boolean }) {
   const t = useTranslations("serata");
   const tr = useTranslations("serata.result");
   const locale = useLocale();
@@ -378,6 +379,7 @@ function Result({ view, meId, isGuest }: { view: RoomView; meId: string; isGuest
         <section className="grid gap-3 rounded-md bg-paper-2 p-4">
           <h2 className="font-display text-lg font-semibold">{tr("saveTitle")}</h2>
           <p className="text-sm text-muted">{tr("saveBody")}</p>
+          <GoogleButton callbackURL={`/${locale}/s/${view.code}`} enabled={google} />
           {sent ? (
             <p role="status" className="text-sm text-second-text">{tr("saveSent")}</p>
           ) : (

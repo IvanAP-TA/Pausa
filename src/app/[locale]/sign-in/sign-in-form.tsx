@@ -1,15 +1,12 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth-client";
-import { isEmbeddedBrowser } from "@/lib/embedded-browser";
+import { GoogleButton, useEmbedded } from "@/components/google-button";
 
 type Status = "idle" | "sending" | "sent" | "error";
 
-const noop = () => () => {};
-/** The user agent, read on the client only (the server renders as if it were an ordinary browser, then this settles). */
-const useEmbedded = () => useSyncExternalStore(noop, () => isEmbeddedBrowser(navigator.userAgent), () => false);
 
 export function SignInForm({ callbackURL, google }: { callbackURL: string; google: boolean }) {
   const t = useTranslations("auth");
@@ -31,16 +28,10 @@ export function SignInForm({ callbackURL, google }: { callbackURL: string; googl
   return (
     <div className="grid gap-6">
       {google && embedded && <p className="rounded-md border border-rule p-3 text-sm text-muted">{t("embeddedHint")}</p>}
-      {google && !embedded && (
+      {!embedded && (
         <>
-          <button
-            type="button"
-            onClick={() => authClient.signIn.social({ provider: "google", callbackURL })}
-            className="min-h-12 rounded-full border border-rule bg-paper-3 font-semibold hover:bg-rule"
-          >
-            {t("google")}
-          </button>
-          <p className="text-center text-xs text-muted">{t("or")}</p>
+          <GoogleButton callbackURL={callbackURL} enabled={google} />
+          {(google || process.env.NODE_ENV === "development") && <p className="text-center text-xs text-muted">{t("or")}</p>}
         </>
       )}
       <form onSubmit={onSubmit} className="grid gap-2">
