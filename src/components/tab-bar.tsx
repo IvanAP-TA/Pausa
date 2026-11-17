@@ -21,7 +21,7 @@ export function TabBar({ circleId }: { circleId: string }) {
       <Link
         href={href}
         aria-current={active ? "page" : undefined}
-        className={`grid justify-items-center gap-1 py-1.5 text-[11px] transition-colors ${active ? "text-ink" : "text-muted hover:text-ink"}`}
+        className={`grid justify-items-center gap-1 py-1.5 text-[11px] transition-colors lg:flex lg:items-center lg:justify-start lg:gap-3 lg:rounded-md lg:px-3 lg:py-3 lg:text-[15px] lg:hover:bg-paper-2 ${active ? "text-ink lg:bg-paper-2" : "text-muted hover:text-ink"}`}
       >
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={active ? "text-accent" : ""} aria-hidden="true">
           {icons[key]}
@@ -34,14 +34,14 @@ export function TabBar({ circleId }: { circleId: string }) {
   return (
     <nav
       aria-label="Pausa"
-      className="sticky bottom-0 z-10 grid grid-cols-5 items-center border-t border-rule bg-paper/80 px-2 pb-[max(env(safe-area-inset-bottom),12px)] pt-2 backdrop-blur-md"
+      className="sticky bottom-0 z-10 grid grid-cols-5 items-center border-t border-rule bg-paper/80 px-2 pb-[max(env(safe-area-inset-bottom),12px)] pt-2 backdrop-blur-md lg:top-0 lg:order-1 lg:h-dvh lg:w-56 lg:shrink-0 lg:grid-cols-1 lg:content-start lg:gap-1 lg:border-r lg:border-t-0 lg:bg-transparent lg:px-3 lg:pb-6 lg:pt-8 lg:backdrop-blur-none"
     >
       {tab("diary", base)}
       {tab("serata", `${base}/serata`)}
       <Link
         href={`${base}/log`}
         aria-label={t("log")}
-        className="grid size-12 place-items-center justify-self-center rounded-full bg-accent text-on-accent transition-colors hover:bg-accent-hover active:translate-y-px"
+        className="grid size-12 place-items-center justify-self-center rounded-full bg-accent text-on-accent transition-colors hover:bg-accent-hover active:translate-y-px lg:order-first lg:mb-4 lg:h-12 lg:w-full lg:justify-self-stretch"
       >
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
           <path d="M12 5v14M5 12h14" />
