@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { recommendFast } from "../src/lib/engine";
 import { recommend, type LogFact, type Person } from "../src/lib/core/insights";
 
-/* Not part of `npm test`: run with `npx vitest run scripts/engine-bench.test.ts` to compare the engine with the TypeScript reference.
+/* Skipped unless BENCH=1 (it takes ~40 s): run with `BENCH=1 npx vitest run scripts/engine-bench.test.ts --reporter=verbose` to compare the engine with the TypeScript reference.
  * It builds one big Cerchia and times both over several runs. */
 
 function bigCircle(people: number, titles: number) {
@@ -23,7 +23,7 @@ const time = async (f: () => Promise<unknown> | unknown, runs: number) => {
   return (performance.now() - t0) / runs;
 };
 
-describe("benchmark", () => {
+describe.skipIf(!process.env.BENCH)("benchmark", () => {
   for (const [people, titles] of [[4, 40], [12, 300], [30, 1500]] as const) {
     it(`${people} people, ${titles} titles`, { timeout: 120_000 }, async () => {
       const { ps, facts } = bigCircle(people, titles);
