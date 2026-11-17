@@ -16,6 +16,7 @@
     "serata": "Movie night",
     "log": "Log a watch",
     "lists": "Lists",
+    "ranking": "Ranking",
     "circle": "Circle"
   },
   "kind": {
@@ -903,8 +904,6 @@
   "ranking": {
     "title": "Ranking",
     "lede": "Every title in the group, with everyone's rating and the average.",
-    "linkTitle": "Group ranking",
-    "linkBody": "Every film with everyone's ratings and the average",
     "count": "{count, plural, one {# title} other {# titles}}",
     "filters": {
       "title": "Filters",

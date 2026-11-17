@@ -16,6 +16,7 @@
     "serata": "Serata",
     "log": "Registra una visione",
     "lists": "Liste",
+    "ranking": "Classifica",
     "circle": "Cerchia"
   },
   "kind": {
@@ -903,8 +904,6 @@
   "ranking": {
     "title": "Classifica",
     "lede": "Tutti i titoli del gruppo, con il voto di ognuno e la media.",
-    "linkTitle": "Classifica del gruppo",
-    "linkBody": "Ogni film con i voti di tutti e la media",
     "count": "{count, plural, one {# titolo} other {# titoli}}",
     "filters": {
       "title": "Filtri",

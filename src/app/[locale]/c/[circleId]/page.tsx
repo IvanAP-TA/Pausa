@@ -40,7 +40,7 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
   const filtered = Object.values(filters).some(Boolean);
   const qs = new URLSearchParams(Object.entries({ q: filters.q, kind: filters.kind, by: filters.by, year: filters.year, min: filters.minRating }).flatMap(([k, v]) => (v ? [[k, String(v)]] : []))).toString();
 
-  const [circle, members, stats, watching, feed, unread, t, ta, about, tr] = await Promise.all([
+  const [circle, members, stats, watching, feed, unread, t, ta, about] = await Promise.all([
     getCircleForMember(circleId, user.id),
     getMembers(circleId),
     getCircleStats(circleId, now.getFullYear()),
@@ -51,7 +51,6 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
     getTranslations("feed"),
     getTranslations("account"),
     getMyCircleSettings(circleId, user.id),
-    getTranslations("ranking"),
   ]);
   const coverGlyph = about?.cover ? COVER_GLYPH[about.cover] : null;
 
@@ -123,8 +122,6 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
           ))}
         </ul>
       )}
-
-      <Link href={`/c/${circleId}/ranking`} className="mx-4 flex min-h-11 items-center justify-between gap-3 rounded-md border border-rule px-4 text-sm font-semibold hover:bg-paper-2">{tr("linkTitle")}<span aria-hidden="true" className="text-muted">→</span></Link>
 
       <FilterBar circleId={circleId} members={members} filters={filters} qs={qs} year={now.getFullYear()} resultCount={filtered ? Math.min(feed.length, PAGE) : null} hasMore={feed.length > PAGE} />
 

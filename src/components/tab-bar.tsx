@@ -8,6 +8,7 @@ import { LogoutButton } from "./logout-button";
 const icons = {
   diary: <path d="M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM9 8h6M9 12h6M9 16h4" />,
   serata: <path d="M4 6h5v4H4zM4 14h5v4H4zM9 8h4v8H9M13 12h7" />,
+  ranking: <path d="M5 20V11M12 20V5M19 20v-6" />,
   lists: <path d="M5 6h14M5 12h14M5 18h9" />,
   circle: <path d="M9 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7 1.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM3.5 19c.8-3 3-4.5 5.5-4.5s4.7 1.5 5.5 4.5M14 15.2c2.6-.4 5 .9 6 3.8" />,
 };
@@ -37,7 +38,7 @@ export function TabBar({ circleId, me }: { circleId: string; me: { id: string; n
   return (
     <nav
       aria-label="Pausa"
-      className="sticky bottom-0 z-10 grid grid-cols-5 items-center border-t border-rule bg-paper/80 px-2 pb-[max(env(safe-area-inset-bottom),12px)] pt-2 backdrop-blur-md lg:top-0 lg:order-1 lg:h-dvh lg:w-56 lg:shrink-0 lg:grid-cols-1 lg:content-start lg:gap-1 lg:border-r lg:border-t-0 lg:bg-transparent lg:px-3 lg:pb-6 lg:pt-8 lg:backdrop-blur-none"
+      className="sticky bottom-0 z-10 grid grid-cols-6 items-center border-t border-rule bg-paper/80 px-2 pb-[max(env(safe-area-inset-bottom),12px)] pt-2 backdrop-blur-md lg:top-0 lg:order-1 lg:h-dvh lg:w-56 lg:shrink-0 lg:grid-cols-1 lg:content-start lg:gap-1 lg:border-r lg:border-t-0 lg:bg-transparent lg:px-3 lg:pb-6 lg:pt-8 lg:backdrop-blur-none"
     >
       {tab("diary", base)}
       {tab("serata", `${base}/serata`)}
@@ -51,6 +52,7 @@ export function TabBar({ circleId, me }: { circleId: string; me: { id: string; n
         </svg>
       </Link>
       {tab("lists", `${base}/lists`)}
+      {tab("ranking", `${base}/ranking`)}
       {tab("circle", `${base}/members`)}
       {/* Desktop only: who you are, and the way out. On phones the same lives in the Cerchia tab and the diary header. */}
       <div className="hidden lg:mt-auto lg:grid lg:gap-1 lg:border-t lg:border-rule lg:pt-4">

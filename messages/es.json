@@ -16,6 +16,7 @@
     "serata": "Noche",
     "log": "Registrar lo que viste",
     "lists": "Listas",
+    "ranking": "Ranking",
     "circle": "Círculo"
   },
   "kind": {
@@ -903,8 +904,6 @@
   "ranking": {
     "title": "Clasificación",
     "lede": "Todos los títulos del grupo, con la nota de cada uno y la media.",
-    "linkTitle": "Clasificación del grupo",
-    "linkBody": "Cada película con las notas de todos y la media",
     "count": "{count, plural, one {# título} other {# títulos}}",
     "filters": {
       "title": "Filtros",
