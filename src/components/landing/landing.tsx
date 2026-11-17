@@ -238,6 +238,11 @@ export function Landing() {
             <p className="text-sm text-muted">{t("footer.tagline")}</p>
             <div className="max-w-md"><TmdbAttribution /></div>
           </div>
+          <div className="grid gap-3 md:justify-items-end">
+          <ul className="flex items-center gap-4 text-sm text-muted">
+            <li><Link href="/privacy" className="inline-flex min-h-10 items-center underline-offset-4 hover:text-ink hover:underline">{t("footer.privacy")}</Link></li>
+            <li><Link href="/terms" className="inline-flex min-h-10 items-center underline-offset-4 hover:text-ink hover:underline">{t("footer.terms")}</Link></li>
+          </ul>
           <ul className="flex items-center gap-1 text-sm" aria-label={t("footer.language")}>
             {routing.locales.map((l) => (
               <li key={l}>
@@ -248,6 +253,7 @@ export function Landing() {
               </li>
             ))}
           </ul>
+          </div>
         </div>
       </footer>
 

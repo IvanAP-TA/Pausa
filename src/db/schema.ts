@@ -56,6 +56,14 @@ export const verification = sqliteTable("verification", {
   updatedAt: updatedAt(),
 });
 
+/** Better Auth's rate limiter, kept in D1 so every Worker instance shares the same counters. */
+export const rateLimit = sqliteTable("rate_limit", {
+  id: id(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: integer("last_request").notNull(), // ms since epoch
+});
+
 /* ───────────── Cerchie ───────────── */
 
 export const circle = sqliteTable("circle", {

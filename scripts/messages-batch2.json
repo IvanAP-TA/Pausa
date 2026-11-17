@@ -1,0 +1,35 @@
+{
+  "it": {
+    "feed": { "older": "Mostra i più vecchi", "endOfFeed": "Non c'è altro, più indietro di così." },
+    "errors": { "notFoundTitle": "Qui non c'è niente", "notFoundBody": "La pagina non esiste, oppure non fa parte di una Cerchia a cui appartieni.", "home": "Torna all'inizio", "errorTitle": "Qualcosa si è inceppato", "errorBody": "Non è colpa tua. Riprova: di solito basta una volta.", "retry": "Riprova" },
+    "serata": { "join": { "avatar": "Scegli un'immagine" } },
+    "retention": {
+      "firstStepsTitle": "Per cominciare",
+      "stepLog": "Registra il primo titolo", "stepInvite": "Invita qualcuno nella Cerchia", "stepSerata": "Fate la prima Serata",
+      "memoriesTitle": "Un anno fa… e oltre",
+      "yearsAgo": "{count, plural, one {Un anno fa} other {# anni fa}}", "saw": "ha visto"
+    }
+  },
+  "en": {
+    "feed": { "older": "Show older", "endOfFeed": "Nothing further back than this." },
+    "errors": { "notFoundTitle": "Nothing here", "notFoundBody": "The page does not exist, or it is not in a Cerchia you belong to.", "home": "Back to start", "errorTitle": "Something jammed", "errorBody": "It is not you. Try again: once is usually enough.", "retry": "Try again" },
+    "serata": { "join": { "avatar": "Pick a picture" } },
+    "retention": {
+      "firstStepsTitle": "To get started",
+      "stepLog": "Log your first title", "stepInvite": "Invite someone to the Cerchia", "stepSerata": "Run your first Serata",
+      "memoriesTitle": "A year ago… and beyond",
+      "yearsAgo": "{count, plural, one {A year ago} other {# years ago}}", "saw": "watched"
+    }
+  },
+  "es": {
+    "feed": { "older": "Mostrar anteriores", "endOfFeed": "No hay nada más atrás." },
+    "errors": { "notFoundTitle": "Aquí no hay nada", "notFoundBody": "La página no existe, o no está en una Cerchia a la que perteneces.", "home": "Volver al inicio", "errorTitle": "Algo se atascó", "errorBody": "No es culpa tuya. Inténtalo de nuevo: normalmente basta una vez.", "retry": "Reintentar" },
+    "serata": { "join": { "avatar": "Elige una imagen" } },
+    "retention": {
+      "firstStepsTitle": "Para empezar",
+      "stepLog": "Registra tu primer título", "stepInvite": "Invita a alguien a la Cerchia", "stepSerata": "Haced la primera Serata",
+      "memoriesTitle": "Hace un año… y más",
+      "yearsAgo": "{count, plural, one {Hace un año} other {Hace # años}}", "saw": "vio"
+    }
+  }
+}

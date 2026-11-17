@@ -141,3 +141,20 @@ How it behaves: imports are **idempotent** (a viewing already logged for the sam
 Security: the browser may only send the person's own data and the source id. Posters, TMDB ids and localized titles are looked up by the server (TMDB / AniList) and anything else is dropped, so a member can't make other people's browsers load a URL of their choosing. Cover URLs are only accepted from TMDB paths or `https://s4.anilist.co/`.
 
 Limits: the work is split into chunks of 20 films (each triggers a TMDB lookup) or 30 anime. A test (`import.test.ts`, "D1 limits") records every query of a worst-case chunk and fails if one binds more than 100 variables or a chunk needs more than 45 queries, the limits of D1 and of the free Workers plan. Not done: importing watchlists/lists, MAL "plan to watch", and AniList private profiles.
+
+## Launch basics
+
+- **Edit and delete.** Logs (author only; comments and reactions go with it), comments (author edits; author or the log's owner deletes), lists (rename, remove items, reorder rankings, add any title by search, delete). Rules live in `src/lib/core/content.ts` and are tested on real SQLite.
+- **Cerchia profile.** Admins rename it; people in several Cerchie switch from the Cerchia tab, and the app reopens the last one used (cookie `pausa-circle`).
+- **Account** (`/account`): name, JSON export of your data (`/api/account/export`), deletion with the email typed back. Deleting hands a Cerchia you created to its oldest other member (made admin) and deletes it if you were alone (`src/lib/core/account.ts`).
+- **Legal** (`/privacy`, `/terms`, in it/en/es, linked from the footer and the account page): `src/lib/legal.ts`. **It is a draft written from what the code does and has not been reviewed by a lawyer.** Set `CONTACT_EMAIL` and `LEGAL_ENTITY` (shown at the bottom of both pages) before launch.
+- **Abuse limits.** Better Auth's rate limiter, stored in D1 (`rate_limit`, migration 0004): 5 sign-in emails per 10 min and 10 guests per hour per IP, 60 requests/min overall.
+- **Errors.** Translated not-found and error pages. The feed pages 20 at a time (`?before=`).
+
+## Retention
+
+- **Memorie** ("a year ago…"): logs from the same calendar day (±3 days) in earlier years, shown on top of the feed with their review.
+- **First steps** checklist (log something, invite someone, run a Serata), gone when all three are done.
+- **Guest avatars**: guests pick one of eight emoji when joining a Serata (stored as `emoji:<glyph>` in `user.image`, whitelisted).
+
+Still open: episodes and seasons, a streaming-services filter and individual recommendations (they need TMDB availability data), web push with a service worker, and launch metrics.

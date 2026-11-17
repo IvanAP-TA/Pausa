@@ -3,24 +3,37 @@ import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
 import { getCircleFeed, getCircleForMember, getCircleStats, getMembers, getNowWatching, getUnreadCount } from "@/lib/data";
 import { clearNowWatching } from "@/lib/actions";
+import { getDb } from "@/db";
+import { memoriesFor, onboardingFor } from "@/lib/core/retention";
 import { Avatar } from "@/components/avatar";
 import { LogCard } from "@/components/log-card";
 import { Poster } from "@/components/poster";
 
-export default async function Feed({ params }: PageProps<"/[locale]/c/[circleId]">) {
+const PAGE = 20;
+
+export default async function Feed({ params, searchParams }: PageProps<"/[locale]/c/[circleId]">) {
   const { locale, circleId } = await params;
+  const { before: beforeParam } = await searchParams;
   setRequestLocale(locale);
   const user = await requireUser();
   const now = new Date();
+  // Older entries: ?before=<ms of the last log shown>.
+  const beforeMs = typeof beforeParam === "string" ? Number(beforeParam) : NaN;
+  const before = Number.isFinite(beforeMs) ? new Date(beforeMs) : undefined;
 
-  const [circle, members, stats, watching, feed, unread, t] = await Promise.all([
+  const db = await getDb();
+  const [circle, members, stats, watching, feed, unread, t, memories, onboarding, tr] = await Promise.all([
     getCircleForMember(circleId, user.id),
     getMembers(circleId),
     getCircleStats(circleId, now.getFullYear()),
     getNowWatching(circleId, locale),
-    getCircleFeed(circleId, user.id, locale),
+    // One extra row tells us whether there is a next page.
+    getCircleFeed(circleId, user.id, locale, PAGE + 1, undefined, before),
     getUnreadCount(user.id),
     getTranslations("feed"),
+    before ? Promise.resolve([]) : memoriesFor(db, circleId, now, { locale }),
+    before ? Promise.resolve(null) : onboardingFor(db, circleId, user.id),
+    getTranslations("retention"),
   ]);
 
   return (
@@ -75,7 +88,50 @@ export default async function Feed({ params }: PageProps<"/[locale]/c/[circleId]
         </ul>
       )}
 
-      {feed.length === 0 ? (
+      {onboarding && !onboarding.done && (
+        <section aria-labelledby="first-steps" className="mx-4 grid gap-2 rounded-md bg-second-deep p-4 text-on-second">
+          <h2 id="first-steps" className="font-display text-lg">{tr("firstStepsTitle")}</h2>
+          <ul className="grid gap-1.5 text-sm">
+            {([
+              ["hasLog", tr("stepLog"), `/c/${circleId}/log`],
+              ["hasCompany", tr("stepInvite"), `/c/${circleId}/members`],
+              ["hasSerata", tr("stepSerata"), `/c/${circleId}/serata`],
+            ] as const).map(([key, label, href]) => (
+              <li key={key}>
+                {onboarding[key] ? (
+                  <span className="flex min-h-9 items-center gap-2 text-on-second-muted line-through"><span aria-hidden="true">✓</span>{label}</span>
+                ) : (
+                  <Link href={href} className="flex min-h-9 items-center gap-2 font-semibold underline-offset-4 hover:underline"><span aria-hidden="true">○</span>{label}</Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {memories.length > 0 && (
+        <section aria-labelledby="memories" className="mx-4 grid gap-3">
+          <h2 id="memories" className="font-display text-lg">{tr("memoriesTitle")}</h2>
+          <ul className="grid gap-2">
+            {memories.map((m) => (
+              <li key={m.logId}>
+                <Link href={`/c/${circleId}/l/${m.logId}`} className="flex gap-3 rounded-md border border-rule bg-paper-2 p-3 hover:border-muted">
+                  <Poster media={{ id: m.mediaId, title: m.title, posterPath: m.posterPath }} size="sm" className="w-12 shrink-0" />
+                  <span className="min-w-0 text-[13px]">
+                    <span className="text-xs text-accent">{tr("yearsAgo", { count: m.yearsAgo })}</span>
+                    <span className="block"><strong className="font-semibold">{m.author.name}</strong> {tr("saw")} <strong className="font-semibold">{m.title}</strong></span>
+                    {m.review && <span className="subtitle mt-1 block line-clamp-2 text-[13px]">{m.review}</span>}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {feed.length === 0 && before ? (
+        <p className="px-4 text-sm text-muted">{t("endOfFeed")}</p>
+      ) : feed.length === 0 ? (
         <section className="mx-4 mt-6 grid gap-3 rounded-md border border-dashed border-rule p-6">
           <h2 className="font-display text-xl font-semibold">{t("emptyTitle")}</h2>
           <p className="text-sm text-muted">{t("emptyBody")}</p>
@@ -85,7 +141,12 @@ export default async function Feed({ params }: PageProps<"/[locale]/c/[circleId]
         </section>
       ) : (
         <div className="grid gap-4 px-4">
-          {feed.map((log) => <LogCard key={log.id} log={log} now={now} circleId={circleId} />)}
+          {feed.slice(0, PAGE).map((log) => <LogCard key={log.id} log={log} now={now} circleId={circleId} />)}
+          {feed.length > PAGE && (
+            <Link href={`/c/${circleId}?before=${feed[PAGE - 1].createdAt.getTime()}`} className="inline-flex min-h-11 w-fit items-center justify-self-center rounded-full border border-rule px-5 text-sm font-semibold hover:bg-paper-2">
+              {t("older")}
+            </Link>
+          )}
         </div>
       )}
     </main>

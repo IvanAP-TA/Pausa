@@ -1,0 +1,59 @@
+{
+  "it": {
+    "landing": { "footer": { "privacy": "Privacy", "terms": "Termini" } },
+    "manage": {
+      "edit": "Modifica", "delete": "Elimina", "deleteConfirm": "Sì, elimina", "saveChanges": "Salva le modifiche",
+      "editLog": "Modifica il log", "deleteLogWarn": "Sparisce per tutti, con commenti e reazioni.",
+      "renameCircle": "Rinomina la Cerchia", "rename": "Rinomina", "switchCircle": "Le tue Cerchie",
+      "manageList": "Gestisci la lista", "addTitle": "Aggiungi un titolo", "noResults": "Nessun titolo trovato.", "added": "Aggiunto",
+      "moveUp": "Sposta su {title}", "moveDown": "Sposta giù {title}", "removeItem": "Togli {title}",
+      "deleteList": "Elimina la lista", "deleteListWarn": "La lista sparisce per tutti.",
+      "accountTitle": "Il tuo account", "accountBody": "Nome, i tuoi dati, eliminazione", "legal": "Note legali", "privacy": "Privacy", "terms": "Termini"
+    },
+    "account": {
+      "back": "Indietro", "title": "Il tuo account", "name": "Il tuo nome", "save": "Salva", "saved": "Salvato.", "circles": "Le tue Cerchie",
+      "dataTitle": "I tuoi dati", "dataBody": "Scarica tutto quello che Pausa sa di te: profilo, log, commenti e liste, in formato JSON.", "export": "Scarica i miei dati",
+      "deleteTitle": "Elimina l'account", "deleteBody": "Cancella subito il tuo profilo, i tuoi log, commenti, reazioni e le tue liste personali. Non si può annullare. Se hai creato una Cerchia con altri dentro, passa a un altro membro, che ne diventa admin.",
+      "deleteOpen": "Voglio eliminare il mio account", "deleteConfirm": "Per confermare scrivi la tua email ({email}).", "deleteGo": "Elimina per sempre", "deleteMismatch": "L'email non coincide. Non è stato eliminato niente.",
+      "legal": "Note legali", "privacy": "Privacy", "terms": "Termini"
+    }
+  },
+  "en": {
+    "landing": { "footer": { "privacy": "Privacy", "terms": "Terms" } },
+    "manage": {
+      "edit": "Edit", "delete": "Delete", "deleteConfirm": "Yes, delete", "saveChanges": "Save changes",
+      "editLog": "Edit the log", "deleteLogWarn": "It disappears for everyone, with its comments and reactions.",
+      "renameCircle": "Rename the Cerchia", "rename": "Rename", "switchCircle": "Your Cerchie",
+      "manageList": "Manage the list", "addTitle": "Add a title", "noResults": "No title found.", "added": "Added",
+      "moveUp": "Move {title} up", "moveDown": "Move {title} down", "removeItem": "Remove {title}",
+      "deleteList": "Delete the list", "deleteListWarn": "The list disappears for everyone.",
+      "accountTitle": "Your account", "accountBody": "Name, your data, deletion", "legal": "Legal", "privacy": "Privacy", "terms": "Terms"
+    },
+    "account": {
+      "back": "Back", "title": "Your account", "name": "Your name", "save": "Save", "saved": "Saved.", "circles": "Your Cerchie",
+      "dataTitle": "Your data", "dataBody": "Download everything Pausa knows about you: profile, logs, comments and lists, as JSON.", "export": "Download my data",
+      "deleteTitle": "Delete the account", "deleteBody": "Immediately erases your profile, your logs, comments, reactions and personal lists. It cannot be undone. If you created a Cerchia that has other people in it, it passes to another member, who becomes admin.",
+      "deleteOpen": "I want to delete my account", "deleteConfirm": "To confirm, type your email ({email}).", "deleteGo": "Delete forever", "deleteMismatch": "The email does not match. Nothing was deleted.",
+      "legal": "Legal", "privacy": "Privacy", "terms": "Terms"
+    }
+  },
+  "es": {
+    "landing": { "footer": { "privacy": "Privacidad", "terms": "Términos" } },
+    "manage": {
+      "edit": "Editar", "delete": "Eliminar", "deleteConfirm": "Sí, eliminar", "saveChanges": "Guardar cambios",
+      "editLog": "Editar el registro", "deleteLogWarn": "Desaparece para todos, con sus comentarios y reacciones.",
+      "renameCircle": "Renombrar la Cerchia", "rename": "Renombrar", "switchCircle": "Tus Cerchie",
+      "manageList": "Gestionar la lista", "addTitle": "Añadir un título", "noResults": "No se encontró ningún título.", "added": "Añadido",
+      "moveUp": "Subir {title}", "moveDown": "Bajar {title}", "removeItem": "Quitar {title}",
+      "deleteList": "Eliminar la lista", "deleteListWarn": "La lista desaparece para todos.",
+      "accountTitle": "Tu cuenta", "accountBody": "Nombre, tus datos, eliminación", "legal": "Aviso legal", "privacy": "Privacidad", "terms": "Términos"
+    },
+    "account": {
+      "back": "Volver", "title": "Tu cuenta", "name": "Tu nombre", "save": "Guardar", "saved": "Guardado.", "circles": "Tus Cerchie",
+      "dataTitle": "Tus datos", "dataBody": "Descarga todo lo que Pausa sabe de ti: perfil, registros, comentarios y listas, en JSON.", "export": "Descargar mis datos",
+      "deleteTitle": "Eliminar la cuenta", "deleteBody": "Borra al instante tu perfil, tus registros, comentarios, reacciones y tus listas personales. No se puede deshacer. Si creaste una Cerchia con más gente dentro, pasa a otro miembro, que se vuelve admin.",
+      "deleteOpen": "Quiero eliminar mi cuenta", "deleteConfirm": "Para confirmar, escribe tu email ({email}).", "deleteGo": "Eliminar para siempre", "deleteMismatch": "El email no coincide. No se eliminó nada.",
+      "legal": "Aviso legal", "privacy": "Privacidad", "terms": "Términos"
+    }
+  }
+}

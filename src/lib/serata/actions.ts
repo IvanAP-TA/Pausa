@@ -8,6 +8,7 @@ import { atomically, getDb, schema as s } from "@/db";
 import { routing, type Locale } from "@/i18n/routing";
 import { getSession } from "@/lib/auth";
 import { getCircleForMember } from "@/lib/data";
+import { isGuestAvatar, toAvatarImage } from "@/lib/avatars";
 import { requireUser } from "@/lib/session";
 import { DOTS, MAX_CANDIDATES, MIN_CANDIDATES, currentMatch, initBracket, initTable, validBallot, type SerataState } from "./engine";
 import { getSerataByCode, tryClose } from "./server";
@@ -67,7 +68,7 @@ export async function createSerata(formData: FormData) {
 }
 
 /** Joins the current session (member or anonymous guest) to a Serata. Guests send a display name. */
-export async function joinSerata(code: string, guestName?: string) {
+export async function joinSerata(code: string, guestName?: string, guestAvatar?: string) {
   const user = await requireAnySession();
   const serata = await getSerataByCode(code);
   if (!serata || serata.status === "done") throw new Error("Serata closed");
@@ -76,7 +77,7 @@ export async function joinSerata(code: string, guestName?: string) {
 
   const db = await getDb();
   await atomically([
-    isGuest && db.update(s.user).set({ name }).where(eq(s.user.id, user.id)),
+    isGuest && db.update(s.user).set({ name, ...(isGuestAvatar(guestAvatar) ? { image: toAvatarImage(guestAvatar) } : {}) }).where(eq(s.user.id, user.id)),
     db.insert(s.serataParticipant).values({ serataId: serata.id, userId: user.id, name, isGuest }).onConflictDoNothing(),
     bump(db, serata.id),
   ]);

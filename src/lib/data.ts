@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, inArray, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, like, lt, or, sql } from "drizzle-orm";
 import { getDb, schema as s } from "@/db";
 
 /* Localized title: media_title for the locale, else the original title. */
@@ -61,7 +61,7 @@ export async function getCircleStats(circleId: string, year: number) {
 
 /* ───────────── Feed ───────────── */
 
-export async function getCircleFeed(circleId: string, viewerId: string, locale: string, limit = 30, logId?: string) {
+export async function getCircleFeed(circleId: string, viewerId: string, locale: string, limit = 30, logId?: string, before?: Date) {
   const db = await getDb();
   const logs = await db
     .select({
@@ -80,7 +80,7 @@ export async function getCircleFeed(circleId: string, viewerId: string, locale: 
     .innerJoin(s.circleMember, and(eq(s.circleMember.userId, s.log.userId), eq(s.circleMember.circleId, circleId)))
     .innerJoin(s.user, eq(s.user.id, s.log.userId))
     .innerJoin(s.mediaEntity, eq(s.mediaEntity.id, s.log.mediaId))
-    .where(logId ? eq(s.log.id, logId) : undefined)
+    .where(and(logId ? eq(s.log.id, logId) : undefined, before ? lt(s.log.createdAt, before) : undefined))
     .orderBy(desc(s.log.createdAt))
     .limit(limit);
 
@@ -207,7 +207,7 @@ export async function getNowWatching(circleId: string, locale: string) {
 export async function getCircleLists(circleId: string | null, locale: string, ownerId?: string) {
   const db = await getDb();
   const lists = await db
-    .select({ id: s.list.id, name: s.list.name, kind: s.list.kind, description: s.list.description, owner: s.user.name })
+    .select({ id: s.list.id, name: s.list.name, kind: s.list.kind, description: s.list.description, owner: s.user.name, ownerId: s.list.ownerId })
     .from(s.list)
     .innerJoin(s.user, eq(s.user.id, s.list.ownerId))
     .where(circleId ? eq(s.list.circleId, circleId) : and(sql`${s.list.circleId} is null`, eq(s.list.ownerId, ownerId ?? "")))

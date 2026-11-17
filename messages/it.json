@@ -60,7 +60,9 @@
     "rating": "{stars} stelle su 5",
     "stopWatching": "Finito o mollato",
     "notifications": "Notifiche",
-    "unread": "{count, plural, one {# notifica non letta} other {# notifiche non lette}}"
+    "unread": "{count, plural, one {# notifica non letta} other {# notifiche non lette}}",
+    "older": "Mostra i più vecchi",
+    "endOfFeed": "Non c'è altro, più indietro di così."
   },
   "log": {
     "title": "Cosa hai visto?",
@@ -243,7 +245,8 @@
       "bodyMember": "La tua Cerchia sta scegliendo cosa guardare.",
       "name": "Il tuo nome",
       "cta": "Entra in sala",
-      "error": "Non sono riuscito a farti entrare. Riprova."
+      "error": "Non sono riuscito a farti entrare. Riprova.",
+      "avatar": "Scegli un'immagine"
     }
   },
   "join": {
@@ -523,7 +526,9 @@
     },
     "footer": {
       "tagline": "Il diario privato per gruppi di amici.",
-      "language": "Lingua"
+      "language": "Lingua",
+      "privacy": "Privacy",
+      "terms": "Termini"
     }
   },
   "import": {
@@ -590,5 +595,67 @@
       "anilistDown": "AniList non risponde. Riprova tra poco.",
       "chunk": "L'importazione si è fermata: controlla la connessione e rilancia. Quello che è già stato importato non si duplica."
     }
+  },
+  "manage": {
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "deleteConfirm": "Sì, elimina",
+    "saveChanges": "Salva le modifiche",
+    "editLog": "Modifica il log",
+    "deleteLogWarn": "Sparisce per tutti, con commenti e reazioni.",
+    "renameCircle": "Rinomina la Cerchia",
+    "rename": "Rinomina",
+    "switchCircle": "Le tue Cerchie",
+    "manageList": "Gestisci la lista",
+    "addTitle": "Aggiungi un titolo",
+    "noResults": "Nessun titolo trovato.",
+    "added": "Aggiunto",
+    "moveUp": "Sposta su {title}",
+    "moveDown": "Sposta giù {title}",
+    "removeItem": "Togli {title}",
+    "deleteList": "Elimina la lista",
+    "deleteListWarn": "La lista sparisce per tutti.",
+    "accountTitle": "Il tuo account",
+    "accountBody": "Nome, i tuoi dati, eliminazione",
+    "legal": "Note legali",
+    "privacy": "Privacy",
+    "terms": "Termini"
+  },
+  "account": {
+    "back": "Indietro",
+    "title": "Il tuo account",
+    "name": "Il tuo nome",
+    "save": "Salva",
+    "saved": "Salvato.",
+    "circles": "Le tue Cerchie",
+    "dataTitle": "I tuoi dati",
+    "dataBody": "Scarica tutto quello che Pausa sa di te: profilo, log, commenti e liste, in formato JSON.",
+    "export": "Scarica i miei dati",
+    "deleteTitle": "Elimina l'account",
+    "deleteBody": "Cancella subito il tuo profilo, i tuoi log, commenti, reazioni e le tue liste personali. Non si può annullare. Se hai creato una Cerchia con altri dentro, passa a un altro membro, che ne diventa admin.",
+    "deleteOpen": "Voglio eliminare il mio account",
+    "deleteConfirm": "Per confermare scrivi la tua email ({email}).",
+    "deleteGo": "Elimina per sempre",
+    "deleteMismatch": "L'email non coincide. Non è stato eliminato niente.",
+    "legal": "Note legali",
+    "privacy": "Privacy",
+    "terms": "Termini"
+  },
+  "errors": {
+    "notFoundTitle": "Qui non c'è niente",
+    "notFoundBody": "La pagina non esiste, oppure non fa parte di una Cerchia a cui appartieni.",
+    "home": "Torna all'inizio",
+    "errorTitle": "Qualcosa si è inceppato",
+    "errorBody": "Non è colpa tua. Riprova: di solito basta una volta.",
+    "retry": "Riprova"
+  },
+  "retention": {
+    "firstStepsTitle": "Per cominciare",
+    "stepLog": "Registra il primo titolo",
+    "stepInvite": "Invita qualcuno nella Cerchia",
+    "stepSerata": "Fate la prima Serata",
+    "memoriesTitle": "Un anno fa… e oltre",
+    "yearsAgo": "{count, plural, one {Un anno fa} other {# anni fa}}",
+    "saw": "ha visto"
   }
 }

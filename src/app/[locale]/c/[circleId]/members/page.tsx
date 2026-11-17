@@ -3,12 +3,13 @@ import { getFormatter, getTranslations, setRequestLocale } from "next-intl/serve
 import { THEME_COOKIE, parseTheme } from "@/lib/theme";
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
-import { getCircleForMember, getMembers } from "@/lib/data";
+import { getCircleForMember, getMembers, getMyCircles } from "@/lib/data";
 import { getDb } from "@/db";
 import { EXPIRY_CHOICES, MAX_USES_CHOICES, listInvites } from "@/lib/core/circles";
 import {
   createInviteAction, leaveCircleAction, removeMemberAction, revokeInviteAction, setMemberRoleAction,
 } from "@/lib/actions";
+import { renameCircleAction } from "@/lib/manage-actions";
 import { Avatar } from "@/components/avatar";
 import { TmdbAttribution } from "@/components/tmdb-attribution";
 import { CopyInvite } from "./copy-invite";
@@ -23,11 +24,13 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
   setRequestLocale(locale);
   const user = await requireUser();
   const now = new Date();
-  const [circle, members, invites, t, format] = await Promise.all([
+  const [circle, members, myCircles, invites, t, tm, format] = await Promise.all([
     getCircleForMember(circleId, user.id),
     getMembers(circleId),
+    getMyCircles(user.id),
     getDb().then((db) => listInvites(db, circleId, now)),
     getTranslations("circle"),
+    getTranslations("manage"),
     getFormatter(),
   ]);
   const isAdmin = circle!.role === "admin";
@@ -46,6 +49,29 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
   return (
     <main className="grid gap-8 px-4 pb-8 pt-6">
       <h1 className="font-display text-[1.75rem] leading-tight">{circle!.name}</h1>
+
+      {isAdmin && (
+        <details className="-mt-4">
+          <summary className="inline-flex min-h-9 cursor-pointer list-none items-center text-sm text-muted marker:content-none hover:text-ink">{tm("renameCircle")}</summary>
+          <form action={renameCircleAction} className="mt-2 flex gap-2">
+            {hidden}
+            <label htmlFor="circle-name" className="sr-only">{tm("renameCircle")}</label>
+            <input id="circle-name" name="name" required maxLength={60} defaultValue={circle!.name} className={field} />
+            <button className="min-h-11 shrink-0 rounded-full border border-rule px-4 text-sm font-semibold hover:bg-paper-2">{tm("rename")}</button>
+          </form>
+        </details>
+      )}
+
+      {myCircles.length > 1 && (
+        <nav aria-label={tm("switchCircle")} className="flex flex-wrap gap-2">
+          {myCircles.map((c) => (
+            <Link key={c.id} href={`/c/${c.id}`} aria-current={c.id === circleId ? "page" : undefined}
+              className={`inline-flex min-h-9 items-center rounded-full border px-3.5 text-sm ${c.id === circleId ? "border-ink font-semibold" : "border-rule text-muted hover:text-ink"}`}>
+              {c.name}
+            </Link>
+          ))}
+        </nav>
+      )}
 
       {error && <p role="alert" className="rounded-md border border-accent p-3 text-sm text-accent">{t(`errors.${error}`)}</p>}
 
@@ -168,7 +194,19 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
         </form>
       </details>
 
+      <Link href="/account" className="flex min-h-14 items-center justify-between gap-3 rounded-md border border-rule bg-paper-2 px-4 hover:border-muted">
+        <span>
+          <span className="block font-display text-lg leading-tight">{tm("accountTitle")}</span>
+          <span className="text-xs text-muted">{tm("accountBody")}</span>
+        </span>
+        <span aria-hidden="true" className="text-muted">→</span>
+      </Link>
+
       <AccountControls initialTheme={parseTheme((await cookies()).get(THEME_COOKIE)?.value)} />
+      <nav className="flex gap-4 text-xs text-muted" aria-label={tm("legal")}>
+        <Link href="/privacy" className="underline underline-offset-4 hover:text-ink">{tm("privacy")}</Link>
+        <Link href="/terms" className="underline underline-offset-4 hover:text-ink">{tm("terms")}</Link>
+      </nav>
       <TmdbAttribution />
     </main>
   );

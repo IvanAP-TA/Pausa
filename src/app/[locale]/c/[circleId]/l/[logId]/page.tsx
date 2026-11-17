@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
 import { getComments, getListTargets, getLogInCircle } from "@/lib/data";
 import { addComment, addToList } from "@/lib/actions";
+import { deleteCommentAction, deleteLogAction, updateCommentAction } from "@/lib/manage-actions";
 import { Avatar } from "@/components/avatar";
 import { LogCard } from "@/components/log-card";
 import { Spoiler } from "@/components/spoiler";
@@ -15,13 +16,14 @@ export default async function LogThread({ params }: PageProps<"/[locale]/c/[circ
   const log = await getLogInCircle(circleId, logId, user.id, locale);
   if (!log) notFound();
 
-  const [comments, targets, t, tc, tl, tf, format] = await Promise.all([
+  const [comments, targets, t, tc, tl, tf, tm, format] = await Promise.all([
     getComments(logId),
     getListTargets(circleId, user.id),
     getTranslations("comments"),
     getTranslations("common"),
     getTranslations("lists"),
     getTranslations("feed"),
+    getTranslations("manage"),
     getFormatter(),
   ]);
   const now = new Date();
@@ -31,6 +33,22 @@ export default async function LogThread({ params }: PageProps<"/[locale]/c/[circ
       <Link href={`/c/${circleId}`} className="inline-flex min-h-8 w-fit items-center text-sm text-muted hover:text-ink">← {tc("back")}</Link>
 
       <LogCard log={log} now={now} />
+
+      {log.author.id === user.id && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href={`/c/${circleId}/l/${logId}/edit`} className="inline-flex min-h-9 items-center rounded-full border border-rule px-4 text-sm font-semibold hover:bg-paper-2">{tm("edit")}</Link>
+          <details>
+            <summary className="inline-flex min-h-9 cursor-pointer list-none items-center rounded-full border border-rule px-4 text-sm text-muted marker:content-none hover:text-ink">{tm("delete")}</summary>
+            <form action={deleteLogAction} className="mt-2 flex flex-wrap items-center gap-3">
+              <input type="hidden" name="locale" value={locale} />
+              <input type="hidden" name="logId" value={logId} />
+              <input type="hidden" name="circleId" value={circleId} />
+              <p className="text-sm text-muted">{tm("deleteLogWarn")}</p>
+              <button className="min-h-9 rounded-full bg-accent px-4 text-sm font-semibold text-on-accent">{tm("deleteConfirm")}</button>
+            </form>
+          </details>
+        </div>
+      )}
 
       {targets.length > 0 && (
         <form action={addToList} className="flex gap-2">
@@ -59,6 +77,27 @@ export default async function LogThread({ params }: PageProps<"/[locale]/c/[circ
                   <time className="tabular" dateTime={c.createdAt.toISOString()}>{format.relativeTime(c.createdAt, now)}</time>
                 </p>
                 {c.isSpoiler ? <Spoiler label={tf("spoiler")}>{c.body}</Spoiler> : <p className="mt-0.5 text-sm [overflow-wrap:anywhere]">{c.body}</p>}
+                {(c.author.id === user.id || log.author.id === user.id) && (
+                  <div className="mt-1 flex flex-wrap items-start gap-3 text-xs text-muted">
+                    {c.author.id === user.id && (
+                      <details>
+                        <summary className="inline-flex min-h-8 cursor-pointer list-none items-center marker:content-none hover:text-ink">{tm("edit")}</summary>
+                        <form action={updateCommentAction} className="mt-1 grid gap-2">
+                          <input type="hidden" name="commentId" value={c.id} />
+                          <textarea name="body" required maxLength={2000} rows={3} defaultValue={c.body} aria-label={tm("edit")} className="rounded-sm border border-rule bg-paper-2 p-2 text-sm text-ink" />
+                          <div className="flex items-center gap-3">
+                            <label className="flex min-h-8 items-center gap-2"><input type="checkbox" name="isSpoiler" defaultChecked={c.isSpoiler} className="size-4 accent-[var(--color-accent)]" />{t("spoiler")}</label>
+                            <button className="min-h-8 rounded-full border border-rule px-3 font-semibold text-ink">{tm("saveChanges")}</button>
+                          </div>
+                        </form>
+                      </details>
+                    )}
+                    <form action={deleteCommentAction}>
+                      <input type="hidden" name="commentId" value={c.id} />
+                      <button className="inline-flex min-h-8 items-center hover:text-accent">{tm("delete")}</button>
+                    </form>
+                  </div>
+                )}
               </div>
             </li>
           ))}

@@ -60,7 +60,9 @@
     "rating": "{stars} out of 5 stars",
     "stopWatching": "Done or dropped",
     "notifications": "Notifications",
-    "unread": "{count, plural, one {# unread notification} other {# unread notifications}}"
+    "unread": "{count, plural, one {# unread notification} other {# unread notifications}}",
+    "older": "Show older",
+    "endOfFeed": "Nothing further back than this."
   },
   "log": {
     "title": "What did you watch?",
@@ -243,7 +245,8 @@
       "bodyMember": "Your Circle is picking what to watch.",
       "name": "Your name",
       "cta": "Join the room",
-      "error": "Couldn't get you in. Try again."
+      "error": "Couldn't get you in. Try again.",
+      "avatar": "Pick a picture"
     }
   },
   "join": {
@@ -523,7 +526,9 @@
     },
     "footer": {
       "tagline": "The private diary for friend groups.",
-      "language": "Language"
+      "language": "Language",
+      "privacy": "Privacy",
+      "terms": "Terms"
     }
   },
   "import": {
@@ -590,5 +595,67 @@
       "anilistDown": "AniList isn't responding. Try again shortly.",
       "chunk": "The import stopped: check your connection and run it again. What was already imported isn't duplicated."
     }
+  },
+  "manage": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Yes, delete",
+    "saveChanges": "Save changes",
+    "editLog": "Edit the log",
+    "deleteLogWarn": "It disappears for everyone, with its comments and reactions.",
+    "renameCircle": "Rename the Cerchia",
+    "rename": "Rename",
+    "switchCircle": "Your Cerchie",
+    "manageList": "Manage the list",
+    "addTitle": "Add a title",
+    "noResults": "No title found.",
+    "added": "Added",
+    "moveUp": "Move {title} up",
+    "moveDown": "Move {title} down",
+    "removeItem": "Remove {title}",
+    "deleteList": "Delete the list",
+    "deleteListWarn": "The list disappears for everyone.",
+    "accountTitle": "Your account",
+    "accountBody": "Name, your data, deletion",
+    "legal": "Legal",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
+  "account": {
+    "back": "Back",
+    "title": "Your account",
+    "name": "Your name",
+    "save": "Save",
+    "saved": "Saved.",
+    "circles": "Your Cerchie",
+    "dataTitle": "Your data",
+    "dataBody": "Download everything Pausa knows about you: profile, logs, comments and lists, as JSON.",
+    "export": "Download my data",
+    "deleteTitle": "Delete the account",
+    "deleteBody": "Immediately erases your profile, your logs, comments, reactions and personal lists. It cannot be undone. If you created a Cerchia that has other people in it, it passes to another member, who becomes admin.",
+    "deleteOpen": "I want to delete my account",
+    "deleteConfirm": "To confirm, type your email ({email}).",
+    "deleteGo": "Delete forever",
+    "deleteMismatch": "The email does not match. Nothing was deleted.",
+    "legal": "Legal",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
+  "errors": {
+    "notFoundTitle": "Nothing here",
+    "notFoundBody": "The page does not exist, or it is not in a Cerchia you belong to.",
+    "home": "Back to start",
+    "errorTitle": "Something jammed",
+    "errorBody": "It is not you. Try again: once is usually enough.",
+    "retry": "Try again"
+  },
+  "retention": {
+    "firstStepsTitle": "To get started",
+    "stepLog": "Log your first title",
+    "stepInvite": "Invite someone to the Cerchia",
+    "stepSerata": "Run your first Serata",
+    "memoriesTitle": "A year ago… and beyond",
+    "yearsAgo": "{count, plural, one {A year ago} other {# years ago}}",
+    "saw": "watched"
   }
 }

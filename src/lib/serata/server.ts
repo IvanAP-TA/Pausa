@@ -29,8 +29,9 @@ export async function getCandidates(serataId: string, locale: string): Promise<(
 
 export async function getParticipants(serataId: string) {
   const db = await getDb();
-  return db.select({ id: s.serataParticipant.userId, name: s.serataParticipant.name, isGuest: s.serataParticipant.isGuest })
-    .from(s.serataParticipant).where(eq(s.serataParticipant.serataId, serataId)).orderBy(asc(s.serataParticipant.joinedAt));
+  return db.select({ id: s.serataParticipant.userId, name: s.serataParticipant.name, isGuest: s.serataParticipant.isGuest, image: s.user.image })
+    .from(s.serataParticipant).innerJoin(s.user, eq(s.user.id, s.serataParticipant.userId))
+    .where(eq(s.serataParticipant.serataId, serataId)).orderBy(asc(s.serataParticipant.joinedAt));
 }
 
 /** The polling fast path: version + membership in a single query. */

@@ -1,4 +1,6 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { LAST_CIRCLE_COOKIE } from "@/components/circle-memory";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getSession } from "@/lib/auth";
 import { getMyCircles } from "@/lib/data";
@@ -34,7 +36,11 @@ export default async function Home({ params }: PageProps<"/[locale]">) {
   if (!user) return <Landing />;
 
   const circles = await getMyCircles(user.id);
-  if (circles.length > 0) redirect(`/${locale}/c/${circles[0].id}`);
+  if (circles.length > 0) {
+    // Land in the Cerchia you used last, if you still belong to it.
+    const last = (await cookies()).get(LAST_CIRCLE_COOKIE)?.value;
+    redirect(`/${locale}/c/${(circles.find((c) => c.id === last) ?? circles[0]).id}`);
+  }
 
   const t = await getTranslations("home");
   return (

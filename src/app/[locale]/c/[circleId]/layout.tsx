@@ -3,6 +3,7 @@ import { setRequestLocale } from "next-intl/server";
 import { requireUser } from "@/lib/session";
 import { getCircleForMember } from "@/lib/data";
 import { TabBar } from "@/components/tab-bar";
+import { CircleMemory } from "@/components/circle-memory";
 
 export default async function CircleLayout({ children, params }: LayoutProps<"/[locale]/c/[circleId]">) {
   const { locale, circleId } = await params;
@@ -13,6 +14,7 @@ export default async function CircleLayout({ children, params }: LayoutProps<"/[
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col">
+      <CircleMemory circleId={circleId} />
       <div className="projector flex-1">{children}</div>
       <TabBar circleId={circleId} />
     </div>
