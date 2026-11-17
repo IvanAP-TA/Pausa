@@ -8,7 +8,7 @@ Stato al 17 novembre 2026, a lavoro di sviluppo concluso. Il codice è pronto pe
 
 - [ ] Account **Cloudflare**, piano **Workers a pagamento** (il gratuito ha 10 ms di CPU per richiesta), **database D1**, migrazioni (`npm run db:migrate:remote`), **dominio** `pausa.gnagno.org`.
 - [ ] **Segreti e variabili** della tabella di `DEPLOY.md`: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RESEND_API_KEY` + dominio verificato (SPF/DKIM), `EMAIL_FROM`, `TMDB_API_TOKEN`, chiavi VAPID **rigenerate** per la produzione, `ADMIN_EMAILS`, `CONTACT_EMAIL`, `LEGAL_ENTITY`; facoltativi `SENTRY_DSN`, `NEXT_PUBLIC_CF_ANALYTICS_TOKEN`.
-- [ ] **Google OAuth** (facoltativo): progetto, schermata di consenso con link a privacy e termini, URI di ritorno del dominio vero, pubblicazione.
+- [x] **Google OAuth** (facoltativo): progetto, schermata di consenso con link a privacy e termini, URI di ritorno del dominio vero, pubblicazione. In produzione; accesso riuscito anche con un account non incluso negli utenti di prova.
 - [ ] **Prime verifiche dopo il deploy**: `/api/health/engine` risponde `"wasm"`, accesso via email, Serata con un ospite, `/sitemap.xml`.
 - [ ] **Prove su telefono vero** (`docs/PHONE_TEST.md`): browser dentro WhatsApp e Instagram, notifiche push (Chrome/Android; iPhone solo da app installata), installazione, velocità su rete mobile.
 - [ ] **Search Console** e **Bing Webmaster Tools**: aggiungere il dominio e inviare la sitemap.

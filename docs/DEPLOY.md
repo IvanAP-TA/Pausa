@@ -24,7 +24,9 @@ Controllo: `npx wrangler whoami` mostra il tuo account.
 npx wrangler d1 create pausa
 ```
 
-Copia il `database_id` stampato in `wrangler.jsonc` (al posto di `00000000-…`). Poi crea le tabelle sul database vero:
+Copia il `database_id` stampato in `wrangler.jsonc` (al posto di `00000000-…`). Se Wrangler aggiunge automaticamente una seconda voce al file, conserva una sola voce per `pausa`, con `"binding": "DB"`, l'identificativo vero e `"migrations_dir": "drizzle"`.
+
+Poi crea le tabelle sul database vero:
 
 ```bash
 npm run db:migrate:remote
@@ -38,6 +40,8 @@ Controllo: `npx wrangler d1 execute pausa --remote --command "select name from s
 ## 2. Variabili e segreti
 
 Due tipi. I **segreti** non finiscono mai nel repository: si impostano con `npx wrangler secret put NOME` (chiede il valore). Le **variabili** non segrete vanno in `wrangler.jsonc` sotto `"vars"` oppure nel pannello Cloudflare (Workers → pausa → Settings → Variables). `wrangler.jsonc` ha `"keep_vars": true`, quindi le variabili scritte nel pannello non vengono cancellate dai deploy successivi (senza, ogni deploy le azzera: il segno tipico è il pulsante Google che sparisce, perché `GOOGLE_CLIENT_ID` è una variabile e `GOOGLE_CLIENT_SECRET` un segreto). Se il pulsante manca, controlla che **entrambi** esistano nel Worker; in alternativa imposta anche l'id come segreto con `npx wrangler secret put GOOGLE_CLIENT_ID`.
+
+Anche i valori non segreti possono essere salvati con `wrangler secret put`: per `ADMIN_EMAILS`, `CONTACT_EMAIL` e `LEGAL_ENTITY` permette di non versionare gli indirizzi email e i dati del titolare. Non definire lo stesso nome anche in `"vars"`.
 
 | Nome | Tipo | A cosa serve | Dove si ottiene |
 |---|---|---|---|
@@ -97,33 +101,38 @@ Gli altri segreti (`BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `TMDB_API_TOKEN`, `VA
 ## 3. Primo deploy
 
 ```bash
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=la_chiave_pubblica npm run deploy
+export NEXT_PUBLIC_VAPID_PUBLIC_KEY='la_chiave_pubblica'
+npm run deploy
 ```
 
-(su PowerShell: `$env:NEXT_PUBLIC_VAPID_PUBLIC_KEY="..."; npm run deploy`). La build impiega alcuni minuti. Alla fine wrangler stampa un indirizzo `https://pausa.<tuo-account>.workers.dev`.
+(su PowerShell: `$env:NEXT_PUBLIC_VAPID_PUBLIC_KEY="..."; npm run deploy`). Ripeti l'impostazione della chiave pubblica se apri un nuovo terminale, prima di ogni build o deploy. La build impiega alcuni minuti. Alla fine wrangler stampa un indirizzo `https://pausa.<tuo-account>.workers.dev`.
 
 Controlli, in quest'ordine:
 
 1. `https://…workers.dev/it` mostra la landing.
 2. `https://…workers.dev/api/health/engine` risponde `{"engine":"wasm", …}`. Se risponde `"typescript"` il sito funziona ma usa il ripiego più lento: controlla che `src/lib/engine/engine.wasm` sia nel repository e che `wrangler.jsonc` abbia `"main": "worker.ts"`.
-3. Registrati con la tua email: deve arrivare il link e portarti dentro. Crea una Cerchia, registra una visione.
-4. Apri una Serata e il suo link da un'altra finestra in incognito (ospite): deve entrare con un nome.
+
+Se `BETTER_AUTH_URL` è già `https://pausa.gnagno.org`, aspetta di collegare quel dominio prima di provare l'accesso: i link email puntano all'indirizzo configurato.
 
 ## 4. Dominio
 
-Cloudflare → Workers & Pages → `pausa` → Settings → **Domains & routes** → Add → Custom domain → `pausa.gnagno.org`. Il DNS si configura da solo se il dominio è su Cloudflare. Poi:
+Cloudflare → Workers & Pages → `pausa` → Settings → **Domains & routes** → Add → Custom domain → `pausa.gnagno.org`. Il DNS si configura da solo se il dominio è su Cloudflare. Il dominio collegato è anche dichiarato in `wrangler.jsonc` con `"routes": [{ "pattern": "pausa.gnagno.org", "custom_domain": true }]`: mantieni coerenti dashboard e configurazione se lo cambi. Poi:
 
-- imposta `BETTER_AUTH_URL=https://pausa.gnagno.org` e rilancia `npm run deploy`;
+- se `BETTER_AUTH_URL` non è già `https://pausa.gnagno.org`, aggiornalo e rilancia `npm run deploy` con la chiave pubblica VAPID impostata;
+- sul dominio definitivo, registrati con la tua email: deve arrivare il link e portarti dentro. Crea una Cerchia, registra una visione;
+- apri una Serata e il suo link da un'altra finestra in incognito (ospite): deve entrare con un nome;
 - controlla `https://pausa.gnagno.org/sitemap.xml`, `/robots.txt`, `/llms.txt`;
 - Search Console e Bing Webmaster Tools: aggiungi il dominio e invia `https://pausa.gnagno.org/sitemap.xml`.
 
 ## 5. Google (facoltativo)
 
 1. console.cloud.google.com → nuovo progetto.
-2. **Schermata di consenso OAuth**: tipo "Esterno"; nome Pausa; link a `https://pausa.gnagno.org/it/privacy` e `/it/terms`; dominio autorizzato `gnagno.org`; ambiti: email e profilo.
-3. **Credenziali → ID client OAuth → Applicazione web**. URI di reindirizzamento autorizzato: `https://pausa.gnagno.org/api/auth/callback/google`.
-4. Imposta `GOOGLE_CLIENT_ID` (variabile) e `GOOGLE_CLIENT_SECRET` (segreto); rilancia il deploy. Il pulsante "Continua con Google" compare da solo.
-5. Pubblica l'app ("In produzione"), altrimenti entrano solo gli utenti di prova.
+2. **Google Auth Platform → Branding**: nome Pausa; email di assistenza e contatto sviluppatore; home page `https://pausa.gnagno.org/it`; privacy `https://pausa.gnagno.org/it/privacy`; termini `https://pausa.gnagno.org/it/terms`; dominio autorizzato `gnagno.org`. In **Pubblico / Audience**, scegli "Esterno".
+3. **Accesso ai dati / Data Access**: seleziona solo `openid`, `https://www.googleapis.com/auth/userinfo.email` e `https://www.googleapis.com/auth/userinfo.profile`. Devono risultare ambiti non sensibili; non servono API o permessi Gmail, Drive o Calendar.
+4. Per la prima prova lascia lo stato **Testing** e aggiungi il tuo account Google in **Pubblico / Audience → Utenti di prova**.
+5. **Client / Clients → Crea client → Applicazione web**, nome "Pausa Web". URI di reindirizzamento autorizzato: `https://pausa.gnagno.org/api/auth/callback/google`, senza prefisso della lingua. Le origini JavaScript possono restare vuote per questo flusso server. Conserva Client ID e Client secret nel gestore di password: il segreto viene mostrato solo alla creazione, non salvarlo nel repository.
+6. Salva i valori sul Worker, uno alla volta: `npx wrangler secret put GOOGLE_CLIENT_ID`, poi `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Anche l'id può essere salvato come segreto; in alternativa può essere una variabile, preservata da `"keep_vars": true`. Sul sito già pubblicato, `secret put` aggiorna il Worker senza rifare la build. Il pulsante "Continua con Google" compare quando entrambi i valori sono presenti.
+7. Prova l'accesso in una finestra in incognito su `https://pausa.gnagno.org/it/sign-in`. Per il lancio vai in **Pubblico / Audience → Pubblica app** e controlla che lo stato diventi **In produzione**; completa eventuali verifiche richieste da Google. Ripeti l'accesso anche con un account non incluso negli utenti di prova.
 
 Nota: Google non funziona dentro i browser di WhatsApp e Instagram; il codice nasconde il pulsante lì e offre il link via email. Chi entra con Google e poi con email (stessa casella) finisce sullo stesso account.
 
@@ -152,7 +161,9 @@ Non sono nel codice e non le posso fare per te:
 | Sintomo | Causa probabile |
 |---|---|
 | Nessuno riceve il link di accesso | `RESEND_API_KEY` mancante o dominio non verificato su Resend. In produzione il codice non scrive mai i link nei log: fallisce apposta. |
+| La ricerca di film noti non trova titoli | Controllare `TMDB_API_TOKEN`: serve un **API Read Access Token** valido, non la chiave v3. Un `401` da TMDB indica una credenziale rifiutata; aggiornare il segreto con `npx wrangler secret put TMDB_API_TOKEN`, senza rifare la build. |
 | "Error 1102 / exceeded CPU" | piano gratuito: passare al piano a pagamento |
+| Il dominio rimanda a `cloudflareaccess.com` | Cloudflare Access protegge il sito prima dell'app: controllare in Zero Trust se la protezione è voluta o appartiene a una vecchia applicazione. Non rimuoverla senza verificare. |
 | `/api/health/engine` dice `typescript` | `engine.wasm` non incluso nel bundle (vedi controllo 2 del primo deploy) |
 | Le notifiche non si attivano | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` non era impostata durante la build |
 | Errori su `database_id` | `wrangler.jsonc` ha ancora l'id segnaposto |
