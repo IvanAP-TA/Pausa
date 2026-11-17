@@ -37,7 +37,7 @@ Controllo: `npx wrangler d1 execute pausa --remote --command "select name from s
 
 ## 2. Variabili e segreti
 
-Due tipi. I **segreti** non finiscono mai nel repository: si impostano con `npx wrangler secret put NOME` (chiede il valore). Le **variabili** non segrete vanno in `wrangler.jsonc` sotto `"vars"` oppure nel pannello Cloudflare (Workers → pausa → Settings → Variables).
+Due tipi. I **segreti** non finiscono mai nel repository: si impostano con `npx wrangler secret put NOME` (chiede il valore). Le **variabili** non segrete vanno in `wrangler.jsonc` sotto `"vars"` oppure nel pannello Cloudflare (Workers → pausa → Settings → Variables). `wrangler.jsonc` ha `"keep_vars": true`, quindi le variabili scritte nel pannello non vengono cancellate dai deploy successivi (senza, ogni deploy le azzera: il segno tipico è il pulsante Google che sparisce, perché `GOOGLE_CLIENT_ID` è una variabile e `GOOGLE_CLIENT_SECRET` un segreto). Se il pulsante manca, controlla che **entrambi** esistano nel Worker; in alternativa imposta anche l'id come segreto con `npx wrangler secret put GOOGLE_CLIENT_ID`.
 
 | Nome | Tipo | A cosa serve | Dove si ottiene |
 |---|---|---|---|

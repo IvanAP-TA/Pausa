@@ -4,6 +4,9 @@
   "main": "worker.ts",
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Variables typed in the Cloudflare dashboard (GOOGLE_CLIENT_ID, EMAIL_FROM, ADMIN_EMAILS, ...) survive every deploy. Without this,
+  // each `wrangler deploy` wipes them and, for example, the Google button disappears.
+  "keep_vars": true,
   // 03:17 UTC housekeeping and 17:00 UTC email digest (see scheduled() in worker.ts).
   "triggers": { "crons": ["17 3 * * *", "0 17 * * *"] },
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
