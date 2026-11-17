@@ -106,11 +106,21 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
         {hidden}
         {pickedCard}
         {modeToggle}
-        <label className="grid gap-1.5 text-sm text-muted">
-          {t("progress")}
-          <input name="progress" maxLength={20} placeholder={t("progressPlaceholder")}
-            className="tabular min-h-12 rounded-sm border border-rule bg-paper-2 px-3 text-ink placeholder:text-muted/60" />
-        </label>
+        <fieldset className="grid gap-1.5">
+          <legend className="mb-1 text-sm text-muted">{t("progress")}</legend>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="grid gap-1.5 text-sm text-muted">
+              {t("season")}
+              <input type="number" name="season" min={1} max={99} inputMode="numeric" disabled={picked.kind === "movie"} placeholder={picked.kind === "anime" ? "–" : "1"}
+                className="tabular min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-3 text-ink placeholder:text-muted/60 disabled:opacity-40" />
+            </label>
+            <label className="grid gap-1.5 text-sm text-muted">
+              {t("episode")}
+              <input type="number" name="episode" min={1} max={9999} inputMode="numeric" placeholder="1"
+                className="tabular min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-3 text-ink placeholder:text-muted/60" />
+            </label>
+          </div>
+        </fieldset>
         <Submit label={t("setWatching")} pending={t("saving")} />
       </form>
     );
@@ -143,6 +153,13 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
           <input name="platform" maxLength={60} placeholder={t("platformPlaceholder")} className="min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-3 text-ink placeholder:text-muted/60" />
         </label>
       </div>
+
+      {picked.kind !== "movie" && (
+        <label className="grid gap-1.5 text-sm text-muted sm:max-w-40">
+          {t("seasonLogged")}
+          <input type="number" name="season" min={1} max={99} inputMode="numeric" placeholder={t("wholeShow")} className="tabular min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-3 text-ink placeholder:text-muted/60" />
+        </label>
+      )}
 
       <label className="grid gap-1.5 text-sm text-muted">
         {t("review")}

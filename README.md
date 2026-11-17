@@ -157,4 +157,6 @@ Limits: the work is split into chunks of 20 films (each triggers a TMDB lookup) 
 - **First steps** checklist (log something, invite someone, run a Serata), gone when all three are done.
 - **Guest avatars**: guests pick one of eight emoji when joining a Serata (stored as `emoji:<glyph>` in `user.image`, whitelisted).
 
-Still open: episodes and seasons, a streaming-services filter and individual recommendations (they need TMDB availability data), web push with a service worker, and launch metrics.
+- **Episodes and seasons.** "Sto guardando" stores season and episode (`now_watching.season/episode`), with **+1 episode** and **New season** buttons on the feed; old free-text labels such as `S1·E9` are read when you first tap. A log of a series or anime can name its season (`log.season`). Logic in `src/lib/core/progress.ts`, tested. There is no per-episode diary and no episode count from TMDB yet (inputs accept 1..99 seasons, 1..9999 episodes).
+
+Still open: a streaming-services filter and individual recommendations (they need TMDB availability data), web push with a service worker, and launch metrics.

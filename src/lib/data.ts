@@ -71,6 +71,7 @@ export async function getCircleFeed(circleId: string, viewerId: string, locale: 
       review: s.log.review,
       containsSpoilers: s.log.containsSpoilers,
       platform: s.log.platform,
+      season: s.log.season,
       isRewatch: s.log.isRewatch,
       createdAt: s.log.createdAt,
       author: { id: s.user.id, name: s.user.name, image: s.user.image },
@@ -148,7 +149,7 @@ export async function logVisibleTo(logId: string, viewerId: string) {
 export async function getMyNowWatching(userId: string, locale: string) {
   const db = await getDb();
   const [row] = await db
-    .select({ progress: s.nowWatching.progress, media: mediaFields(locale) })
+    .select({ progress: s.nowWatching.progress, season: s.nowWatching.season, episode: s.nowWatching.episode, media: mediaFields(locale) })
     .from(s.nowWatching)
     .innerJoin(s.mediaEntity, eq(s.mediaEntity.id, s.nowWatching.mediaId))
     .where(eq(s.nowWatching.userId, userId));
@@ -193,7 +194,7 @@ export async function getUnreadCount(userId: string) {
 export async function getNowWatching(circleId: string, locale: string) {
   const db = await getDb();
   return db
-    .select({ user: { id: s.user.id, name: s.user.name, image: s.user.image }, progress: s.nowWatching.progress, updatedAt: s.nowWatching.updatedAt, media: mediaFields(locale) })
+    .select({ user: { id: s.user.id, name: s.user.name, image: s.user.image }, progress: s.nowWatching.progress, season: s.nowWatching.season, episode: s.nowWatching.episode, updatedAt: s.nowWatching.updatedAt, media: mediaFields(locale) })
     .from(s.nowWatching)
     .innerJoin(s.circleMember, and(eq(s.circleMember.userId, s.nowWatching.userId), eq(s.circleMember.circleId, circleId)))
     .innerJoin(s.user, eq(s.user.id, s.nowWatching.userId))

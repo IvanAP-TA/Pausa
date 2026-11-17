@@ -31,6 +31,7 @@ export function LogCard({ log, now, circleId }: { log: FeedLog; now: Date; circl
         <p className="mt-0.5 text-xs text-muted">
           {tk(log.media.kind)}
           {log.media.year ? ` · ${log.media.year}` : ""}
+          {log.season ? ` · ${t("season", { n: log.season })}` : ""}
           {log.platform ? ` · ${t("on", { platform: log.platform })}` : ""}
         </p>
         {log.rating ? (

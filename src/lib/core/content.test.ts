@@ -20,7 +20,7 @@ beforeEach(async () => {
   ]);
 });
 
-const base = { watchedOn: "2026-01-01", rating: 8, review: "ok", platform: null, containsSpoilers: false };
+const base = { watchedOn: "2026-01-01", rating: 8, review: "ok", platform: null, season: null, containsSpoilers: false };
 
 describe("logs and comments", () => {
   beforeEach(async () => {

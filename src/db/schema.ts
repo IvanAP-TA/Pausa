@@ -134,6 +134,7 @@ export const log = sqliteTable("log", {
   review: text("review"),
   containsSpoilers: integer("contains_spoilers", { mode: "boolean" }).notNull().default(false),
   platform: text("platform"),
+  season: integer("season"), // which season of a series/anime this log is about; null = the whole thing or a film
   isRewatch: integer("is_rewatch", { mode: "boolean" }).notNull().default(false),
   createdAt: createdAt(),
 }, (t) => [index("log_user_idx").on(t.userId, t.createdAt), index("log_media_idx").on(t.mediaId)]);
@@ -163,7 +164,9 @@ export const comment = sqliteTable("comment", {
 export const nowWatching = sqliteTable("now_watching", {
   userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
   mediaId: text("media_id").notNull().references(() => mediaEntity.id),
-  progress: text("progress"), // free label, e.g. "S3·E4"
+  progress: text("progress"), // legacy free label, e.g. "S3·E4"; superseded by season/episode
+  season: integer("season"),
+  episode: integer("episode"),
   updatedAt: updatedAt(),
 });
 

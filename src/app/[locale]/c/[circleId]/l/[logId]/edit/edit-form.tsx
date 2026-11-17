@@ -7,12 +7,13 @@ import { Stars } from "@/components/stars";
 
 type Props = {
   logId: string; circleId: string; today: string;
-  initial: { watchedOn: string; rating: number | null; review: string | null; platform: string | null; containsSpoilers: boolean };
+  showSeason: boolean;
+  initial: { season: number | null; watchedOn: string; rating: number | null; review: string | null; platform: string | null; containsSpoilers: boolean };
   members: { id: string; name: string }[];
   initialWith: string[];
 };
 
-export function EditLogForm({ logId, circleId, today, initial, members, initialWith }: Props) {
+export function EditLogForm({ showSeason, logId, circleId, today, initial, members, initialWith }: Props) {
   const t = useTranslations("log");
   const tf = useTranslations("feed");
   const te = useTranslations("manage");
@@ -46,6 +47,13 @@ export function EditLogForm({ logId, circleId, today, initial, members, initialW
           <input name="platform" maxLength={60} defaultValue={initial.platform ?? ""} className="min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-3 text-ink" />
         </label>
       </div>
+
+      {showSeason && (
+        <label className="grid gap-1.5 text-sm text-muted sm:max-w-40">
+          {t("seasonLogged")}
+          <input type="number" name="season" min={1} max={99} inputMode="numeric" defaultValue={initial.season ?? ""} placeholder={t("wholeShow")} className="tabular min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-3 text-ink placeholder:text-muted/60" />
+        </label>
+      )}
 
       <label className="grid gap-1.5 text-sm text-muted">
         {t("review")}

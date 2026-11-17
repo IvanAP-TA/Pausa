@@ -9,7 +9,7 @@ export type ContentError = "forbidden" | "not_found";
 /** Only the author edits a log; "visto con" is replaced wholesale and limited to members of the Cerchia the log is edited from. */
 export async function updateLog(
   db: AnyDb,
-  input: { logId: string; actorId: string; circleId: string; watchedOn: string; rating: number | null; review: string | null; platform: string | null; containsSpoilers: boolean; watchedWith: string[] },
+  input: { logId: string; actorId: string; circleId: string; watchedOn: string; rating: number | null; review: string | null; platform: string | null; season: number | null; containsSpoilers: boolean; watchedWith: string[] },
 ): Promise<{ ok: true } | { error: ContentError }> {
   const [row] = await db.select({ userId: log.userId }).from(log).where(eq(log.id, input.logId));
   if (!row) return { error: "not_found" };
@@ -18,7 +18,7 @@ export async function updateLog(
   const ids = new Set(members.map((m) => m.userId));
   const withIds = [...new Set(input.watchedWith)].filter((id) => id !== input.actorId && ids.has(id));
   await db.update(log).set({
-    watchedOn: input.watchedOn, rating: input.rating, review: input.review, platform: input.platform, containsSpoilers: input.containsSpoilers,
+    watchedOn: input.watchedOn, rating: input.rating, review: input.review, platform: input.platform, season: input.season, containsSpoilers: input.containsSpoilers,
   }).where(eq(log.id, input.logId));
   await db.delete(logWatchedWith).where(eq(logWatchedWith.logId, input.logId));
   if (withIds.length) await db.insert(logWatchedWith).values(withIds.map((userId) => ({ logId: input.logId, userId })));

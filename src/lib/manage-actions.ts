@@ -11,6 +11,7 @@ import { getAuth } from "./auth";
 import { requireUser } from "./session";
 import { getCircleForMember } from "./data";
 import { deleteAccount, updateProfile } from "./core/account";
+import { MAX_SEASON, toPosition } from "./core/progress";
 import {
   deleteComment, deleteList, deleteLog, moveListItem, removeListItem, renameCircle, renameList, updateComment, updateLog,
 } from "./core/content";
@@ -36,6 +37,7 @@ export async function updateLogAction(formData: FormData) {
     rating: z.coerce.number().int().min(0).max(10).transform((n) => (n === 0 ? null : n)),
     review: z.string().trim().max(4000).transform((v) => v || null),
     platform: z.string().trim().max(60).transform((v) => v || null),
+    season: z.number().int().min(1).max(MAX_SEASON).nullable(),
     containsSpoilers: z.boolean(),
     watchedWith: z.array(z.string()).max(20),
   }).parse({
@@ -45,6 +47,7 @@ export async function updateLogAction(formData: FormData) {
     rating: formData.get("rating") ?? 0,
     review: formData.get("review") ?? "",
     platform: formData.get("platform") ?? "",
+    season: toPosition(formData.get("season"), MAX_SEASON),
     containsSpoilers: formData.get("containsSpoilers") === "on",
     watchedWith: formData.getAll("watchedWith").map(String),
   });

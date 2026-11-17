@@ -10,6 +10,7 @@ import { atomically, getDb, schema as s } from "@/db";
 import { requireUser } from "./session";
 import { getCircleForMember, logVisibleTo, searchLocalMedia, type MediaSummary } from "./data";
 import { searchTmdb } from "./tmdb";
+import { MAX_EPISODE, MAX_SEASON, nextEpisode, nextSeason, setWatching, toPosition } from "./core/progress";
 import { REACTIONS } from "./reactions";
 import {
   EXPIRY_CHOICES, MAX_USES_CHOICES, createCircleWithInvite, createInvite, leaveCircle, redeemInvite, removeMember,
@@ -118,6 +119,7 @@ const logInput = z.object({
   rating: z.coerce.number().int().min(0).max(10).transform((n) => (n === 0 ? null : n)),
   review: z.string().trim().max(4000).transform((v) => v || null),
   platform: z.string().trim().max(60).transform((v) => v || null),
+  season: z.number().int().min(1).max(MAX_SEASON).nullable(),
   containsSpoilers: z.boolean(),
   isRewatch: z.boolean(),
   watchedWith: z.array(z.string()).max(20),
@@ -132,6 +134,7 @@ export async function createLog(formData: FormData) {
     rating: formData.get("rating") ?? 0,
     review: formData.get("review") ?? "",
     platform: formData.get("platform") ?? "",
+    season: toPosition(formData.get("season"), MAX_SEASON),
     containsSpoilers: formData.get("containsSpoilers") === "on",
     isRewatch: formData.get("isRewatch") === "on",
     watchedWith: formData.getAll("watchedWith").map(String),
@@ -152,7 +155,7 @@ export async function createLog(formData: FormData) {
   await atomically([
     db.insert(s.log).values({
       id: logId, userId: user.id, mediaId: input.mediaId, watchedOn: input.watchedOn, rating: input.rating,
-      review: input.review, platform: input.platform, containsSpoilers: input.containsSpoilers, isRewatch: input.isRewatch,
+      review: input.review, platform: input.platform, season: input.season, containsSpoilers: input.containsSpoilers, isRewatch: input.isRewatch,
     }),
     watchedWith.length > 0 && db.insert(s.logWatchedWith).values(watchedWith.map((userId) => ({ logId, userId }))),
     notify.length > 0 && db.insert(s.notification).values(notify.map((userId) => ({ userId, type: "log" as const, actorId: user.id, circleId: input.circleId, logId }))),
@@ -258,16 +261,15 @@ export async function setNowWatching(formData: FormData) {
   const user = await requireUser();
   const circleId = z.string().min(1).parse(formData.get("circleId"));
   const mediaId = z.string().min(1).parse(formData.get("mediaId"));
-  const progress = z.string().trim().max(20).transform((v) => v || null).parse(formData.get("progress") ?? "");
+  const season = toPosition(formData.get("season"), MAX_SEASON);
+  const episode = toPosition(formData.get("episode"), MAX_EPISODE);
   if (!(await getCircleForMember(circleId, user.id))) throw new Error("Not a member of this circle");
 
   const db = await getDb();
-  const [current] = await db.select({ mediaId: s.nowWatching.mediaId }).from(s.nowWatching).where(eq(s.nowWatching.userId, user.id));
-  await db.insert(s.nowWatching).values({ userId: user.id, mediaId, progress, updatedAt: new Date() })
-    .onConflictDoUpdate({ target: s.nowWatching.userId, set: { mediaId, progress, updatedAt: new Date() } });
+  const { titleChanged } = await setWatching(db, { userId: user.id, mediaId, season, episode });
 
   // Notify the Cerchia only when starting a new title, not on every episode bump.
-  if (current?.mediaId !== mediaId) {
+  if (titleChanged) {
     const others = await db.select({ userId: s.circleMember.userId }).from(s.circleMember)
       .where(and(eq(s.circleMember.circleId, circleId), ne(s.circleMember.userId, user.id)));
     if (others.length) {
@@ -275,6 +277,15 @@ export async function setNowWatching(formData: FormData) {
     }
   }
   redirect(`/${localeFrom(formData.get("locale"))}/c/${circleId}`);
+}
+
+/** One tap on the feed: next episode, or the start of the next season. */
+export async function advanceWatching(formData: FormData) {
+  const user = await requireUser();
+  const db = await getDb();
+  if (formData.get("what") === "season") await nextSeason(db, user.id);
+  else await nextEpisode(db, user.id);
+  revalidatePath("/[locale]/c/[circleId]", "page");
 }
 
 export async function clearNowWatching() {

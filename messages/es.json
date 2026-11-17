@@ -62,7 +62,10 @@
     "notifications": "Notificaciones",
     "unread": "{count, plural, one {# notificación sin leer} other {# notificaciones sin leer}}",
     "older": "Mostrar anteriores",
-    "endOfFeed": "No hay nada más atrás."
+    "endOfFeed": "No hay nada más atrás.",
+    "nextEpisode": "+1 episodio",
+    "nextSeason": "Nueva temporada",
+    "season": "Temporada {n}"
   },
   "log": {
     "title": "¿Qué viste?",
@@ -85,7 +88,11 @@
     "modeWatching": "Estoy viendo",
     "progress": "Por dónde vas",
     "progressPlaceholder": "T1·E3",
-    "setWatching": "Marcar como en curso"
+    "setWatching": "Marcar como en curso",
+    "season": "Temporada",
+    "episode": "Episodio",
+    "seasonLogged": "Temporada (opcional)",
+    "wholeShow": "Toda"
   },
   "lists": {
     "title": "Listas",

@@ -2,7 +2,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
 import { getCircleFeed, getCircleForMember, getCircleStats, getMembers, getNowWatching, getUnreadCount } from "@/lib/data";
-import { clearNowWatching } from "@/lib/actions";
+import { advanceWatching, clearNowWatching } from "@/lib/actions";
+import { formatProgress } from "@/lib/core/progress";
 import { getDb } from "@/db";
 import { memoriesFor, onboardingFor } from "@/lib/core/retention";
 import { Avatar } from "@/components/avatar";
@@ -74,12 +75,25 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
               <span className="min-w-0">
                 <strong className="font-semibold">{w.user.name}</strong> {t("isWatching")}{" "}
                 <strong className="font-semibold">{w.media.title}</strong>
-                {w.progress ? <span className="tabular text-muted"> {w.progress}</span> : null}
+                {formatProgress(w) ? <span className="tabular text-muted"> {formatProgress(w)}</span> : null}
               </span>
               {w.user.id === user.id ? (
-                <form action={clearNowWatching} className="ml-auto shrink-0">
-                  <button className="min-h-8 rounded-full border border-rule px-3 text-xs text-muted hover:text-ink">{t("stopWatching")}</button>
-                </form>
+                <div className="ml-auto flex shrink-0 flex-wrap justify-end gap-1.5">
+                  {w.media.kind !== "movie" && (
+                    <>
+                      <form action={advanceWatching}>
+                        <button className="min-h-9 rounded-full bg-accent px-3 text-xs font-semibold text-on-accent hover:bg-accent-hover">{t("nextEpisode")}</button>
+                      </form>
+                      <form action={advanceWatching}>
+                        <input type="hidden" name="what" value="season" />
+                        <button className="min-h-9 rounded-full border border-rule px-3 text-xs text-muted hover:text-ink">{t("nextSeason")}</button>
+                      </form>
+                    </>
+                  )}
+                  <form action={clearNowWatching}>
+                    <button className="min-h-9 rounded-full border border-rule px-3 text-xs text-muted hover:text-ink">{t("stopWatching")}</button>
+                  </form>
+                </div>
               ) : (
                 <span aria-hidden="true" className="ml-auto size-2 shrink-0 animate-pulse rounded-full bg-accent motion-reduce:animate-none" />
               )}

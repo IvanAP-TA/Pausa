@@ -24,10 +24,11 @@ export default async function EditLog({ params }: PageProps<"/[locale]/c/[circle
         <p className="font-display text-lg leading-tight">{log.media.title}</p>
       </div>
       <EditLogForm
+        showSeason={log.media.kind !== "movie"}
         logId={logId}
         circleId={circleId}
         today={new Date().toISOString().slice(0, 10)}
-        initial={{ watchedOn: log.watchedOn, rating: log.rating, review: log.review, platform: log.platform, containsSpoilers: log.containsSpoilers }}
+        initial={{ season: log.season, watchedOn: log.watchedOn, rating: log.rating, review: log.review, platform: log.platform, containsSpoilers: log.containsSpoilers }}
         members={members.filter((m) => m.id !== user.id).map((m) => ({ id: m.id, name: m.name }))}
         initialWith={log.watchedWith.map((w) => w.id)}
       />

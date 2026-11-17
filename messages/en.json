@@ -62,7 +62,10 @@
     "notifications": "Notifications",
     "unread": "{count, plural, one {# unread notification} other {# unread notifications}}",
     "older": "Show older",
-    "endOfFeed": "Nothing further back than this."
+    "endOfFeed": "Nothing further back than this.",
+    "nextEpisode": "+1 episode",
+    "nextSeason": "New season",
+    "season": "Season {n}"
   },
   "log": {
     "title": "What did you watch?",
@@ -85,7 +88,11 @@
     "modeWatching": "I'm watching",
     "progress": "Where you're at",
     "progressPlaceholder": "S1·E3",
-    "setWatching": "Mark as watching"
+    "setWatching": "Mark as watching",
+    "season": "Season",
+    "episode": "Episode",
+    "seasonLogged": "Season (optional)",
+    "wholeShow": "Whole show"
   },
   "lists": {
     "title": "Lists",
