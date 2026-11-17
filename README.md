@@ -1,7 +1,9 @@
 # Pausa
 
-Il diario privato della tua Cerchia: film, serie e anime, rating, commenti, liste, e (Fase 2) la Serata per decidere cosa guardare.
-Spec: `MASTER_PROMPT_PAUSA.md` v2.2 · Design: [`design/DESIGN_PLAN.md`](design/DESIGN_PLAN.md) (direction: **Sala**, Share Card **Locandina**).
+Il diario privato della tua Cerchia: film, serie e anime, rating, commenti, liste, e la Serata per decidere cosa guardare in due minuti.
+Spec: `MASTER_PROMPT_PAUSA.md` v2.2 · Design: [`design/DESIGN_PLAN.md`](design/DESIGN_PLAN.md).
+
+**Per chi mette online il progetto: [`docs/DEPLOY.md`](docs/DEPLOY.md).** Per capire il codice: [`docs/ARCHITETTURA.md`](docs/ARCHITETTURA.md). Cosa resta da fare: [`docs/COSA_MANCA.md`](docs/COSA_MANCA.md). Test su telefono: [`docs/PHONE_TEST.md`](docs/PHONE_TEST.md).
 
 ## Stack
 
@@ -12,6 +14,7 @@ Spec: `MASTER_PROMPT_PAUSA.md` v2.2 · Design: [`design/DESIGN_PLAN.md`](design/
 | Data | Cloudflare D1 (SQLite) + Drizzle ORM; migrations in `drizzle/` |
 | Auth | Better Auth: email link, Google (optional), anonymous guests (for Serata, Phase 2) |
 | Media | TMDB (search + localized titles), canonical `media_entity` table |
+| Recommendations | Rust engine compiled to WebAssembly (`engine/`, loaded by `worker.ts`), TypeScript reference in `src/lib/core/insights.ts` |
 | Deploy | Cloudflare Workers via OpenNext (`@opennextjs/cloudflare`) |
 
 ## Run locally
@@ -34,6 +37,10 @@ In dev the sign-in page shows four buttons, one per seed person: click one and y
 | Script | What it does |
 | --- | --- |
 | `dev` / `build` | Next.js dev server / production build |
+| `test` | Unit tests of the domain logic and the Rust engine parity (real SQLite, no browser) |
+| `e2e` | Playwright: main journeys and an axe accessibility audit (needs the seeded local DB) |
+| `engine:build` | Recompile the Rust engine to `src/lib/engine/engine.wasm` (committed; only after changing `engine/`) |
+| `dev:lan` | Dev server reachable from a phone on the same Wi-Fi |
 | `typecheck`, `lint` | `tsc --noEmit`, ESLint |
 | `db:generate` | Generate a migration from `src/db/schema.ts` |
 | `db:migrate:local` / `db:migrate:remote` | Apply migrations to local / production D1 |

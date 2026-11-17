@@ -27,7 +27,8 @@ async function createAuth() {
     }),
     // Abuse limits, counted per IP in D1: sign-in emails cost money and guests pile up as rows.
     rateLimit: {
-      enabled: true,
+      // Off in development: the quick-login shortcut and the end-to-end tests sign in many times in a row.
+      enabled: process.env.NODE_ENV !== "development",
       storage: "database",
       window: 60,
       max: 60,

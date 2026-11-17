@@ -14,8 +14,8 @@
   --color-ink: #151413;
   --color-muted: #5E5A52;
 
-  --color-accent: #C9361F;       /* tomato: actions, rating, subtitles */
-  --color-accent-hover: #A92C17;
+  --color-accent: #B8301C;       /* tomato: actions, rating, subtitles (darkened from the brand #C9361F so text on paper passes AA) */
+  --color-accent-hover: #9A2714;
   --color-on-accent: #FFFFFF;
 
   --color-second: #1F5C45;       /* bottle green: "visto con", Cerchia */
