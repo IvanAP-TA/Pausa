@@ -9,6 +9,7 @@ import { z } from "zod";
 import { atomically, getDb, schema as s } from "@/db";
 import { requireUser } from "./session";
 import { pushNotifications } from "./push";
+import { allow, enforce } from "./limit-guard";
 import { getCircleForMember, logVisibleTo, searchLocalMedia, type MediaSummary } from "./data";
 import { searchTmdb } from "./tmdb";
 import { MAX_EPISODE, MAX_SEASON, nextEpisode, nextSeason, setWatching, toPosition } from "./core/progress";
@@ -27,6 +28,7 @@ function localeFrom(value: unknown): Locale {
 
 export async function createCircle(formData: FormData) {
   const user = await requireUser();
+  await enforce("createCircle", user.id);
   const name = z.string().trim().min(1).max(60).parse(formData.get("name"));
   const db = await getDb();
   const { id } = await createCircleWithInvite(db, { name, createdBy: user.id });
@@ -35,6 +37,7 @@ export async function createCircle(formData: FormData) {
 
 export async function joinCircle(formData: FormData) {
   const user = await requireUser();
+  await enforce("joinCircle", user.id);
   const code = z.string().trim().toUpperCase().min(4).max(16).parse(formData.get("code"));
   const db = await getDb();
   const locale = localeFrom(formData.get("locale"));
@@ -64,6 +67,7 @@ function backToMembers(formData: FormData, circleId: string, error?: string): ne
 
 export async function createInviteAction(formData: FormData) {
   const user = await requireUser();
+  await enforce("createInvite", user.id);
   const { circleId } = circleFields.parse({ circleId: formData.get("circleId") });
   const expiry = z.enum(Object.keys(EXPIRY_CHOICES) as [keyof typeof EXPIRY_CHOICES, ...(keyof typeof EXPIRY_CHOICES)[]]).parse(formData.get("expiry"));
   const rawUses = String(formData.get("maxUses") ?? "");
@@ -130,6 +134,7 @@ const logInput = z.object({
 
 export async function createLog(formData: FormData) {
   const user = await requireUser();
+  await enforce("createLog", user.id);
   const input = logInput.parse({
     circleId: formData.get("circleId"),
     mediaId: formData.get("mediaId"),
@@ -172,6 +177,7 @@ export async function createLog(formData: FormData) {
 
 export async function toggleReaction(logId: string, emoji: string) {
   const user = await requireUser();
+  await enforce("react", user.id);
   if (!(REACTIONS as readonly string[]).includes(emoji)) throw new Error("Unknown reaction");
   const db = await getDb();
 
@@ -196,7 +202,8 @@ export async function toggleReaction(logId: string, emoji: string) {
 /* ───────────── Media ───────────── */
 
 export async function searchMedia(query: string, localeParam: string): Promise<MediaSummary[]> {
-  await requireUser();
+  const user = await requireUser();
+  if (!(await allow("search", user.id))) return [];
   const q = z.string().trim().min(1).max(100).safeParse(query);
   if (!q.success) return [];
   const locale = localeFrom(localeParam);
@@ -239,6 +246,7 @@ export async function addToList(formData: FormData) {
 
 export async function addComment(formData: FormData) {
   const user = await requireUser();
+  await enforce("comment", user.id);
   const logId = z.string().min(1).parse(formData.get("logId"));
   const body = z.string().trim().min(1).max(2000).parse(formData.get("body"));
   const isSpoiler = formData.get("isSpoiler") === "on";

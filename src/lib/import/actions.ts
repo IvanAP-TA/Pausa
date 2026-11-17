@@ -8,6 +8,7 @@ import { CHUNK_LIMIT, importRows, type ImportResult } from "@/lib/core/import";
 import type { ImportRow } from "@/lib/core/import-parsers";
 import { requireUser } from "@/lib/session";
 import { enrichAnime, enrichMovies } from "./enrich";
+import { allow } from "../limit-guard";
 
 /**
  * What the browser may send for each row: the person's own data and the source's id. Anything else (cover, TMDB id,
@@ -40,6 +41,7 @@ export type ImportChunkResult = ({ ok: true } & ImportResult) | { ok: false; err
 /** Imports one chunk (≤ CHUNK_LIMIT rows) of the signed-in person's history. The browser calls this repeatedly. */
 export async function importChunk(input: unknown): Promise<ImportChunkResult> {
   const user = await requireUser();
+  if (!(await allow("importRows", user.id))) return { ok: false, error: "invalid" };
   const parsed = payload.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalid" };
   const { rows, includeReviews, includeUndated, locale: rawLocale } = parsed.data;

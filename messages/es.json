@@ -32,7 +32,8 @@
     "linkSent": "Revisa tu correo: te enviamos un enlace para entrar. Caduca en 15 minutos.",
     "google": "Continuar con Google",
     "or": "o",
-    "error": "Algo falló. Inténtalo de nuevo en un momento."
+    "error": "Algo falló. Inténtalo de nuevo en un momento.",
+    "embeddedHint": "Google no funciona dentro de WhatsApp o Instagram. Usa el email de abajo, o abre esta página en el navegador del móvil."
   },
   "home": {
     "noCircleTitle": "Aún no tienes Círculo.",
@@ -702,7 +703,9 @@
     "home": "Volver al inicio",
     "errorTitle": "Algo se atascó",
     "errorBody": "No es culpa tuya. Inténtalo de nuevo: normalmente basta una vez.",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "slowTitle": "Con calma",
+    "slowBody": "Has hecho esto muchas veces en poco tiempo. Espera un poco e inténtalo de nuevo: así protegemos a todos del spam."
   },
   "retention": {
     "firstStepsTitle": "Para empezar",

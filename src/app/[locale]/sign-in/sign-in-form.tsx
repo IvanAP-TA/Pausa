@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth-client";
+import { isEmbeddedBrowser } from "@/lib/embedded-browser";
 
 type Status = "idle" | "sending" | "sent" | "error";
+
+const noop = () => () => {};
+/** The user agent, read on the client only (the server renders as if it were an ordinary browser, then this settles). */
+const useEmbedded = () => useSyncExternalStore(noop, () => isEmbeddedBrowser(navigator.userAgent), () => false);
 
 export function SignInForm({ callbackURL, google }: { callbackURL: string; google: boolean }) {
   const t = useTranslations("auth");
   const [status, setStatus] = useState<Status>("idle");
+  const embedded = useEmbedded();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -24,7 +30,8 @@ export function SignInForm({ callbackURL, google }: { callbackURL: string; googl
 
   return (
     <div className="grid gap-6">
-      {google && (
+      {google && embedded && <p className="rounded-md border border-rule p-3 text-sm text-muted">{t("embeddedHint")}</p>}
+      {google && !embedded && (
         <>
           <button
             type="button"

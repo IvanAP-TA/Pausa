@@ -36,6 +36,8 @@ async function createAuth() {
         "/sign-in/anonymous": { window: 3600, max: 10 },
       },
     },
+    // Someone who signed in with an email link and later taps "Continue with Google" (same address) gets the same account.
+    account: { accountLinking: { enabled: true, trustedProviders: ["google"] } },
     advanced: { ipAddress: { ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"] } },
     socialProviders: googleEnabled()
       ? { google: { clientId: process.env.GOOGLE_CLIENT_ID!, clientSecret: process.env.GOOGLE_CLIENT_SECRET! } }

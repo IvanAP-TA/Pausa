@@ -8,8 +8,18 @@
  */
 import engine from "./src/lib/engine/engine.wasm";
 import openNext from "./.open-next/worker.js";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "./src/db/schema";
+import { runCleanup } from "./src/lib/core/cleanup";
 
 globalThis.__PAUSA_ENGINE__ = engine;
 
 export * from "./.open-next/worker.js";
-export default openNext;
+
+export default {
+  fetch: (...args) => openNext.fetch(...args),
+  // Daily housekeeping (cron trigger in wrangler.jsonc): old guests, expired sessions and sign-in links, stale counters.
+  async scheduled(_event, env, ctx) {
+    ctx.waitUntil(runCleanup(drizzle(env.DB, { schema })).then((r) => console.log("[pausa] cleanup", JSON.stringify(r))));
+  },
+};

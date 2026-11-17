@@ -9,6 +9,7 @@ import { routing, type Locale } from "@/i18n/routing";
 import { getSession } from "@/lib/auth";
 import { getCircleForMember } from "@/lib/data";
 import { pushNotifications } from "@/lib/push";
+import { enforce } from "@/lib/limit-guard";
 import { isGuestAvatar, toAvatarImage } from "@/lib/avatars";
 import { requireUser } from "@/lib/session";
 import { DOTS, MAX_CANDIDATES, MIN_CANDIDATES, currentMatch, initBracket, initTable, validBallot, type SerataState } from "./engine";
@@ -47,6 +48,7 @@ async function requireParticipant(code: string) {
 
 export async function createSerata(formData: FormData) {
   const user = await requireUser();
+  await enforce("createSerata", user.id);
   const locale = localeFrom(formData.get("locale"));
   const circleId = z.string().min(1).parse(formData.get("circleId"));
   const mode = z.enum(["bracket", "table"]).parse(formData.get("mode"));

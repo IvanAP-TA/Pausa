@@ -32,7 +32,8 @@
     "linkSent": "Controlla la posta: ti abbiamo mandato un link per entrare. Scade tra 15 minuti.",
     "google": "Continua con Google",
     "or": "oppure",
-    "error": "Qualcosa non ha funzionato. Riprova tra un attimo."
+    "error": "Qualcosa non ha funzionato. Riprova tra un attimo.",
+    "embeddedHint": "Google non funziona dentro WhatsApp o Instagram. Usa l'email qui sotto, oppure apri questa pagina nel browser del telefono."
   },
   "home": {
     "noCircleTitle": "Nessuna Cerchia, per ora.",
@@ -702,7 +703,9 @@
     "home": "Torna all'inizio",
     "errorTitle": "Qualcosa si è inceppato",
     "errorBody": "Non è colpa tua. Riprova: di solito basta una volta.",
-    "retry": "Riprova"
+    "retry": "Riprova",
+    "slowTitle": "Piano, piano",
+    "slowBody": "Hai fatto questa azione molte volte in poco tempo. Aspetta un po' e riprova: serve a proteggere tutti dallo spam."
   },
   "retention": {
     "firstStepsTitle": "Per cominciare",

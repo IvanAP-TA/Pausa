@@ -32,7 +32,8 @@
     "linkSent": "Check your inbox: we sent you a sign-in link. It expires in 15 minutes.",
     "google": "Continue with Google",
     "or": "or",
-    "error": "Something went wrong. Try again in a moment."
+    "error": "Something went wrong. Try again in a moment.",
+    "embeddedHint": "Google does not work inside WhatsApp or Instagram. Use the email below, or open this page in your phone's browser."
   },
   "home": {
     "noCircleTitle": "No Circle yet.",
@@ -702,7 +703,9 @@
     "home": "Back to start",
     "errorTitle": "Something jammed",
     "errorBody": "It is not you. Try again: once is usually enough.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "slowTitle": "Easy there",
+    "slowBody": "You have done that many times in a short while. Wait a little and try again: it keeps everyone safe from spam."
   },
   "retention": {
     "firstStepsTitle": "To get started",
