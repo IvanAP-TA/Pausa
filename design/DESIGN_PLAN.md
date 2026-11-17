@@ -104,3 +104,13 @@ The Sala direction (Fraunces + Geist, warm charcoal, mandarin glow) read as "gen
 - **Share Card 9:16:** poster on top, printed caption below. Always the paper look, in both themes, because it's what leaves the app.
 - The spec's Mandarin + Forest palette is replaced by tomato + bottle green (light) and yellow + night blue (dark).
 - Tokens: [`tokens.css`](tokens.css) (mirror of `src/app/globals.css`).
+
+## 9. Decision v3 (17 Nov 2026), supersedes §8
+
+Full redesign with the Hallmark skill. Three themes were dealt and compared on the real diary in [`directions-v3.html`](directions-v3.html): Midnight, Darkroom, Lumen.
+
+- **Locked: Darkroom.** Warm print-black ground, fibre-white ink, hairline Sofia Sans Extra Condensed capitals over Barlow, zero radius, one amber signal. Posters keep their own colours and sit on the ground as prints.
+- **Dark by default.** With no cookie the app opens dark. Light is Darkroom's "fibre paper" colourway (red signal on paper); "Auto" follows the phone.
+- **Lists are rows under hairlines,** not stacks of cards. The diary reads as a contact sheet.
+- **Share Card 9:16:** follows the theme, always the dark print, in both modes.
+- The locked system lives in [`../DESIGN.md`](../DESIGN.md); tokens in `src/app/tokens.css`.

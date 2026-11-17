@@ -30,21 +30,21 @@ export default async function CardPage({ params }: PageProps<"/[locale]/s/[code]
   const [t, ts, format] = await Promise.all([getTranslations("serata.result"), getTranslations("serata"), getFormatter()]);
 
   const lines = [
-    [card.circleName, format.dateTime(card.finishedAt, { day: "numeric", month: "short", year: "numeric" })].filter(Boolean).join(" · "),
-    [ts(`mode.${card.mode}`), card.mode === "bracket" ? t("rounds", { count: card.rounds }) : null, t("people", { count: card.voters })].filter(Boolean).join(" · "),
+    [card.circleName, format.dateTime(card.finishedAt, { day: "numeric", month: "short", year: "numeric" })].filter(Boolean).join(", "),
+    [ts(`mode.${card.mode}`), card.mode === "bracket" ? t("rounds", { count: card.rounds }) : null, t("people", { count: card.voters })].filter(Boolean).join(", "),
   ];
 
   return (
     <main className="projector mx-auto grid min-h-dvh max-w-md content-center gap-6 px-4 py-8">
       <SerataCard kicker={t("kicker")} subtitle={t("subtitle")} title={card.winner.title} posterPath={card.winner.posterPath} lines={lines} />
-      <p className="text-center text-sm text-muted">{t("cta")}</p>
-      <a href={`/${locale}/sign-in`} className="grid min-h-12 place-items-center rounded-full bg-accent font-semibold text-on-accent hover:bg-accent-hover">
+      <p className="text-ink-2">{t("cta")}</p>
+      <a href={`/${locale}/sign-in`} className="btn btn-primary min-h-12 w-full">
         {t("ctaButton")}
       </a>
-      <figure className="mx-auto grid justify-items-center gap-2 text-center">
+      <figure className="plate grid grid-cols-[112px_minmax(0,1fr)] items-center gap-4 pt-6">
         {/* eslint-disable-next-line @next/next/no-img-element -- inline data URI */}
-        <img src={qrDataUri(`${siteUrl()}/${locale}?utm_source=card`)} alt={t("qrAlt")} width={112} height={112} className="rounded-sm border border-rule" />
-        <figcaption className="text-xs text-muted">{t("qr")}</figcaption>
+        <img src={qrDataUri(`${siteUrl()}/${locale}?utm_source=card`)} alt={t("qrAlt")} width={112} height={112} className="border border-rule" />
+        <figcaption className="text-sm text-muted">{t("qr")}</figcaption>
       </figure>
       <TmdbAttribution />
     </main>

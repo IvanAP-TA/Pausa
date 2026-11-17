@@ -4,11 +4,13 @@ import { Link } from "@/i18n/navigation";
 export default function NotFound() {
   const t = useTranslations("errors");
   return (
-    <main className="projector mx-auto grid min-h-dvh max-w-md content-center gap-4 px-5 py-12">
-      <p className="font-display text-sm text-accent">Pausa</p>
-      <h1 className="font-display text-[2rem] leading-tight">{t("notFoundTitle")}</h1>
-      <p className="text-muted">{t("notFoundBody")}</p>
-      <Link href="/" className="mt-2 inline-flex min-h-12 w-fit items-center rounded-full bg-accent px-6 font-semibold text-on-accent hover:bg-accent-hover">{t("home")}</Link>
+    <main className="projector mx-auto grid min-h-dvh w-full max-w-[40rem] grid-rows-[auto_1fr] px-4 py-6">
+      <p className="font-display text-2xl text-ink">Pausa</p>
+      <div className="grid content-center gap-4 py-10">
+        <h1 className="display text-poster">{t("notFoundTitle")}</h1>
+        <p className="max-w-[45ch] text-lg text-ink-2">{t("notFoundBody")}</p>
+        <Link href="/" className="btn btn-primary btn-lg mt-4 w-full sm:w-fit">{t("home")}</Link>
+      </div>
     </main>
   );
 }

@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { updateLogAction } from "@/lib/manage-actions";
-import { Stars } from "@/components/stars";
 import { EpisodeFields } from "@/components/episode-fields";
 import type { EpisodeLimits } from "@/lib/core/episodes";
+import { RatingField } from "@/app/[locale]/c/[circleId]/log/log-form";
 
 type Props = {
   logId: string; circleId: string; today: string;
@@ -30,60 +30,50 @@ export function EditLogForm({ limits, showSeason, logId, circleId, today, initia
       <input type="hidden" name="circleId" value={circleId} />
       <input type="hidden" name="rating" value={rating} />
 
-      <fieldset className="grid gap-2">
-        <legend className="mb-2 text-sm text-muted">{t("rating")}</legend>
-        <div className="flex items-center gap-4">
-          <input type="range" min={0} max={10} step={1} value={rating} onChange={(e) => setRating(Number(e.target.value))}
-            aria-label={t("rating")} aria-valuetext={rating ? tf("rating", { stars: rating / 2 }) : t("noRating")}
-            className="flex-1 accent-[var(--color-accent)]" />
-          {rating ? <Stars rating={rating} label={tf("rating", { stars: rating / 2 })} className="text-lg" /> : <span className="text-sm text-muted">{t("noRating")}</span>}
-        </div>
-      </fieldset>
+      <RatingField rating={rating} onChange={setRating} label={t("rating")} valueText={rating ? tf("rating", { stars: rating / 2 }) : t("noRating")} emptyText={t("noRating")} />
 
-      <div className="grid grid-cols-2 gap-3">
-        <label className="grid gap-1.5 text-sm text-muted">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="field-label">
           {t("watchedOn")}
-          <input type="date" name="watchedOn" defaultValue={initial.watchedOn} max={today} required className="min-h-12 rounded-sm border border-rule bg-paper-2 px-3 text-ink" />
+          <input type="date" name="watchedOn" defaultValue={initial.watchedOn} max={today} required className="field tabular" />
         </label>
-        <label className="grid gap-1.5 text-sm text-muted">
+        <label className="field-label">
           {t("platform")}
-          <input name="platform" maxLength={60} defaultValue={initial.platform ?? ""} className="min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-3 text-ink" />
+          <input name="platform" maxLength={60} defaultValue={initial.platform ?? ""} className="field" />
         </label>
       </div>
 
       {showSeason && (
         <fieldset className="grid gap-1.5">
-          <legend className="mb-1 text-sm text-muted">{t("episodeLogged")}</legend>
+          <legend className="mb-2 text-sm text-ink-2">{t("episodeLogged")}</legend>
           <EpisodeFields limits={limits} seasonName="season" episodeName="logEpisode" defaultSeason={initial.season} defaultEpisode={initial.episode} optionalSeasonLabel={t("seasonLogged")} />
         </fieldset>
       )}
 
-      <label className="grid gap-1.5 text-sm text-muted">
+      <label className="field-label">
         {t("review")}
-        <textarea name="review" rows={4} maxLength={4000} defaultValue={initial.review ?? ""} className="rounded-sm border border-rule bg-paper-2 p-3 text-[15px] text-ink" />
+        <textarea name="review" rows={4} maxLength={4000} defaultValue={initial.review ?? ""} className="field" />
       </label>
 
-      <label className="flex min-h-10 items-center gap-3 text-sm">
-        <input type="checkbox" name="containsSpoilers" defaultChecked={initial.containsSpoilers} className="size-5 accent-[var(--color-accent)]" />{t("spoilers")}
+      <label className="flex min-h-11 items-center gap-3">
+        <input type="checkbox" name="containsSpoilers" defaultChecked={initial.containsSpoilers} className="size-5 shrink-0 accent-accent" />{t("spoilers")}
       </label>
 
       {members.length > 0 && (
         <fieldset className="grid gap-2">
-          <legend className="mb-2 text-sm text-muted">{t("with")}</legend>
+          <legend className="mb-2 text-sm text-ink-2">{t("with")}</legend>
           <div className="flex flex-wrap gap-2">
             {members.map((m) => (
-              <label key={m.id} className="cursor-pointer">
-                <input type="checkbox" name="watchedWith" value={m.id} defaultChecked={initialWith.includes(m.id)} className="peer sr-only" />
-                <span className="inline-flex min-h-9 items-center rounded-full border border-rule px-3.5 text-sm text-muted transition-colors peer-checked:border-second peer-checked:bg-second peer-checked:text-on-second peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
-                  {m.name}
-                </span>
+              <label key={m.id} className="inline-flex min-h-11 cursor-pointer items-center gap-2 border border-rule px-3 text-ink-2 transition-colors duration-150 hover:border-muted has-[:checked]:border-ink has-[:checked]:text-ink">
+                <input type="checkbox" name="watchedWith" value={m.id} defaultChecked={initialWith.includes(m.id)} className="size-5 shrink-0 accent-accent" />
+                {m.name}
               </label>
             ))}
           </div>
         </fieldset>
       )}
 
-      <button className="min-h-12 rounded-full bg-accent font-semibold text-on-accent hover:bg-accent-hover">{te("saveChanges")}</button>
+      <button className="btn btn-primary w-full sm:w-fit">{te("saveChanges")}</button>
     </form>
   );
 }

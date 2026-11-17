@@ -16,10 +16,12 @@ export default async function Join({ params }: PageProps<"/[locale]/join/[code]"
   if (!invite || invite.state !== "active") {
     const reason = invite?.state ?? "not_found";
     return (
-      <main className="mx-auto grid min-h-dvh max-w-md content-center gap-3 px-4">
-        <p className="font-display text-sm text-accent">Pausa</p>
-        <h1 className="font-display text-[2rem] leading-tight">{t(`invalid.${reason}.title`)}</h1>
-        <p className="text-muted">{t(`invalid.${reason}.body`)}</p>
+      <main className="mx-auto grid min-h-dvh w-full max-w-[40rem] grid-rows-[auto_1fr] px-4 py-6">
+        <p className="font-display text-2xl text-ink">Pausa</p>
+        <div className="grid content-center gap-4 py-10">
+          <h1 className="display text-poster">{t(`invalid.${reason}.title`)}</h1>
+          <p className="max-w-[45ch] text-lg text-ink-2">{t(`invalid.${reason}.body`)}</p>
+        </div>
       </main>
     );
   }
@@ -31,17 +33,19 @@ export default async function Join({ params }: PageProps<"/[locale]/join/[code]"
   }
 
   return (
-    <main className="projector mx-auto grid min-h-dvh max-w-md content-center gap-8 px-4">
-      <header>
-        <p className="font-display text-sm text-accent">Pausa</p>
-        <h1 className="mt-2 font-display text-[2rem] leading-tight">{t("title", { name: invite.circleName })}</h1>
-        <p className="mt-3 text-muted">{t("body")}</p>
-      </header>
-      <form action={joinCircle}>
-        <input type="hidden" name="locale" value={locale} />
-        <input type="hidden" name="code" value={decodeURIComponent(code)} />
-        <button className="min-h-12 w-full rounded-full bg-accent font-semibold text-on-accent hover:bg-accent-hover">{t("cta")}</button>
-      </form>
+    <main className="projector mx-auto grid min-h-dvh w-full max-w-[40rem] grid-rows-[auto_1fr] px-4 py-6">
+      <p className="font-display text-2xl text-ink">Pausa</p>
+      <div className="grid content-center gap-8 py-10">
+        <header className="grid min-w-0 gap-4">
+          <h1 className="display text-poster">{t("title", { name: invite.circleName })}</h1>
+          <p className="max-w-[45ch] text-lg text-ink-2">{t("body")}</p>
+        </header>
+        <form action={joinCircle}>
+          <input type="hidden" name="locale" value={locale} />
+          <input type="hidden" name="code" value={decodeURIComponent(code)} />
+          <button className="btn btn-primary btn-lg w-full sm:w-fit">{t("cta")}</button>
+        </form>
+      </div>
     </main>
   );
 }

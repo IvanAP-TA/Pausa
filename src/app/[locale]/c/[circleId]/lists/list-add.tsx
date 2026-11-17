@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { addToList, searchMedia } from "@/lib/actions";
 import type { MediaSummary } from "@/lib/data";
 import { Poster } from "@/components/poster";
+import { Check } from "lucide-react";
 
 /** Adds any title to a list without going through a log: search, tap. */
 export function ListAdd({ listId }: { listId: string }) {
@@ -31,22 +32,28 @@ export function ListAdd({ listId }: { listId: string }) {
   }
 
   return (
-    <div className="grid gap-2">
-      <form onSubmit={search} role="search" className="flex gap-2">
-        <label htmlFor={`q-${listId}`} className="sr-only">{t("addTitle")}</label>
-        <input id={`q-${listId}`} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("addTitle")}
-          className="min-h-11 min-w-0 flex-1 rounded-sm border border-rule bg-paper px-3 text-sm placeholder:text-muted/70" />
-        <button disabled={pending} className="min-h-11 shrink-0 rounded-full border border-rule px-4 text-sm font-semibold hover:bg-paper-3 disabled:opacity-60">{tl("add")}</button>
+    <div className="grid gap-3">
+      <form onSubmit={search} role="search" className="grid gap-2">
+        <label htmlFor={`q-${listId}`} className="field-label">{t("addTitle")}</label>
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <input id={`q-${listId}`} value={query} onChange={(e) => setQuery(e.target.value)} className="field" />
+          <button disabled={pending} className="btn w-full sm:w-fit">{tl("add")}</button>
+        </div>
       </form>
-      {results?.length === 0 && <p className="text-xs text-muted">{t("noResults")}</p>}
+      {results?.length === 0 && <p className="text-sm text-muted">{t("noResults")}</p>}
       {results && results.length > 0 && (
-        <ul className="grid grid-cols-4 gap-2">
+        <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4">
           {results.slice(0, 8).map((m) => (
-            <li key={m.id}>
-              <button type="button" disabled={added.has(m.id) || pending} onClick={() => add(m)} className="relative grid w-full gap-1 text-left disabled:opacity-50">
+            <li key={m.id} className="min-w-0">
+              <button type="button" disabled={added.has(m.id) || pending} onClick={() => add(m)}
+                className="group relative grid w-full gap-2 text-left transition-opacity duration-150 hover:opacity-80 active:translate-y-px disabled:opacity-50">
                 <Poster media={m} size="sm" />
-                <span className="line-clamp-2 text-[11px] leading-tight">{m.title}</span>
-                {added.has(m.id) && <span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-second text-[11px] text-on-second" aria-label={t("added")}>✓</span>}
+                <span className="line-clamp-2 text-sm leading-snug underline-offset-4 [overflow-wrap:anywhere] group-hover:underline">{m.title}</span>
+                {added.has(m.id) && (
+                  <span className="absolute right-0 top-0 grid size-6 place-items-center bg-accent text-accent-ink" aria-label={t("added")}>
+                    <Check size={16} strokeWidth={1.6} aria-hidden="true" />
+                  </span>
+                )}
               </button>
             </li>
           ))}

@@ -27,31 +27,32 @@ export default async function Notifications({ params }: PageProps<"/[locale]/c/[
   return (
     <main className="grid gap-6 px-4 pb-8 pt-6">
       {hasUnread && <MarkRead />}
-      <Link href={`/c/${circleId}`} className="inline-flex min-h-10 w-fit items-center text-sm text-muted hover:text-ink">← {tc("back")}</Link>
-      <h1 className="font-display text-[1.75rem] font-semibold leading-tight">{t("title")}</h1>
+      <Link href={`/c/${circleId}`} className="link inline-flex min-h-11 w-fit items-center text-sm">{tc("back")}</Link>
+      <h1 className="display">{t("title")}</h1>
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted">{t("empty")}</p>
+        <p className="well grained p-6 text-ink-2">{t("empty")}</p>
       ) : (
-        <ul className="grid">
+        <ul className="rows grid">
           {items.map((n) => {
             const text = t.rich(n.type, {
-              name: n.actor?.name ?? "—",
+              name: n.actor?.name ?? "",
               title: n.mediaTitle ?? "",
               circle: n.circleName ?? "",
-              b: (chunks) => <strong className="font-semibold text-ink">{chunks}</strong>,
+              b: (chunks) => <strong>{chunks}</strong>,
             });
             // Log-related notices open the thread when it's in this Cerchia's feed; others open the feed.
             const href = n.logId ? `/c/${n.circleId ?? circleId}/l/${n.logId}` : `/c/${n.circleId ?? circleId}`;
             return (
               <li key={n.id}>
-                <Link href={href} className="flex min-h-14 items-center gap-3 border-b border-rule py-3 hover:bg-paper-2">
+                {/* Unread: an amber square and ink text. Read: muted text, the square's column left empty so rows stay aligned. */}
+                <Link href={href} className="grid min-h-14 grid-cols-[8px_32px_minmax(0,1fr)_auto] items-center gap-3 py-3 transition-colors duration-150 hover:bg-paper-2">
+                  {!n.readAt ? <span aria-hidden="true" className="size-2 bg-accent" /> : <span />}
                   {n.actor ? <Avatar user={n.actor} size={32} /> : <span className="size-8" />}
-                  <span className="min-w-0 flex-1 text-sm text-muted">{text}</span>
-                  <time className="tabular shrink-0 text-xs text-muted" dateTime={n.createdAt.toISOString()}>
+                  <span className={`min-w-0 [overflow-wrap:anywhere] ${n.readAt ? "text-muted" : "text-ink"}`}>{text}</span>
+                  <time className="tabular text-sm text-muted" dateTime={n.createdAt.toISOString()}>
                     {format.relativeTime(n.createdAt, now)}
                   </time>
-                  {!n.readAt && <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-accent" />}
                 </Link>
               </li>
             );

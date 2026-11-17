@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pausa · tre ipotesi di tema</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mona+Sans:wdth,wght@100,400;100,500;125,300&family=Sofia+Sans+Extra+Condensed:wght@200;400&family=Barlow:wght@300;400;500&family=Instrument+Serif&family=Geist:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Pausa · design/directions-v3 · tre temi Hallmark dal mazzo "atmospheric" (17 nov 2026), sugli stessi contenuti del seed. */
+:root {
+  --page: oklch(22% 0.01 260); --page-ink: oklch(92% 0.01 260); --page-muted: oklch(70% 0.01 260); --page-rule: oklch(34% 0.01 260);
+  --font-page: ui-sans-serif, system-ui, sans-serif;
+}
+[data-t="midnight"] {
+  --paper: oklch(14% 0.048 264); --paper-2: oklch(18.5% 0.052 264); --paper-3: oklch(23% 0.055 264);
+  --ink: oklch(95% 0.016 250); --ink-2: oklch(88% 0.05 245); --muted: oklch(73% 0.04 256);
+  --rule: oklch(29% 0.058 264); --rule-2: oklch(40% 0.06 262);
+  --accent: oklch(80% 0.11 230); --accent-ink: oklch(16% 0.05 264);
+  --font-display: "Mona Sans", ui-sans-serif, system-ui, sans-serif; --font-body: "Mona Sans", ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 0px; --radius-pill: 0px; --shadow: 0 24px 48px -24px oklch(6% 0.04 264 / 0.7);
+}
+[data-t="darkroom"] {
+  --paper: oklch(12.5% 0.008 55); --paper-2: oklch(16% 0.009 55); --paper-3: oklch(20.5% 0.01 55);
+  --ink: oklch(92% 0.012 78); --ink-2: oklch(80% 0.012 75); --muted: oklch(64% 0.012 65);
+  --rule: oklch(29% 0.01 55); --rule-2: oklch(64% 0.012 65);
+  --accent: oklch(73% 0.15 58); --accent-ink: oklch(12.5% 0.008 55);
+  --font-display: "Sofia Sans Extra Condensed", ui-sans-serif, sans-serif; --font-body: "Barlow", ui-sans-serif, sans-serif;
+  --radius-card: 0px; --radius-pill: 0px; --shadow: none;
+}
+[data-t="lumen"] {
+  --paper: oklch(12.5% 0.027 290); --paper-2: oklch(16% 0.03 290); --paper-3: oklch(20% 0.032 290);
+  --ink: oklch(96% 0.01 300); --ink-2: oklch(85% 0.017 298); --muted: oklch(69% 0.026 295);
+  --rule: oklch(27% 0.034 290); --rule-2: oklch(36% 0.04 292);
+  --accent: oklch(80% 0.15 62); --accent-ink: oklch(14% 0.028 290);
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif; --font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 10px; --radius-pill: 999px; --shadow: 0 28px 64px -30px oklch(4% 0.02 290 / 0.8);
+}
+
+* { box-sizing: border-box; margin: 0; }
+html, body { overflow-x: clip; }
+body { background: var(--page); color: var(--page-ink); font: 16px/1.5 var(--font-page); padding: 40px 24px 64px; }
+.wrap { max-width: 1280px; margin: 0 auto; }
+.intro h1 { font-size: 28px; font-weight: 600; line-height: 1.15; }
+.intro p { color: var(--page-muted); max-width: 62ch; margin-top: 8px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; margin-top: 40px; align-items: start; }
+.col h2 { font-size: 20px; font-weight: 600; }
+.col .facts { color: var(--page-muted); font-size: 14px; margin: 6px 0 16px; padding: 0; list-style: none; }
+.col .facts li + li { margin-top: 2px; }
+
+/* phone */
+.phone { background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.5; border: 1px solid var(--page-rule); max-width: 390px; margin: 0 auto; display: grid; }
+.phone header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 28px 16px 16px; }
+.phone h3, .phone h4 { font-family: var(--font-display); overflow-wrap: break-word; min-width: 0; }
+.meta { color: var(--muted); font-size: 13px; }
+.avs { display: flex; }
+.av { width: 28px; height: 28px; border-radius: 50%; background: var(--paper-3); color: var(--ink-2); font-size: 12px; font-weight: 500; display: grid; place-items: center; margin-left: -6px; box-shadow: 0 0 0 2px var(--paper); }
+.now { margin: 0 16px; display: flex; align-items: center; gap: 12px; background: var(--paper-2); border-radius: var(--radius-card); padding: 10px 12px; font-size: 14px; }
+.now img { width: 34px; aspect-ratio: 2/3; object-fit: cover; }
+.now b { font-weight: 500; }
+.live { margin-left: auto; color: var(--accent); font-size: 13px; }
+.feed { display: grid; gap: 16px; padding: 16px; }
+.card { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 14px; background: var(--paper-2); border-radius: var(--radius-card); padding: 14px; }
+.card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; border-radius: calc(var(--radius-card) * .6); box-shadow: var(--shadow); }
+.who { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.who .av { margin: 0; box-shadow: none; width: 24px; height: 24px; }
+.who b { color: var(--ink); font-weight: 500; }
+.who time { margin-left: auto; font-variant-numeric: tabular-nums; }
+.stars { color: var(--accent); font-size: 18px; letter-spacing: 1px; margin-top: 8px; }
+.stars span { color: var(--rule-2); }
+.review { grid-column: 1 / -1; color: var(--ink-2); font-size: 15px; line-height: 1.45; border-left: 2px solid var(--accent); padding-left: 12px; }
+.foot { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.rx { min-height: 36px; padding: 0 12px; border-radius: var(--radius-pill); border: 1px solid var(--rule-2); background: transparent; color: var(--ink-2); font: inherit; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 6px; }
+.rx.mine { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 500; }
+.foot a { margin-left: auto; color: var(--muted); }
+.cta { margin: 0 16px 16px; min-height: 48px; border: 0; border-radius: var(--radius-pill); background: var(--accent); color: var(--accent-ink); font: 500 16px/1 var(--font-body); }
+.tabs { display: grid; grid-template-columns: repeat(6, 1fr); align-items: center; border-top: 1px solid var(--rule); background: var(--paper); padding: 10px 8px 14px; font-size: 11px; color: var(--muted); text-align: center; }
+.tabs .on { color: var(--accent); }
+.tabs .plus { width: 44px; height: 44px; border-radius: var(--radius-pill); background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 24px; line-height: 1; justify-self: center; }
+:focus-visible { outline: 2px solid var(--accent, var(--page-ink)); outline-offset: 2px; }
+
+/* per-theme voice */
+[data-t="midnight"] h3 { font-weight: 300; font-stretch: 125%; font-size: 30px; line-height: 1.04; letter-spacing: -0.015em; }
+[data-t="midnight"] h4 { font-weight: 300; font-stretch: 125%; font-size: 21px; line-height: 1.1; }
+[data-t="midnight"] .rx { border-radius: 0; }
+
+[data-t="darkroom"] h3 { font-weight: 200; text-transform: uppercase; font-size: 52px; line-height: 1; }
+[data-t="darkroom"] h4 { font-weight: 400; text-transform: uppercase; font-size: 34px; line-height: 1; }
+[data-t="darkroom"] .card { background: transparent; padding: 16px 0; border-top: 1px solid var(--rule); border-radius: 0; }
+[data-t="darkroom"] .feed { gap: 0; padding-top: 8px; }
+[data-t="darkroom"] .cta { font: 400 20px/1 var(--font-display); text-transform: uppercase; }
+[data-t="darkroom"] .now { background: var(--paper-2); }
+
+[data-t="lumen"] h3 { font-weight: 400; text-transform: lowercase; font-size: 40px; line-height: 0.98; letter-spacing: -0.015em; }
+[data-t="lumen"] h4 { font-weight: 400; text-transform: lowercase; font-size: 28px; line-height: 1; }
+[data-t="lumen"] .card { border: 1px solid var(--rule); }
+[data-t="lumen"] .cta, [data-t="lumen"] .tabs { text-transform: lowercase; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="intro">
+    <h1>Pausa, tre ipotesi di tema</h1>
+    <p>Stessa schermata (il diario della Cerchia), stessi dati del seed, tre materiali diversi. Cambiano font, colori, raggi e superfici; struttura e funzioni restano uguali.</p>
+  </div>
+
+  <div class="cols">
+    <!-- 1 -->
+    <section class="col">
+      <h2>1 · Midnight</h2>
+      <ul class="facts"><li>Blu notte pieno, un solo azzurro</li><li>Mona Sans largo e leggero, angoli vivi</li><li>Solo scuro: niente tema chiaro</li></ul>
+      <div class="phone" data-t="midnight">
+        <header><div><h3>Divano Club</h3><p class="meta">4 membri, 18 visioni quest'anno</p></div><div class="avs"><span class="av">G</span><span class="av">M</span><span class="av">S</span><span class="av">L</span></div></header>
+        <div class="now"><img src="https://image.tmdb.org/t/p/w92/ggFHVNu6YYI5L9pCfOacjizRGt.jpg" alt=""><span><b>Luca</b> sta guardando <b>Breaking Bad</b> S3 E4</span><span class="live">in onda</span></div>
+        <div class="feed">
+          <article class="card">
+            <div class="who"><span class="av">G</span><b>Giulia</b> ha visto <time>2 ore fa</time></div>
+            <img src="https://image.tmdb.org/t/p/w342/hlLXt2tOPT6RRnjiUmoxyG1LTFi.jpg" alt="Locandina di Chernobyl">
+            <div><h4>Chernobyl</h4><p class="meta">Serie, 2019, su Sky Atlantic</p><p class="stars" aria-label="4,5 stelle su 5">★★★★<span>★</span></p></div>
+            <p class="review">Cinque puntate, cinque nodi allo stomaco. Marco ha smesso di respirare alla terza.</p>
+            <div class="foot"><button class="rx mine">🔥 3</button><button class="rx">😭 1</button><a href="#">2 commenti</a></div>
+          </article>
+          <article class="card">
+            <div class="who"><span class="av">S</span><b>Sofi</b> ha rivisto <time>2 giorni fa</time></div>
+            <img src="https://image.tmdb.org/t/p/w342/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg" alt="Locandina de La città incantata">
+            <div><h4>La città incantata</h4><p class="meta">Film, 2001, su Netflix</p><p class="stars" aria-label="5 stelle su 5">★★★★★</p></div>
+            <p class="review">Cada vez lloro en el mismo sitio. Ya no lo escondo.</p>
+            <div class="foot"><button class="rx">❤️ 2</button><a href="#">Commenta</a></div>
+          </article>
+        </div>
+        <button class="cta">Inizia una Serata</button>
+        <nav class="tabs" aria-label="Midnight"><span class="on">Diario</span><span>Serata</span><span class="plus" aria-label="Aggiungi">+</span><span>Liste</span><span>Classifica</span><span>Cerchia</span></nav>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="col">
+      <h2>2 · Darkroom</h2>
+      <ul class="facts"><li>Nero caldo da camera oscura, un solo ambra</li><li>Titoli stretti in maiuscolo sottile, da locandina</li><li>Ha anche la variante chiara (carta)</li></ul>
+      <div class="phone" data-t="darkroom">
+        <header><div><h3>Divano Club</h3><p class="meta">4 membri, 18 visioni quest'anno</p></div><div class="avs"><span class="av">G</span><span class="av">M</span><span class="av">S</span><span class="av">L</span></div></header>
+        <div class="now"><img src="https://image.tmdb.org/t/p/w92/ggFHVNu6YYI5L9pCfOacjizRGt.jpg" alt=""><span><b>Luca</b> sta guardando <b>Breaking Bad</b> S3 E4</span><span class="live">in onda</span></div>
+        <div class="feed">
+          <article class="card">
+            <div class="who"><span class="av">G</span><b>Giulia</b> ha visto <time>2 ore fa</time></div>
+            <img src="https://image.tmdb.org/t/p/w342/hlLXt2tOPT6RRnjiUmoxyG1LTFi.jpg" alt="Locandina di Chernobyl">
+            <div><h4>Chernobyl</h4><p class="meta">Serie, 2019, su Sky Atlantic</p><p class="stars" aria-label="4,5 stelle su 5">★★★★<span>★</span></p></div>
+            <p class="review">Cinque puntate, cinque nodi allo stomaco. Marco ha smesso di respirare alla terza.</p>
+            <div class="foot"><button class="rx mine">🔥 3</button><button class="rx">😭 1</button><a href="#">2 commenti</a></div>
+          </article>
+          <article class="card">
+            <div class="who"><span class="av">S</span><b>Sofi</b> ha rivisto <time>2 giorni fa</time></div>
+            <img src="https://image.tmdb.org/t/p/w342/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg" alt="Locandina de La città incantata">
+            <div><h4>La città incantata</h4><p class="meta">Film, 2001, su Netflix</p><p class="stars" aria-label="5 stelle su 5">★★★★★</p></div>
+            <p class="review">Cada vez lloro en el mismo sitio. Ya no lo escondo.</p>
+            <div class="foot"><button class="rx">❤️ 2</button><a href="#">Commenta</a></div>
+          </article>
+        </div>
+        <button class="cta">Inizia una Serata</button>
+        <nav class="tabs" aria-label="Darkroom"><span class="on">Diario</span><span>Serata</span><span class="plus" aria-label="Aggiungi">+</span><span>Liste</span><span>Classifica</span><span>Cerchia</span></nav>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="col">
+      <h2>3 · Lumen</h2>
+      <ul class="facts"><li>Nero violaceo, un solo ottone caldo</li><li>Titoli in serif minuscolo, bottoni a pillola</li><li>Ha anche la variante chiara (giorno)</li></ul>
+      <div class="phone" data-t="lumen">
+        <header><div><h3>Divano Club</h3><p class="meta">4 membri, 18 visioni quest'anno</p></div><div class="avs"><span class="av">G</span><span class="av">M</span><span class="av">S</span><span class="av">L</span></div></header>
+        <div class="now"><img src="https://image.tmdb.org/t/p/w92/ggFHVNu6YYI5L9pCfOacjizRGt.jpg" alt=""><span><b>Luca</b> sta guardando <b>Breaking Bad</b> S3 E4</span><span class="live">in onda</span></div>
+        <div class="feed">
+          <article class="card">
+            <div class="who"><span class="av">G</span><b>Giulia</b> ha visto <time>2 ore fa</time></div>
+            <img src="https://image.tmdb.org/t/p/w342/hlLXt2tOPT6RRnjiUmoxyG1LTFi.jpg" alt="Locandina di Chernobyl">
+            <div><h4>Chernobyl</h4><p class="meta">Serie, 2019, su Sky Atlantic</p><p class="stars" aria-label="4,5 stelle su 5">★★★★<span>★</span></p></div>
+            <p class="review">Cinque puntate, cinque nodi allo stomaco. Marco ha smesso di respirare alla terza.</p>
+            <div class="foot"><button class="rx mine">🔥 3</button><button class="rx">😭 1</button><a href="#">2 commenti</a></div>
+          </article>
+          <article class="card">
+            <div class="who"><span class="av">S</span><b>Sofi</b> ha rivisto <time>2 giorni fa</time></div>
+            <img src="https://image.tmdb.org/t/p/w342/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg" alt="Locandina de La città incantata">
+            <div><h4>La città incantata</h4><p class="meta">Film, 2001, su Netflix</p><p class="stars" aria-label="5 stelle su 5">★★★★★</p></div>
+            <p class="review">Cada vez lloro en el mismo sitio. Ya no lo escondo.</p>
+            <div class="foot"><button class="rx">❤️ 2</button><a href="#">Commenta</a></div>
+          </article>
+        </div>
+        <button class="cta">Inizia una Serata</button>
+        <nav class="tabs" aria-label="Lumen"><span class="on">Diario</span><span>Serata</span><span class="plus" aria-label="Aggiungi">+</span><span>Liste</span><span>Classifica</span><span>Cerchia</span></nav>
+      </div>
+    </section>
+  </div>
+</div>
+</body>
+</html>

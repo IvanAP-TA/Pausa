@@ -64,22 +64,22 @@ export function PushToggle({ publicKey }: { publicKey: string }) {
   }
 
   return (
-    <section className="grid gap-2 rounded-md bg-paper-2 p-4" aria-labelledby="push-title">
-      <h2 id="push-title" className="font-display text-lg">{t("title")}</h2>
-      <p className="text-sm text-muted">{t("body")}</p>
+    <section className="grid gap-3" aria-labelledby="push-title">
+      <h2 id="push-title" className="title">{t("title")}</h2>
+      <p className="text-ink-2">{t("body")}</p>
       {state === "unsupported" && <p className="text-sm text-muted">{t("unsupported")}</p>}
       {state === "needs-install" && <p className="text-sm text-muted">{t("iosHint")}</p>}
-      {state === "blocked" && <p className="text-sm text-accent">{t("blocked")}</p>}
+      {state === "blocked" && <p className="text-sm text-error">{t("blocked")}</p>}
       {state === "off" && (
-        <button type="button" onClick={enable} disabled={busy} className="min-h-11 w-fit rounded-full bg-accent px-5 text-sm font-semibold text-on-accent hover:bg-accent-hover disabled:opacity-60">{t("enable")}</button>
+        <button type="button" onClick={enable} disabled={busy} className="btn btn-primary w-full sm:w-fit">{t("enable")}</button>
       )}
       {state === "on" && (
-        <div className="flex flex-wrap items-center gap-3">
-          <p role="status" className="text-sm text-second-text">{t("enabled")}</p>
-          <button type="button" onClick={disable} disabled={busy} className="min-h-11 rounded-full border border-rule px-4 text-sm hover:bg-paper-3 disabled:opacity-60">{t("disable")}</button>
+        <div className="plate flex flex-wrap items-center justify-between gap-3 pt-3">
+          <p role="status" className="text-sm text-muted">{t("enabled")}</p>
+          <button type="button" onClick={disable} disabled={busy} className="btn btn-quiet">{t("disable")}</button>
         </div>
       )}
-      {failed && <p role="alert" className="text-sm text-accent">{t("failed")}</p>}
+      {failed && <p role="alert" className="text-sm text-error">{t("failed")}</p>}
     </section>
   );
 }

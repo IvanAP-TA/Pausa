@@ -33,25 +33,25 @@ export default async function Serata({ params }: PageProps<"/[locale]/c/[circleI
   const now = new Date();
 
   return (
-    <main className="grid gap-8 px-4 pb-8 pt-6">
-      <header>
-        <h1 className="font-display text-[1.75rem] font-semibold leading-tight">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted">{t("lede")}</p>
+    <main className="grid gap-8 px-4 pb-8 pt-8">
+      <header className="min-w-0">
+        <h1 className="display">{t("title")}</h1>
+        <p className="mt-2 max-w-prose text-ink-2">{t("lede")}</p>
       </header>
 
       <NewSerata circleId={circleId} quickPicks={quickPicks} tmdb={tmdbEnabled()} services={{ names: services.common.map((p) => p.name), setBy: services.setBy, members: services.members }} />
 
       {recent.length > 0 && (
-        <section className="grid gap-2">
-          <h2 className="text-sm text-muted">{t("recent")}</h2>
-          <ul className="grid">
+        <section className="grid gap-3">
+          <h2 className="title">{t("recent")}</h2>
+          <ul className="rows grid">
             {recent.map((r) => (
               <li key={r.code}>
-                <Link href={`/s/${r.code}`} className="flex min-h-12 items-center gap-3 border-b border-rule py-2 text-sm hover:bg-paper-2">
-                  <span className="min-w-0 flex-1 truncate">
+                <Link href={`/s/${r.code}`} className="grid min-h-14 content-center gap-0.5 py-3 transition-colors duration-150 hover:bg-paper-2">
+                  <span className="min-w-0 truncate">
                     {r.status === "done" && r.winner ? t("statusDone", { title: r.winner }) : t(`status.${r.status}`)}
                   </span>
-                  <span className="shrink-0 text-xs text-muted">{t(`mode.${r.mode}`)} · {format.relativeTime(r.createdAt, now)}</span>
+                  <span className="tabular text-sm text-muted">{t(`mode.${r.mode}`)}, {format.relativeTime(r.createdAt, now)}</span>
                 </Link>
               </li>
             ))}

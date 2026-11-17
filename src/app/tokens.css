@@ -1,0 +1,164 @@
+@theme static {
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.2rem;
+  --text-xl: 1.44rem;
+  --text-2xl: 1.728rem;
+  --text-3xl: 2.074rem;
+  /* App screens: fixed steps. Sofia Sans Extra Condensed is narrow, so each display role sits one step up. */
+  --text-display-s: 2.074rem;
+  --text-display: 3rem;
+  --text-section: 2rem;
+  --text-title: 2rem;
+  --text-lead: 1.2rem;
+  /* Public pages (landing, guides): fluid display sizes. */
+  --text-hero: clamp(4rem, 13vw, 11rem);
+  --text-poster: clamp(2.75rem, 6.5vw, 5.5rem);
+  --text-figure: clamp(6rem, 16vw, 13rem);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Darkroom, amber colourway (the default: the app opens dark). */
+  --color-error: oklch(72% 0.15 27);
+  --color-success: oklch(76% 0.13 150);
+  --color-paper: oklch(12.5% 0.008 55);
+  --color-paper-2: oklch(16% 0.009 55);
+  --color-paper-3: oklch(20.5% 0.01 55);
+  --color-ink: oklch(92% 0.012 78);
+  --color-ink-2: oklch(80% 0.012 75);
+  --color-muted: oklch(64% 0.012 65);
+  --color-rule: oklch(29% 0.01 55);
+  --color-accent: oklch(73% 0.15 58);
+  --color-accent-deep: oklch(50% 0.11 52);
+  --color-accent-ink: oklch(12.5% 0.008 55);
+  --color-focus: oklch(73% 0.15 58);
+  --color-scrim: oklch(12.5% 0.008 55 / 0.62);
+
+  /* The project's older token names, kept as aliases so every existing utility (bg-second, text-on-accent) resolves. */
+  --color-accent-hover: oklch(79% 0.14 62);
+  --color-on-accent: var(--color-accent-ink);
+  --color-second: var(--color-paper-3);
+  --color-second-deep: var(--color-paper-2);
+  --color-on-second: var(--color-ink);
+  --color-on-second-muted: var(--color-ink-2);
+  --color-second-text: var(--color-ink);
+
+  /* The share Card is a print: Darkroom amber in both modes (never overridden below). */
+  --color-card-paper: oklch(12.5% 0.008 55);
+  --color-card-ink: oklch(92% 0.012 78);
+  --color-card-muted: oklch(64% 0.012 65);
+  --color-card-accent: oklch(73% 0.15 58);
+  --color-card-rule: oklch(29% 0.01 55);
+
+  /* Placeholder tints for a title with no artwork, and avatar tones: low chroma, one lightness, so none outshouts a poster. */
+  --color-tint-1: oklch(30% 0.015 250);
+  --color-tint-2: oklch(30% 0.015 140);
+  --color-tint-3: oklch(30% 0.02 200);
+  --color-tint-4: oklch(30% 0.025 65);
+  --color-tint-5: oklch(30% 0.02 115);
+  --color-tint-6: oklch(30% 0.025 240);
+  --color-tint-7: oklch(30% 0.02 300);
+  --color-tint-8: oklch(30% 0.03 25);
+  --color-on-tint: oklch(94% 0.012 78);
+
+  /* The Google mark keeps its own four colours: a brand mark, used on the sign-in button only. */
+  --color-google-blue: #4285F4;
+  --color-google-green: #34A853;
+  --color-google-yellow: #FBBC05;
+  --color-google-red: #EA4335;
+
+  --font-display: var(--font-sofia), "Sofia Sans Extra Condensed", ui-sans-serif, sans-serif;
+  --font-body: var(--font-barlow), "Barlow", ui-sans-serif, sans-serif;
+  --font-outlier: var(--font-body);
+  --font-sans: var(--font-body);
+
+  --radius-card: 0;
+  --radius-pill: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --shadow-card: none;
+  --tracking-display: -0.005em;
+}
+:root {
+  color-scheme: dark;
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+  --space-4xl: 144px;
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+  --container: 1440px;
+  --gutter: 64px;
+  --gap-columns: 32px;
+  --section-gap-s: 120px;
+  --section-gap: 144px;
+  --section-gap-l: 176px;
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-sticky-nav: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+  --rule-hair: 1px;
+  --display-weight: 200;
+  --grain: 0.07;
+  --grain-ink: 1;
+  --control: 44px;
+}
+@media (max-width: 60rem) { :root { --gutter: 24px; --section-gap-s: 80px; --section-gap: 96px; --section-gap-l: 120px; } }
+@media (max-width: 40rem) { :root { --gutter: 16px; --section-gap-s: 56px; --section-gap: 72px; --section-gap-l: 96px; --gap-columns: 16px; } }
+
+/* Light mode: cream white paper (warmer and lighter than Darkroom's "fibre paper"), warm ink, the red signal. Pinned with data-theme="light", or followed from the phone with data-theme="system". */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-paper: oklch(97.5% 0.022 92);
+  --color-paper-2: oklch(94.5% 0.026 90);
+  --color-paper-3: oklch(91% 0.03 88);
+  --color-ink: oklch(17% 0.012 60);
+  --color-ink-2: oklch(32% 0.014 62);
+  --color-muted: oklch(44% 0.018 68);
+  --color-rule: oklch(83% 0.03 86);
+  --color-accent: oklch(50% 0.2 30);
+  --color-accent-hover: oklch(44% 0.19 30);
+  --color-accent-deep: oklch(42% 0.17 30);
+  --color-accent-ink: oklch(98% 0.02 92);
+  --color-focus: oklch(50% 0.2 30);
+  --color-error: oklch(45% 0.2 22);
+  --color-success: oklch(42% 0.11 150);
+  --color-scrim: oklch(97.5% 0.022 92 / 0.7);
+  --grain: 0.12;
+  --grain-ink: 0;
+}
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] {
+    color-scheme: light;
+    --color-paper: oklch(97.5% 0.022 92);
+    --color-paper-2: oklch(94.5% 0.026 90);
+    --color-paper-3: oklch(91% 0.03 88);
+    --color-ink: oklch(17% 0.012 60);
+    --color-ink-2: oklch(32% 0.014 62);
+    --color-muted: oklch(44% 0.018 68);
+    --color-rule: oklch(83% 0.03 86);
+    --color-accent: oklch(50% 0.2 30);
+    --color-accent-hover: oklch(44% 0.19 30);
+    --color-accent-deep: oklch(42% 0.17 30);
+    --color-accent-ink: oklch(98% 0.02 92);
+    --color-focus: oklch(50% 0.2 30);
+    --color-error: oklch(45% 0.2 22);
+    --color-success: oklch(42% 0.11 150);
+    --color-scrim: oklch(97.5% 0.022 92 / 0.7);
+    --grain: 0.12;
+    --grain-ink: 0;
+  }
+}

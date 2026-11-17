@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { CARD } from "@/lib/card-theme";
 
 // Installable from the browser: the landing has a "Get the app" button (one tap where the browser allows it, steps elsewhere).
 export default function manifest(): MetadataRoute.Manifest {
@@ -10,8 +11,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#F2EEE5",
-    theme_color: "#F2EEE5",
+    background_color: CARD.paper,
+    theme_color: CARD.paper,
     icons: [
       { src: "/pwa-icon/192", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/pwa-icon/512", sizes: "512x512", type: "image/png", purpose: "any" },

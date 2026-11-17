@@ -6,7 +6,9 @@ import { getSession } from "@/lib/auth";
 import { getCircleForMember } from "@/lib/data";
 import { loadCircleFacts, yearInReview } from "@/lib/core/insights";
 import { posterUrl } from "@/lib/tmdb-image";
-import { loadGoogleFont } from "@/lib/og-font";
+import { CARD } from "@/lib/card-theme";
+import { loadCardFonts } from "@/lib/og-font";
+import { pauseBars } from "@/lib/pause-mark";
 import { qrDataUri } from "@/lib/qr";
 import { siteUrl } from "@/lib/site";
 import it from "../../../../../../../../messages/it.json";
@@ -14,7 +16,6 @@ import en from "../../../../../../../../messages/en.json";
 import es from "../../../../../../../../messages/es.json";
 
 const MESSAGES = { it, en, es };
-const C = { paper: "#FBF8F2", ink: "#151413", muted: "#5E5A52", accent: "#C9361F", empty: "#2F5D62" };
 
 /**
  * The group's year as a 9:16 image, for stories. Private data: only a member of the Cerchia gets it, and what
@@ -46,46 +47,56 @@ export async function GET(request: Request, ctx: RouteContext<"/api/circle/[circ
     ...(review.busiestMonth ? [t("month", { month: new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(Date.UTC(year, review.busiestMonth.month - 1, 1))) })] : []),
   ];
   const bestLabel = t("best");
-  const [display, body] = await Promise.all([
-    loadGoogleFont("Gloock", 400, `${circle.name} ${best?.title ?? ""} ${year}`),
-    loadGoogleFont("Instrument Sans", 500, [kicker, ...stats, bestLabel, "pausa.gnagno.org"].join(" ")),
-  ]);
+  // The display face draws capitals only: uppercase in code, so the font subset holds the glyphs actually drawn.
+  const name = circle.name.toLocaleUpperCase(locale);
+  const bestTitle = best ? best.title.toLocaleUpperCase(locale) : "";
+  const font = await loadCardFonts({
+    display: `${name} ${bestTitle}`,
+    body: [kicker, ...stats, bestLabel, "pausa.gnagno.org"].join(" "),
+  });
   const poster = best?.posterPath ? posterUrl(best.posterPath, "w500") : null;
+  const nameSize = name.length > 30 ? 120 : name.length > 11 ? 160 : 220;
+  const bestSize = bestTitle.length > 34 ? 104 : bestTitle.length > 13 ? 140 : 180;
 
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: C.paper, color: C.ink, fontFamily: body ? "Instrument Sans" : undefined }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 20, padding: "110px 80px 50px" }}>
-          <div style={{ fontSize: 34, color: C.accent, letterSpacing: 5 }}>{kicker.toUpperCase()}</div>
-          <div style={{ fontSize: circle.name.length > 18 ? 100 : 128, lineHeight: 1.02, fontFamily: display ? "Gloock" : undefined }}>{circle.name}</div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, fontSize: 42, marginTop: 20 }}>
-            {stats.map((s) => <span key={s}>{s}</span>)}
+      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", padding: "72px 72px 64px", background: CARD.paper, color: CARD.ink, fontFamily: font.body }}>
+        <div style={{ display: "flex", fontSize: 36, lineHeight: 1.2, color: CARD.ink2 }}>{kicker}</div>
+        <div style={{ display: "flex", marginTop: 8, fontSize: nameSize, lineHeight: 0.88, fontWeight: 200, fontFamily: font.display, wordBreak: "break-word" }}>{name}</div>
+
+        {/* The poster of the title of the year at its own 2:3, the year's totals as rows beside it. */}
+        <div style={{ display: "flex", gap: 40, marginTop: 32 }}>
+          <div style={{ display: "flex", width: 520, height: 780, background: CARD.paper3 }}>
+            {poster && (
+              // eslint-disable-next-line @next/next/no-img-element -- Satori renders plain <img>
+              <img src={poster} alt="" width={520} height={780} style={{ width: 520, height: 780, objectFit: "cover" }} />
+            )}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", width: 376, borderBottom: `1px solid ${CARD.rule}` }}>
+            {stats.map((s) => (
+              <div key={s} style={{ display: "flex", padding: "18px 0", fontSize: 36, lineHeight: 1.2, borderTop: `1px solid ${CARD.rule}` }}>{s}</div>
+            ))}
           </div>
         </div>
-        <div style={{ display: "flex", flex: 1, background: C.empty, position: "relative" }}>
-          {poster && (
-            // eslint-disable-next-line @next/next/no-img-element -- Satori renders plain <img>
-            <img src={poster} alt="" width={1080} height={900} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          )}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 14, padding: "40px 80px 56px", borderTop: `10px solid ${C.accent}` }}>
-          {best && <div style={{ fontSize: 30, color: C.accent }}>{bestLabel}</div>}
-          {best && <div style={{ fontSize: best.title.length > 22 ? 80 : 100, lineHeight: 1.02, fontFamily: display ? "Gloock" : undefined }}>{best.title}</div>}
-          <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 10 }}>
-            <div style={{ fontSize: 28, color: C.muted }}>pausa.gnagno.org</div>
-            {/* eslint-disable-next-line @next/next/no-img-element -- Satori renders plain <img> */}
-            <img src={qrDataUri(`${siteUrl()}/${locale}?utm_source=year`, { dark: C.ink, light: C.paper })} width={110} height={110} alt="" />
+
+        {best && <div style={{ display: "flex", marginTop: 36, fontSize: 32, lineHeight: 1.2, color: CARD.ink2 }}>{bestLabel}</div>}
+        {best && <div style={{ display: "flex", marginTop: 4, fontSize: bestSize, lineHeight: 0.88, fontWeight: 200, fontFamily: font.display, wordBreak: "break-word" }}>{bestTitle}</div>}
+
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: "auto", paddingTop: 28, borderTop: `1px solid ${CARD.rule}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+            {pauseBars(12, 36, 7)}
+            <div style={{ display: "flex", fontSize: 28, color: CARD.muted }}>pausa.gnagno.org</div>
           </div>
+          {/* Dark modules on the light plate: a QR printed the other way round does not scan everywhere. */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- Satori renders plain <img> */}
+          <img src={qrDataUri(`${siteUrl()}/${locale}?utm_source=year`, { dark: CARD.paper, light: CARD.ink })} width={120} height={120} alt="" />
         </div>
       </div>
     ),
     {
       width: 1080,
       height: 1920,
-      fonts: [
-        ...(body ? [{ name: "Instrument Sans", data: body, weight: 500 as const, style: "normal" as const }] : []),
-        ...(display ? [{ name: "Gloock", data: display, weight: 400 as const, style: "normal" as const }] : []),
-      ],
+      fonts: font.fonts,
       headers: { "Cache-Control": "private, no-store" },
     },
   );

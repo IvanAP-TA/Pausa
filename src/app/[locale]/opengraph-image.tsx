@@ -1,7 +1,9 @@
 import { ImageResponse } from "next/og";
 import { hasLocale } from "next-intl";
 import { routing } from "@/i18n/routing";
-import { loadGoogleFont } from "@/lib/og-font";
+import { CARD } from "@/lib/card-theme";
+import { loadCardFonts } from "@/lib/og-font";
+import { pauseBars } from "@/lib/pause-mark";
 import it from "../../../messages/it.json";
 import en from "../../../messages/en.json";
 import es from "../../../messages/es.json";
@@ -16,35 +18,24 @@ const TAGLINE = { it: it.landing.og.tagline, en: en.landing.og.tagline, es: es.l
 export default async function Image({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: raw } = await params;
   const locale = hasLocale(routing.locales, raw) ? raw : routing.defaultLocale;
-  const tagline = TAGLINE[locale];
-  const [display, body] = await Promise.all([
-    loadGoogleFont("Gloock", 400, `${tagline}Pausa`),
-    loadGoogleFont("Instrument Sans", 500, "pausa.gnagno.org"),
-  ]);
+  // The display face draws capitals only: uppercase in code, so the font subset holds the glyphs actually drawn.
+  const tagline = TAGLINE[locale].toLocaleUpperCase(locale);
+  const font = await loadCardFonts({ display: tagline, displayRegular: "PAUSA", body: "pausa.gnagno.org" });
 
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", background: "#F2EEE5", color: "#151413", fontFamily: body ? "Instrument Sans" : undefined }}>
-        <div style={{ width: 14, background: "#C9361F" }} />
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "64px 72px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-            <div style={{ display: "flex", gap: 8 }}>
-              <div style={{ width: 16, height: 46, background: "#C9361F", borderRadius: 4 }} />
-              <div style={{ width: 16, height: 46, background: "#C9361F", borderRadius: 4 }} />
-            </div>
-            <div style={{ fontSize: 52, fontFamily: display ? "Gloock" : undefined }}>Pausa</div>
-          </div>
-          <div style={{ fontSize: 92, lineHeight: 1.02, maxWidth: 940, fontFamily: display ? "Gloock" : undefined }}>{tagline}</div>
-          <div style={{ fontSize: 28, color: "#5E5A52" }}>pausa.gnagno.org</div>
+      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "60px 72px", background: CARD.paper, color: CARD.ink, fontFamily: font.body }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {pauseBars(12, 38, 8)}
+          <div style={{ display: "flex", fontSize: 52, lineHeight: 1, fontWeight: 400, fontFamily: font.display }}>PAUSA</div>
         </div>
+        <div style={{ display: "flex", fontSize: tagline.length > 40 ? 120 : 144, lineHeight: 0.88, fontWeight: 200, maxWidth: 1056, fontFamily: font.display, wordBreak: "break-word" }}>{tagline}</div>
+        <div style={{ display: "flex", paddingTop: 18, fontSize: 28, color: CARD.muted, borderTop: `1px solid ${CARD.rule}` }}>pausa.gnagno.org</div>
       </div>
     ),
     {
       ...size,
-      fonts: [
-        ...(body ? [{ name: "Instrument Sans", data: body, weight: 500 as const, style: "normal" as const }] : []),
-        ...(display ? [{ name: "Gloock", data: display, weight: 400 as const, style: "normal" as const }] : []),
-      ],
+      fonts: font.fonts,
     },
   );
 }

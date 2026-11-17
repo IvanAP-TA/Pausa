@@ -3,6 +3,7 @@ import it from "../../messages/it.json";
 import en from "../../messages/en.json";
 import es from "../../messages/es.json";
 import { routing, type Locale } from "@/i18n/routing";
+import { CARD } from "@/lib/card-theme";
 
 const MESSAGES: Record<Locale, typeof it> = { it, en, es };
 
@@ -33,12 +34,12 @@ export async function sendMagicLinkEmail(email: string, url: string) {
     return;
   }
 
-  const html = `<!doctype html><html><body style="margin:0;background:#F2EEE5;color:#151413;font-family:-apple-system,Segoe UI,sans-serif">
+  const html = `<!doctype html><html><body style="margin:0;background:${CARD.paper};color:${CARD.ink};font-family:Barlow,-apple-system,Segoe UI,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:40px 24px">
-<p style="margin:0 0 8px;color:#C9361F;font-size:22px;font-family:Georgia,serif">Pausa</p>
+<p style="margin:0 0 8px;color:${CARD.ink};font-size:26px;letter-spacing:0.02em;text-transform:uppercase;font-family:Sofia Sans Extra Condensed,Arial Narrow,sans-serif">Pausa</p>
 <p style="margin:0 0 24px;font-size:16px;line-height:1.5">${escape(m.body)}</p>
-<a href="${escape(url)}" style="display:inline-block;background:#C9361F;color:#FFFFFF;font-weight:600;text-decoration:none;padding:14px 24px;border-radius:999px">${escape(m.subject)}</a>
-<p style="margin:32px 0 0;font-size:13px;color:#5E5A52">${escape(m.ignore)}</p>
+<a href="${escape(url)}" style="display:inline-block;background:${CARD.accent};color:${CARD.accentInk};font-weight:600;text-decoration:none;padding:14px 24px">${escape(m.subject)}</a>
+<p style="margin:32px 0 0;font-size:13px;color:${CARD.muted}">${escape(m.ignore)}</p>
 </td></tr></table></body></html>`;
 
   const res = await fetch("https://api.resend.com/emails", {

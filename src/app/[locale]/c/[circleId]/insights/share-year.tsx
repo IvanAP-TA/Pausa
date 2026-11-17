@@ -35,12 +35,11 @@ export function ShareYear({ circleId, year }: { circleId: string; year: number }
   }
 
   return (
-    <div className="grid gap-1">
-      <button type="button" onClick={share} disabled={busy}
-        className="min-h-11 w-fit rounded-full bg-accent px-5 text-sm font-semibold text-on-accent hover:bg-accent-hover disabled:opacity-60">
+    <div className="grid gap-2">
+      <button type="button" onClick={share} disabled={busy} className="btn btn-primary w-full sm:w-fit">
         {busy ? t("preparing") : t("share")}
       </button>
-      {failed && <p role="alert" className="text-xs text-accent">{t("failed")}</p>}
+      {failed && <p role="alert" className="text-sm text-error">{t("failed")}</p>}
     </div>
   );
 }

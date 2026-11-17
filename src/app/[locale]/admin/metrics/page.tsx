@@ -30,23 +30,32 @@ export default async function Metrics({ params }: PageProps<"/[locale]/admin/met
   ];
 
   return (
-    <main className="projector mx-auto grid max-w-2xl gap-6 px-5 py-12">
-      <header className="grid gap-1">
-        <h1 className="font-display text-[2rem] leading-tight">Metriche</h1>
-        <p className="text-sm text-muted">
-          {m.totals.users} persone, {m.totals.circles} Cerchie, {m.totals.logs} visioni, {m.totals.serate} Serate · calcolate il {m.generatedAt.toLocaleString(locale)}
-        </p>
+    <main className="projector mx-auto grid max-w-2xl gap-8 px-4 py-12">
+      <header className="grid gap-5">
+        <h1 className="display">Metriche</h1>
+        {/* The totals: four figures on one line, each over its label. */}
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+          {([
+            [m.totals.users, "persone"], [m.totals.circles, "Cerchie"], [m.totals.logs, "visioni"], [m.totals.serate, "Serate"],
+          ] as const).map(([value, label]) => (
+            <div key={label} className="plate grid gap-1 pt-3">
+              <dt className="row-start-2 text-sm text-muted">{label}</dt>
+              <dd className="figure row-start-1 text-display">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="tabular text-sm text-muted">calcolate il {m.generatedAt.toLocaleString(locale)}</p>
       </header>
-      <dl className="grid gap-3">
+      <dl className="rows grid">
         {rows.map((r) => (
-          <div key={r.label} className="grid gap-0.5 rounded-md border border-rule bg-paper-2 p-4">
-            <dt className="text-sm text-muted">{r.label}</dt>
-            <dd className="tabular font-display text-[2rem] leading-none">{r.value}</dd>
-            <dd className="text-xs text-muted">{r.note}</dd>
+          <div key={r.label} className="grid gap-x-6 gap-y-1 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline">
+            <dt>{r.label}</dt>
+            <dd className="figure text-display sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:text-right">{r.value}</dd>
+            <dd className="text-sm text-muted">{r.note}</dd>
           </div>
         ))}
       </dl>
-      <p className="text-xs text-muted">«n.d.» significa che non ci sono ancora dati sufficienti, non che il valore è zero.</p>
+      <p className="text-sm text-muted">«n.d.» significa che non ci sono ancora dati sufficienti, non che il valore è zero.</p>
     </main>
   );
 }

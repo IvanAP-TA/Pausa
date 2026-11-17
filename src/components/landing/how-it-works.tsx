@@ -24,39 +24,39 @@ export function HowItWorks({ title, steps, visuals }: { title: string; steps: St
   }, []);
 
   return (
-    <div className="mx-auto max-w-6xl px-5">
-      <h2 data-reveal className="max-w-3xl font-display text-[clamp(2rem,4.6vw,3.4rem)] leading-[1.05]">{title}</h2>
+    <div className="mx-auto w-full max-w-[var(--container)] px-[var(--gutter)]">
+      <h2 data-reveal className="max-w-[60rem] font-display text-poster font-extralight leading-[1.02] text-balance">{title}</h2>
 
-      <div className="mt-12 grid gap-10 lg:mt-16 lg:grid-cols-[1fr_minmax(0,440px)] lg:gap-20">
-        <ol className="grid gap-14 lg:gap-0">
+      <div className="mt-12 grid gap-x-[var(--gap-columns)] gap-y-10 lg:mt-4 lg:grid-cols-12">
+        <ol className="grid gap-14 lg:col-span-7 lg:gap-0">
           {steps.map((s, i) => (
             <li
               key={s.title}
               data-step={i}
               ref={(el) => { items.current[i] = el; }}
-              className="grid gap-5 lg:min-h-[72vh] lg:content-center"
+              className="grid gap-6 lg:min-h-[64svh] lg:content-center"
             >
-              <div data-reveal className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-5 gap-y-2">
-                <span aria-hidden="true" className={`tabular font-display text-[3.4rem] leading-none transition-colors duration-500 ${active === i ? "text-accent" : "text-rule"}`}>{i + 1}</span>
-                <div>
-                  <h3 className="font-display text-[1.7rem] leading-tight">{s.title}</h3>
-                  <p className="mt-2 max-w-md text-muted">{s.body}</p>
+              <div data-reveal className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-6 gap-y-2 border-t border-rule pt-5 lg:gap-x-10">
+                <span aria-hidden="true" className={`figure text-poster transition-colors duration-200 ${active === i ? "text-ink" : "text-muted"}`}>{i + 1}</span>
+                <div className="min-w-0">
+                  <h3 className="title">{s.title}</h3>
+                  <p className="mt-3 max-w-[46ch] text-ink-2">{s.body}</p>
                 </div>
               </div>
-              <div className="mx-auto w-full max-w-[340px] lg:hidden" data-reveal>{visuals[i]}</div>
+              <div className="w-full max-w-[380px] lg:hidden" data-reveal>{visuals[i]}</div>
             </li>
           ))}
         </ol>
 
-        <div className="relative hidden lg:block">
-          <div className="sticky top-28 h-[min(600px,72vh)]">
+        <div className="relative hidden lg:col-span-4 lg:col-start-9 lg:block">
+          <div className="sticky top-28 h-[min(600px,64svh)]">
             {visuals.map((v, i) => (
               <div
                 key={i}
                 aria-hidden="true"
-                className={`absolute inset-0 grid place-items-center transition-[opacity,transform] duration-500 ease-out ${active === i ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0"}`}
+                className={`absolute inset-0 grid content-center transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none ${active === i ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"}`}
               >
-                <div className="w-full max-w-[340px]">{v}</div>
+                <div className="w-full">{v}</div>
               </div>
             ))}
           </div>

@@ -22,29 +22,29 @@ export function SignInForm({ callbackURL, google }: { callbackURL: string; googl
   }
 
   if (status === "sent") {
-    return <p role="status" className="rounded-md border border-second bg-second-deep p-4 text-on-second">{t("linkSent")}</p>;
+    return <p role="status" className="text-lead text-ink">{t("linkSent")}</p>;
   }
 
   return (
-    <div className="grid gap-6">
-      {google && embedded && <p className="rounded-md border border-rule p-3 text-sm text-muted">{t("embeddedHint")}</p>}
+    <div className="grid gap-5">
+      {google && embedded && <p className="text-sm text-ink-2">{t("embeddedHint")}</p>}
       {!embedded && (
         <>
           <GoogleButton callbackURL={callbackURL} enabled={google} />
-          {(google || process.env.NODE_ENV === "development") && <p className="text-center text-xs text-muted">{t("or")}</p>}
+          {(google || process.env.NODE_ENV === "development") && (
+            <p className="flex items-center gap-3 text-sm text-muted before:h-px before:flex-1 before:bg-rule after:h-px after:flex-1 after:bg-rule">{t("or")}</p>
+          )}
         </>
       )}
-      <form onSubmit={onSubmit} className="grid gap-2">
-        <label htmlFor="email" className="text-sm text-muted">{t("email")}</label>
-        <input id="email" name="email" type="email" required autoComplete="email" inputMode="email"
-          className="min-h-12 rounded-sm border border-rule bg-paper-2 px-4" />
-        <button
-          disabled={status === "sending"}
-          className="min-h-12 rounded-full bg-accent font-semibold text-on-accent hover:bg-accent-hover disabled:opacity-60"
-        >
+      <form onSubmit={onSubmit} className="grid gap-4">
+        <div className="grid gap-1">
+          <label htmlFor="email" className="field-label">{t("email")}</label>
+          <input id="email" name="email" type="email" required autoComplete="email" inputMode="email" className="field" />
+        </div>
+        <button disabled={status === "sending"} className="btn btn-primary w-full">
           {status === "sending" ? t("sending") : t("sendLink")}
         </button>
-        {status === "error" && <p role="alert" className="text-sm text-accent">{t("error")}</p>}
+        {status === "error" && <p role="alert" className="text-sm text-error">{t("error")}</p>}
       </form>
     </div>
   );

@@ -44,48 +44,49 @@ export default async function Person({ params }: PageProps<"/[locale]/c/[circleI
   const live = watching.find((w) => w.user.id === userId);
 
   return (
-    <main className="grid gap-8 px-4 pb-10 pt-6">
-      <Link href={`/c/${circleId}/members`} className="inline-flex min-h-10 w-fit items-center text-sm text-muted hover:text-ink">← {t("back")}</Link>
+    <main className="grid gap-6 px-4 pb-8 pt-6">
+      <Link href={`/c/${circleId}/members`} className="link inline-flex min-h-11 w-fit items-center text-sm">{t("back")}</Link>
 
       <header className="flex items-center gap-4">
         <Avatar user={who} size={64} />
         <div className="min-w-0">
-          <h1 className="font-display text-[1.9rem] leading-tight [overflow-wrap:anywhere]">{who.name}</h1>
-          <p className="text-sm text-muted">
-            {who.role === "admin" ? `${t("admin")} · ` : ""}{t("since", { date: format.dateTime(who.joinedAt, { month: "long", year: "numeric" }) })}
+          <h1 className="display [overflow-wrap:anywhere]">{who.name}</h1>
+          <p className="mt-2 text-sm text-muted">
+            {who.role === "admin" ? `${t("admin")}, ` : ""}{t("since", { date: format.dateTime(who.joinedAt, { month: "long", year: "numeric" }) })}
           </p>
         </div>
       </header>
 
       {live && (
-        <p className="flex items-center gap-3 rounded-md bg-paper-2 p-3 text-sm">
-          <Poster media={live.media} size="sm" className="w-9 shrink-0" />
-          <span>{t("watching", { title: live.media.title })}{formatProgress(live) ? <span className="tabular text-muted"> {formatProgress(live)}</span> : null}</span>
+        <p className="well grid grid-cols-[56px_minmax(0,1fr)] items-center gap-3 p-3">
+          <Poster media={live.media} size="sm" />
+          <span className="[overflow-wrap:anywhere]">{t("watching", { title: live.media.title })}{formatProgress(live) ? <span className="tabular text-muted"> {formatProgress(live)}</span> : null}</span>
         </p>
       )}
 
-      <section aria-label={t("stats")} className="grid grid-cols-3 gap-3">
-        <p className="grid gap-0.5 rounded-md border border-rule bg-paper-2 p-3"><span className="tabular font-display text-2xl leading-none">{mine.length}</span><span className="text-xs text-muted">{t("logs")}</span></p>
-        <p className="grid gap-0.5 rounded-md border border-rule bg-paper-2 p-3"><span className="tabular font-display text-2xl leading-none">{new Set(mine.map((f) => f.mediaId)).size}</span><span className="text-xs text-muted">{t("titles")}</span></p>
-        <p className="grid gap-0.5 rounded-md border border-rule bg-paper-2 p-3"><span className="tabular font-display text-2xl leading-none">{avg === null ? "–" : avg.toFixed(1)}</span><span className="text-xs text-muted">{t("avg")}</span></p>
+      {/* The figures: three large numbers parted by vertical hairlines, the label under each. */}
+      <section aria-label={t("stats")} className="grid grid-cols-3 border-y border-rule py-5">
+        <p className="grid min-w-0 gap-1 pr-3"><span className="figure text-display">{mine.length}</span><span className="text-sm text-muted">{t("logs")}</span></p>
+        <p className="grid min-w-0 gap-1 border-l border-rule px-3"><span className="figure text-display">{new Set(mine.map((f) => f.mediaId)).size}</span><span className="text-sm text-muted">{t("titles")}</span></p>
+        <p className="grid min-w-0 gap-1 border-l border-rule pl-3"><span className="figure text-display">{avg === null ? <span className="text-muted">-</span> : avg.toFixed(1)}</span><span className="text-sm text-muted">{t("avg")}</span></p>
       </section>
 
-      {kinds.length > 0 && <p className="text-sm text-muted">{kinds.map(([k, n]) => `${tk(k)} ${n}`).join(" · ")}</p>}
+      {kinds.length > 0 && <p className="text-sm text-muted">{kinds.map(([k, n]) => `${tk(k)} ${n}`).join(", ")}</p>}
 
       {sim && (
-        <p className="rounded-md border border-rule p-3 text-sm">
+        <p className="text-ink-2">
           {sim.score === null ? t("tasteNone", { count: sim.common }) : t("taste", { percent: Math.round(sim.score * 100), count: sim.common })}
         </p>
       )}
 
       {favourites.length > 0 && (
         <section aria-labelledby="loved" className="grid gap-3">
-          <h2 id="loved" className="font-display text-xl">{t("loved")}</h2>
-          <ul className="grid grid-cols-5 gap-2">
+          <h2 id="loved" className="title">{t("loved")}</h2>
+          <ul className="-mx-4 flex snap-x scroll-pl-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:scroll-pl-0 lg:px-0">
             {favourites.map(({ f, r }) => (
-              <li key={f.mediaId} className="grid gap-1">
-                <Poster media={{ id: f.mediaId, title: f.title, posterPath: f.posterPath }} size="sm" />
-                <Stars rating={r} label={tf("rating", { stars: r / 2 })} className="text-[10px]" />
+              <li key={f.mediaId} className="grid w-[104px] shrink-0 snap-start content-start gap-2">
+                <Poster media={{ id: f.mediaId, title: f.title, posterPath: f.posterPath }} />
+                <Stars rating={r} label={tf("rating", { stars: r / 2 })} className="text-base!" />
                 <span className="sr-only">{f.title}</span>
               </li>
             ))}
@@ -94,9 +95,13 @@ export default async function Person({ params }: PageProps<"/[locale]/c/[circleI
       )}
 
       <section aria-labelledby="recent" className="grid gap-3">
-        <h2 id="recent" className="font-display text-xl">{t("recent")}</h2>
-        {recent.length === 0 ? <p className="text-sm text-muted">{t("noLogs")}</p> : recent.map((log) => <LogCard key={log.id} log={log} now={now} circleId={circleId} />)}
-        {mine.length > recent.length && <Link href={`/c/${circleId}?by=${userId}`} className="inline-flex min-h-11 w-fit items-center rounded-full border border-rule px-5 text-sm font-semibold hover:bg-paper-2">{t("all")}</Link>}
+        <h2 id="recent" className="title">{t("recent")}</h2>
+        {recent.length === 0 ? <p className="plate pt-5 text-ink-2">{t("noLogs")}</p> : <div className="grid">{recent.map((log) => <LogCard key={log.id} log={log} now={now} circleId={circleId} />)}</div>}
+        {mine.length > recent.length && (
+          <div className="plate grid justify-items-center pt-6">
+            <Link href={`/c/${circleId}?by=${userId}`} className="btn">{t("all")}</Link>
+          </div>
+        )}
       </section>
     </main>
   );

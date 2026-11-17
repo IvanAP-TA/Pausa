@@ -1,30 +1,35 @@
 import { posterUrl } from "@/lib/tmdb-image";
 
-/* Muted placeholder tints for titles without TMDB artwork (no saturated slop). */
-const TINTS = ["#3B4A5C", "#4F5B4A", "#2F5D62", "#8A5A2B", "#5C6B3A", "#2B4E6E", "#5A4B6E", "#6E2F2F"];
+/* Placeholder tints for titles without TMDB artwork: low-chroma tokens, so none outshouts a real poster. */
+const TINTS = 8;
 function tintFor(id: string) {
   let h = 0;
   for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return TINTS[h % TINTS.length];
+  return `var(--color-tint-${(h % TINTS) + 1})`;
 }
 
 type Props = {
   media: { id: string; title: string; posterPath: string | null };
-  size?: "sm" | "md" | "lg";
+  /** sm: a thumbnail in a row · md: a feed plate · lg / hero: the picture leads the screen. */
+  size?: "sm" | "md" | "lg" | "hero";
+  /** The first picture of a screen: loaded at once, at high priority. */
+  priority?: boolean;
   className?: string;
 };
 
-export function Poster({ media, size = "md", className = "" }: Props) {
+/** A poster is a print: square corners, no frame, no shadow. It sits on the ground as an object. */
+export function Poster({ media, size = "md", priority = false, className = "" }: Props) {
   // A span is inline by default and aspect-ratio ignores inline boxes: the image variant must be block, the fallback flex.
-  const base = `relative aspect-[2/3] overflow-hidden rounded-sm bg-paper-3 ${className}`;
+  const base = `relative aspect-[2/3] overflow-hidden bg-paper-3 ${className}`;
   if (media.posterPath) {
     return (
       <span className={`block ${base}`}>
         {/* eslint-disable-next-line @next/next/no-img-element -- TMDB serves pre-sized images; no optimizer on Workers yet */}
         <img
-          src={posterUrl(media.posterPath, size === "lg" ? "w500" : size === "md" ? "w342" : "w185")}
+          src={posterUrl(media.posterPath, size === "lg" || size === "hero" ? "w500" : size === "md" ? "w342" : "w185")}
           alt=""
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : undefined}
           className="absolute inset-0 h-full w-full object-cover"
         />
       </span>
@@ -32,11 +37,9 @@ export function Poster({ media, size = "md", className = "" }: Props) {
   }
   return (
     <span className={`flex items-end ${base}`} style={{ backgroundColor: tintFor(media.id) }} aria-hidden="true">
-      {size !== "sm" && (
-        <b className="p-2 font-display text-[13px] font-semibold leading-tight text-[#F4F1EC] [overflow-wrap:anywhere]">
-          {media.title}
-        </b>
-      )}
+      <b className={`font-display font-normal leading-none text-on-tint ${size === "hero" || size === "lg" ? "p-3 text-3xl" : size === "md" ? "p-2 text-lg" : "p-1 text-xs"}`}>
+        {media.title}
+      </b>
     </span>
   );
 }
