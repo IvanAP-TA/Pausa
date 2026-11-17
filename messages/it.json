@@ -246,7 +246,9 @@
       "backToCircle": "Torna alla Cerchia",
       "cta": "Pausa è il diario privato dei gruppi di amici, con un modo veloce per decidere cosa guardare.",
       "ctaButton": "Prova Pausa",
-      "subtitle": "Stasera si guarda questo."
+      "subtitle": "Stasera si guarda questo.",
+      "qr": "Inquadra per fare la tua Serata",
+      "qrAlt": "Codice QR che apre Pausa"
     },
     "join": {
       "title": "Stasera si sceglie.",
@@ -371,7 +373,9 @@
       "share": "Condividi la card",
       "preparing": "Preparo…",
       "failed": "Non sono riuscito a preparare l'immagine. Riprova.",
-      "shareText": "Il nostro {year} su Pausa"
+      "shareText": "Il nostro {year} su Pausa",
+      "avg": "{stars} stelle di media",
+      "month": "Il mese più intenso: {month}"
     }
   },
   "landing": {
@@ -713,7 +717,9 @@
     "terms": "Termini",
     "logout": "Esci",
     "loggingOut": "Esco…",
-    "profile": "Il tuo profilo"
+    "profile": "Il tuo profilo",
+    "brought": "{count, plural, one {Hai portato una persona in Pausa.} other {Hai portato # persone in Pausa.}}",
+    "founder": "Fondatore"
   },
   "errors": {
     "notFoundTitle": "Qui non c'è niente",

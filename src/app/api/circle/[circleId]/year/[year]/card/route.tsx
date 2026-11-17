@@ -7,6 +7,8 @@ import { getCircleForMember } from "@/lib/data";
 import { loadCircleFacts, yearInReview } from "@/lib/core/insights";
 import { posterUrl } from "@/lib/tmdb-image";
 import { loadGoogleFont } from "@/lib/og-font";
+import { qrDataUri } from "@/lib/qr";
+import { siteUrl } from "@/lib/site";
 import it from "../../../../../../../../messages/it.json";
 import en from "../../../../../../../../messages/en.json";
 import es from "../../../../../../../../messages/es.json";
@@ -40,6 +42,8 @@ export async function GET(request: Request, ctx: RouteContext<"/api/circle/[circ
     t("logs", { count: review.logs }),
     t("titles", { count: review.titles }),
     ...(review.movieHours ? [t("hours", { count: review.movieHours })] : []),
+    ...(review.avgRating !== null ? [t("avg", { stars: review.avgRating.toFixed(1) })] : []),
+    ...(review.busiestMonth ? [t("month", { month: new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(Date.UTC(year, review.busiestMonth.month - 1, 1))) })] : []),
   ];
   const bestLabel = t("best");
   const [display, body] = await Promise.all([
@@ -54,7 +58,7 @@ export async function GET(request: Request, ctx: RouteContext<"/api/circle/[circ
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 20, padding: "110px 80px 50px" }}>
           <div style={{ fontSize: 34, color: C.accent, letterSpacing: 5 }}>{kicker.toUpperCase()}</div>
           <div style={{ fontSize: circle.name.length > 18 ? 100 : 128, lineHeight: 1.02, fontFamily: display ? "Gloock" : undefined }}>{circle.name}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 46, marginTop: 24 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, fontSize: 42, marginTop: 20 }}>
             {stats.map((s) => <span key={s}>{s}</span>)}
           </div>
         </div>
@@ -67,7 +71,11 @@ export async function GET(request: Request, ctx: RouteContext<"/api/circle/[circ
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 14, padding: "40px 80px 56px", borderTop: `10px solid ${C.accent}` }}>
           {best && <div style={{ fontSize: 30, color: C.accent }}>{bestLabel}</div>}
           {best && <div style={{ fontSize: best.title.length > 22 ? 80 : 100, lineHeight: 1.02, fontFamily: display ? "Gloock" : undefined }}>{best.title}</div>}
-          <div style={{ fontSize: 28, color: C.muted, marginTop: 10 }}>pausa.gnagno.org</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 10 }}>
+            <div style={{ fontSize: 28, color: C.muted }}>pausa.gnagno.org</div>
+            {/* eslint-disable-next-line @next/next/no-img-element -- Satori renders plain <img> */}
+            <img src={qrDataUri(`${siteUrl()}/${locale}?utm_source=year`, { dark: C.ink, light: C.paper })} width={110} height={110} alt="" />
+          </div>
         </div>
       </div>
     ),

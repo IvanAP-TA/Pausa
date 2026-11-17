@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { circle, circleMember, invite } from "../../db/schema";
 import {
   DEFAULT_INVITE_MS, createCircleWithInvite, createInvite, getActiveInvite, inviteState, leaveCircle,
-  listMembersWithRole, redeemInvite, removeMember, revokeInvite, setMemberRole,
+  FOUNDER_AT, listMembersWithRole, peopleBrought, redeemInvite, removeMember, revokeInvite, setMemberRole,
 } from "./circles";
 import type { AnyDb } from "./db-types";
 import { createTestDb, seedUsers } from "./test-db";
@@ -128,5 +128,29 @@ describe("roles", () => {
     expect(await db.select().from(circle).where(eq(circle.id, c.id))).toHaveLength(0);
     expect(await db.select().from(invite).where(eq(invite.circleId, c.id))).toHaveLength(0);
     expect(await db.select().from(circleMember).where(eq(circleMember.circleId, c.id))).toHaveLength(0);
+  });
+});
+
+describe("peopleBrought", () => {
+  it("counts the different people who joined through invites you created, not yourself, not people already in", async () => {
+    const c = await createCircleWithInvite(db, { name: "Divano", createdBy: "u-ann", now: T0 });
+    expect(await peopleBrought(db, "u-ann")).toBe(0);
+    await redeemInvite(db, "u-bob", c.invite.code, T0);
+    await redeemInvite(db, "u-cleo", c.invite.code, T0);
+    await redeemInvite(db, "u-bob", c.invite.code, T0); // same person again: still one
+    await redeemInvite(db, "u-ann", c.invite.code, T0); // the creator opening her own link
+    expect(await peopleBrought(db, "u-ann")).toBe(2);
+    expect(await peopleBrought(db, "u-bob")).toBe(0);
+    expect(FOUNDER_AT).toBe(3);
+  });
+
+  it("credits whoever created the invite, even if another admin shares the link", async () => {
+    const c = await createCircleWithInvite(db, { name: "Divano", createdBy: "u-ann", now: T0 });
+    await redeemInvite(db, "u-bob", c.invite.code, T0);
+    await setMemberRole(db, { circleId: c.id, actorId: "u-ann", targetId: "u-bob", role: "admin" });
+    const second = await createInvite(db, { circleId: c.id, createdBy: "u-bob", expiresInMs: null, maxUses: null, now: T0 });
+    await redeemInvite(db, "u-dan", second.code, T0);
+    expect(await peopleBrought(db, "u-bob")).toBe(1);
+    expect(await peopleBrought(db, "u-ann")).toBe(1);
   });
 });

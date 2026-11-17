@@ -4,6 +4,8 @@ import { routing } from "@/i18n/routing";
 import { getCardData } from "@/lib/serata/server";
 import { posterUrl } from "@/lib/tmdb-image";
 import { loadGoogleFont } from "@/lib/og-font";
+import { qrDataUri } from "@/lib/qr";
+import { siteUrl } from "@/lib/site";
 import it from "../../../../../../messages/it.json";
 import en from "../../../../../../messages/en.json";
 import es from "../../../../../../messages/es.json";
@@ -61,12 +63,19 @@ export async function GET(request: Request, ctx: RouteContext<"/api/serata/[code
         {line1 && <span>{line1}</span>}
         <span>{line2}</span>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 18, marginTop: og ? 10 : "auto", fontSize: og ? 18 : 28, color: C.muted }}>
-        <span>pausa.gnagno.org</span>
-        <div style={{ display: "flex", gap: 6 }}>
-          <div style={{ width: og ? 8 : 12, height: og ? 24 : 36, background: C.accent, borderRadius: 3 }} />
-          <div style={{ width: og ? 8 : 12, height: og ? 24 : 36, background: C.accent, borderRadius: 3 }} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: og ? "flex-start" : "space-between", width: og ? undefined : "100%", gap: 18, marginTop: og ? 10 : "auto", fontSize: og ? 18 : 28, color: C.muted }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <span>pausa.gnagno.org</span>
+          <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ width: og ? 8 : 12, height: og ? 24 : 36, background: C.accent, borderRadius: 3 }} />
+            <div style={{ width: og ? 8 : 12, height: og ? 24 : 36, background: C.accent, borderRadius: 3 }} />
+          </div>
         </div>
+        {!og && (
+          // A scan opens Pausa's landing: the Card is the one thing meant to leave the app, so it carries the way in.
+          // eslint-disable-next-line @next/next/no-img-element -- Satori renders plain <img>
+          <img src={qrDataUri(`${siteUrl()}/${locale}?utm_source=card`, { dark: C.ink, light: C.paper })} width={150} height={150} alt="" />
+        )}
       </div>
     </div>
   );

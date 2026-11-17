@@ -246,7 +246,9 @@
       "backToCircle": "Back to the Circle",
       "cta": "Pausa is the private diary for groups of friends, with a fast way to decide what to watch.",
       "ctaButton": "Try Pausa",
-      "subtitle": "Tonight, this one."
+      "subtitle": "Tonight, this one.",
+      "qr": "Scan to run your own Serata",
+      "qrAlt": "QR code that opens Pausa"
     },
     "join": {
       "title": "We're picking tonight.",
@@ -371,7 +373,9 @@
       "share": "Share the card",
       "preparing": "Preparing…",
       "failed": "I could not prepare the image. Try again.",
-      "shareText": "Our {year} on Pausa"
+      "shareText": "Our {year} on Pausa",
+      "avg": "{stars} stars on average",
+      "month": "Busiest month: {month}"
     }
   },
   "landing": {
@@ -713,7 +717,9 @@
     "terms": "Terms",
     "logout": "Log out",
     "loggingOut": "Logging out…",
-    "profile": "Your profile"
+    "profile": "Your profile",
+    "brought": "{count, plural, one {You brought one person to Pausa.} other {You brought # people to Pausa.}}",
+    "founder": "Founder"
   },
   "errors": {
     "notFoundTitle": "Nothing here",

@@ -1,4 +1,5 @@
 import type { Locale } from "@/i18n/routing";
+import { MORE_GUIDES, MORE_SLUGS, type MoreSlug } from "./guides-more";
 
 /**
  * Public guides: the searches people actually make when they cannot agree on what to watch. Each one answers the question
@@ -7,12 +8,14 @@ import type { Locale } from "@/i18n/routing";
 export type Block = { h: string; p?: string[]; list?: string[] };
 export type Guide = { title: string; description: string; intro: string; blocks: Block[]; cta: string };
 
-export const GUIDE_SLUGS = ["choose-a-movie-with-friends", "bracket-vs-dot-voting", "letterboxd-alternative-for-friends", "movie-night-guide"] as const;
-export type GuideSlug = (typeof GUIDE_SLUGS)[number];
+const CORE_SLUGS = ["choose-a-movie-with-friends", "bracket-vs-dot-voting", "letterboxd-alternative-for-friends", "movie-night-guide"] as const;
+type CoreSlug = (typeof CORE_SLUGS)[number];
+export const GUIDE_SLUGS = [...CORE_SLUGS, ...MORE_SLUGS] as const;
+export type GuideSlug = CoreSlug | MoreSlug;
 export const isGuideSlug = (v: string): v is GuideSlug => (GUIDE_SLUGS as readonly string[]).includes(v);
 export const GUIDES_UPDATED = "2026-11-17";
 
-const it: Record<GuideSlug, Guide> = {
+const it: Record<CoreSlug, Guide> = {
   "choose-a-movie-with-friends": {
     title: "Come scegliere un film con gli amici senza litigare",
     description: "Cinque metodi che funzionano davvero per decidere cosa guardare in gruppo, dal più semplice al più rapido, e quando usare ciascuno.",
@@ -66,7 +69,7 @@ const it: Record<GuideSlug, Guide> = {
   },
 };
 
-const en: Record<GuideSlug, Guide> = {
+const en: Record<CoreSlug, Guide> = {
   "choose-a-movie-with-friends": {
     title: "How to choose a movie with friends without arguing",
     description: "Five methods that actually work for deciding what to watch as a group, from simplest to fastest, and when to use each one.",
@@ -120,7 +123,7 @@ const en: Record<GuideSlug, Guide> = {
   },
 };
 
-const es: Record<GuideSlug, Guide> = {
+const es: Record<CoreSlug, Guide> = {
   "choose-a-movie-with-friends": {
     title: "Cómo elegir una película con amigos sin discutir",
     description: "Cinco métodos que funcionan de verdad para decidir qué ver en grupo, del más sencillo al más rápido, y cuándo usar cada uno.",
@@ -174,11 +177,11 @@ const es: Record<GuideSlug, Guide> = {
   },
 };
 
-const ALL: Record<Locale, Record<GuideSlug, Guide>> = { it, en, es };
-export const guideFor = (locale: Locale, slug: GuideSlug) => ALL[locale][slug];
+const ALL: Record<Locale, Record<CoreSlug, Guide>> = { it, en, es };
+export const guideFor = (locale: Locale, slug: GuideSlug): Guide => (slug in ALL[locale] ? ALL[locale][slug as CoreSlug] : MORE_GUIDES[locale][slug as MoreSlug]);
 
-export const guideStrings: Record<Locale, { index: string; indexTitle: string; indexLede: string; read: string; try: string; updated: string; back: string }> = {
-  it: { index: "Guide", indexTitle: "Guide per scegliere cosa guardare insieme", indexLede: "Metodi pratici per decidere in gruppo, senza litigare e senza perdere la serata.", read: "Leggi la guida", try: "Prova una Serata", updated: "Aggiornato", back: "Tutte le guide" },
-  en: { index: "Guides", indexTitle: "Guides to picking what to watch together", indexLede: "Practical ways to decide as a group, without arguing and without losing the evening.", read: "Read the guide", try: "Try a Serata", updated: "Updated", back: "All guides" },
-  es: { index: "Guías", indexTitle: "Guías para elegir qué ver juntos", indexLede: "Métodos prácticos para decidir en grupo, sin discutir y sin perder la noche.", read: "Leer la guía", try: "Probar una Serata", updated: "Actualizado", back: "Todas las guías" },
+export const guideStrings: Record<Locale, { index: string; indexTitle: string; indexLede: string; read: string; try: string; updated: string; back: string; more: string }> = {
+  it: { index: "Guide", indexTitle: "Guide per scegliere cosa guardare insieme", indexLede: "Metodi pratici per decidere in gruppo, senza litigare e senza perdere la serata.", read: "Leggi la guida", try: "Prova una Serata", updated: "Aggiornato", back: "Tutte le guide", more: "Altre guide" },
+  en: { index: "Guides", indexTitle: "Guides to picking what to watch together", indexLede: "Practical ways to decide as a group, without arguing and without losing the evening.", read: "Read the guide", try: "Try a Serata", updated: "Updated", back: "All guides", more: "More guides" },
+  es: { index: "Guías", indexTitle: "Guías para elegir qué ver juntos", indexLede: "Métodos prácticos para decidir en grupo, sin discutir y sin perder la noche.", read: "Leer la guía", try: "Probar una Serata", updated: "Actualizado", back: "Todas las guías", more: "Más guías" },
 };

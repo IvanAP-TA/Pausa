@@ -3,6 +3,8 @@ import { getFormatter, getTranslations, setRequestLocale } from "next-intl/serve
 import { getCardData } from "@/lib/serata/server";
 import { SerataCard } from "@/components/serata-card";
 import { TmdbAttribution } from "@/components/tmdb-attribution";
+import { qrDataUri } from "@/lib/qr";
+import { siteUrl } from "@/lib/site";
 
 /** Public result page: what people see when a Card link is shared outside the Cerchia. */
 export async function generateMetadata({ params }: PageProps<"/[locale]/s/[code]/card">) {
@@ -39,6 +41,11 @@ export default async function CardPage({ params }: PageProps<"/[locale]/s/[code]
       <a href={`/${locale}/sign-in`} className="grid min-h-12 place-items-center rounded-full bg-accent font-semibold text-on-accent hover:bg-accent-hover">
         {t("ctaButton")}
       </a>
+      <figure className="mx-auto grid justify-items-center gap-2 text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element -- inline data URI */}
+        <img src={qrDataUri(`${siteUrl()}/${locale}?utm_source=card`)} alt={t("qrAlt")} width={112} height={112} className="rounded-sm border border-rule" />
+        <figcaption className="text-xs text-muted">{t("qr")}</figcaption>
+      </figure>
       <TmdbAttribution />
     </main>
   );

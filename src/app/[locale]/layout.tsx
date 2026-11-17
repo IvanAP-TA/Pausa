@@ -50,6 +50,10 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
           <a href="#main" className="skip-link">{skip}</a>
           <div id="main" tabIndex={-1} className="outline-none">{children}</div>
         </NextIntlClientProvider>
+        {/* Cookie-free, aggregate page-view counting by Cloudflare. Off unless a token is configured. */}
+        {process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN && (
+          <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: process.env.NEXT_PUBLIC_CF_ANALYTICS_TOKEN })} />
+        )}
       </body>
     </html>
   );

@@ -87,6 +87,13 @@ export const invite = sqliteTable("invite", {
   createdAt: createdAt(),
 }, (t) => [index("invite_circle_idx").on(t.circleId)]);
 
+/** Who joined through whose invite: the basis for "people you brought to Pausa". One row per person per invite. */
+export const inviteUse = sqliteTable("invite_use", {
+  inviteId: text("invite_id").notNull().references(() => invite.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  usedAt: integer("used_at", { mode: "timestamp_ms" }).notNull().default(now),
+}, (t) => [primaryKey({ columns: [t.inviteId, t.userId] })]);
+
 export const circleMember = sqliteTable("circle_member", {
   circleId: text("circle_id").notNull().references(() => circle.id, { onDelete: "cascade" }),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),

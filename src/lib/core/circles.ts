@@ -1,5 +1,5 @@
 import { and, asc, count, desc, eq, gt, isNull, lt, or, sql } from "drizzle-orm";
-import { circle, circleMember, invite } from "../../db/schema";
+import { circle, circleMember, invite, inviteUse } from "../../db/schema";
 import type { AnyDb } from "./db-types";
 
 /* ───────────── Invites ───────────── */
@@ -100,6 +100,7 @@ export async function redeemInvite(db: AnyDb, userId: string, rawCode: string, n
   if (reserved.length === 0) return { error: "exhausted" };
 
   await db.insert(circleMember).values({ circleId: inv.circleId, userId, role: "member" }).onConflictDoNothing();
+  await db.insert(inviteUse).values({ inviteId: inv.id, userId }).onConflictDoNothing();
   return { circleId: inv.circleId, already: false };
 }
 
@@ -181,3 +182,14 @@ export async function deleteCircle(db: AnyDb, input: { circleId: string; actorId
   await db.delete(circle).where(eq(circle.id, input.circleId));
   return { ok: true as const };
 }
+
+/** How many different people joined Pausa through invites this person created (themselves excluded). */
+export async function peopleBrought(db: AnyDb, userId: string): Promise<number> {
+  const [row] = await db.select({ n: sql<number>`count(distinct ${inviteUse.userId})` }).from(inviteUse)
+    .innerJoin(invite, eq(invite.id, inviteUse.inviteId))
+    .where(and(eq(invite.createdBy, userId), sql`${inviteUse.userId} <> ${userId}`));
+  return row?.n ?? 0;
+}
+
+/** Three friends brought in makes someone a Fondatore: a badge, nothing more (Pausa has no paid tier to unlock). */
+export const FOUNDER_AT = 3;

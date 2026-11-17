@@ -11,6 +11,7 @@ import { countryOf } from "@/lib/discover";
 import { getDb } from "@/db";
 import { COUNTRIES, getUserProviders, isCountry } from "@/lib/core/streaming";
 import { regionProviders, tmdbEnabled } from "@/lib/tmdb";
+import { FOUNDER_AT, peopleBrought } from "@/lib/core/circles";
 
 const input = "min-h-12 w-full rounded-sm border border-rule bg-paper-2 px-4";
 
@@ -25,9 +26,10 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
   const { saved, e, country: countryParam } = await searchParams;
   setRequestLocale(locale);
   const user = await requireUser();
-  const [circles, t, td, mineByUser] = await Promise.all([
+  const [circles, t, td, mineByUser, brought] = await Promise.all([
     getMyCircles(user.id), getTranslations("account"), getTranslations("services"),
     getDb().then((db) => getUserProviders(db, [user.id])),
+    getDb().then((db) => peopleBrought(db, user.id)),
   ]);
   const myServices = mineByUser.get(user.id) ?? [];
   // ?country= shows another region's services before saving.
@@ -42,6 +44,13 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
         <h1 className="font-display text-[1.75rem] leading-tight">{t("title")}</h1>
         <p className="text-sm text-muted">{user.email}</p>
       </header>
+
+      {brought > 0 && (
+        <p className="flex flex-wrap items-center gap-2 rounded-md bg-paper-2 p-3 text-sm">
+          {t("brought", { count: brought })}
+          {brought >= FOUNDER_AT && <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold text-on-accent">{t("founder")}</span>}
+        </p>
+      )}
 
       <LogoutButton className="min-h-11 w-fit rounded-full border border-rule px-5 text-sm font-semibold hover:bg-paper-2" />
 

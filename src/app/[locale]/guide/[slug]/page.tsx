@@ -20,8 +20,8 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/guide/[s
       canonical: `/${locale}/guide/${slug}`,
       languages: { ...Object.fromEntries(routing.locales.map((l) => [l, `/${l}/guide/${slug}`])), "x-default": `/${routing.defaultLocale}/guide/${slug}` },
     },
-    openGraph: { type: "article", title: g.title, description: g.description, siteName: "Pausa", publishedTime: GUIDES_UPDATED },
-    twitter: { card: "summary_large_image", title: g.title, description: g.description },
+    openGraph: { type: "article", title: g.title, description: g.description, siteName: "Pausa", publishedTime: GUIDES_UPDATED, images: [{ url: `/api/og/guide/${slug}?locale=${locale}`, width: 1200, height: 630, alt: g.title }] },
+    twitter: { card: "summary_large_image", title: g.title, description: g.description, images: [`/api/og/guide/${slug}?locale=${locale}`] },
   };
 }
 
@@ -82,6 +82,14 @@ export default async function GuidePage({ params }: PageProps<"/[locale]/guide/[
         <p className="text-[16px] leading-relaxed">{g.cta}</p>
         <Link href="/#try" className="inline-flex min-h-12 w-fit items-center rounded-full bg-accent px-6 font-semibold text-on-accent hover:bg-accent-hover">{s.try}</Link>
       </aside>
+      <section aria-labelledby="more-guides" className="grid gap-3">
+        <h2 id="more-guides" className="font-display text-xl">{s.more}</h2>
+        <ul className="grid gap-2">
+          {GUIDE_SLUGS.filter((o) => o !== slug).slice((GUIDE_SLUGS.indexOf(slug)) % 3, ((GUIDE_SLUGS.indexOf(slug)) % 3) + 3).map((o) => (
+            <li key={o}><Link href={`/guide/${o}`} className="inline-flex min-h-10 items-center text-[15px] underline underline-offset-4 hover:text-accent">{guideFor(locale, o).title}</Link></li>
+          ))}
+        </ul>
+      </section>
       <nav className="flex flex-wrap gap-4 text-sm"><Link href="/guide" className="inline-flex min-h-10 items-center text-muted underline underline-offset-4 hover:text-ink">← {s.back}</Link></nav>
     </main>
   );

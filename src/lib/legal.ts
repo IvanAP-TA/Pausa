@@ -33,7 +33,7 @@ const privacy: Record<Locale, LegalDoc> = {
         "Usiamo solo cookie tecnici: la sessione di accesso, il tema chiaro/scuro e la lingua. Non usiamo cookie di analisi o pubblicitari, quindi non serve un banner di consenso.",
       ] },
       { h: "Servizi di terzi", p: [
-        "Cloudflare: hosting e database. Resend: invio dell'email con il link di accesso. Google: solo se scegli «Accedi con Google». TMDB e AniList: quando cerchi un titolo, la ricerca (non la tua identità) viene inviata a loro; le locandine vengono caricate dai loro server, che quindi vedono il tuo indirizzo IP. I dati dei titoli arrivano da TMDB (questo prodotto usa l'API TMDB ma non è approvato né certificato da TMDB) e da AniList.",
+        "Cloudflare: hosting e database. Resend: invio dell'email con il link di accesso. Google: solo se scegli «Accedi con Google». TMDB e AniList: quando cerchi un titolo, la ricerca (non la tua identità) viene inviata a loro; le locandine vengono caricate dai loro server, che quindi vedono il tuo indirizzo IP. Se attivata, Cloudflare Web Analytics conta le visite in forma aggregata, senza cookie e senza identificarti. I dati dei titoli arrivano da TMDB (questo prodotto usa l'API TMDB ma non è approvato né certificato da TMDB) e da AniList.",
       ] },
       { h: "Per quanto tempo", p: [
         "Finché non elimini l'account. Se elimini un log o un commento, sparisce subito. Se lasci una Cerchia, i tuoi contenuti restano visibili agli altri membri finché non li elimini o non elimini l'account.",
@@ -64,7 +64,7 @@ const privacy: Record<Locale, LegalDoc> = {
         "Only strictly necessary cookies: the sign-in session, the light/dark theme and the language. No analytics or advertising cookies, so no consent banner is needed.",
       ] },
       { h: "Third parties", p: [
-        "Cloudflare: hosting and database. Resend: sending the sign-in email. Google: only if you choose \"Sign in with Google\". TMDB and AniList: when you search a title, the search (not your identity) is sent to them; posters load from their servers, which therefore see your IP address. Title data comes from TMDB (this product uses the TMDB API but is not endorsed or certified by TMDB) and AniList.",
+        "Cloudflare: hosting and database. Resend: sending the sign-in email. Google: only if you choose \"Sign in with Google\". TMDB and AniList: when you search a title, the search (not your identity) is sent to them; posters load from their servers, which therefore see your IP address. If enabled, Cloudflare Web Analytics counts visits in aggregate, with no cookies and without identifying you. Title data comes from TMDB (this product uses the TMDB API but is not endorsed or certified by TMDB) and AniList.",
       ] },
       { h: "How long", p: [
         "Until you delete your account. Deleting a log or a comment removes it immediately. If you leave a Cerchia, your content stays visible to its members until you delete it or delete your account.",
@@ -95,7 +95,7 @@ const privacy: Record<Locale, LegalDoc> = {
         "Solo cookies técnicas: la sesión de acceso, el tema claro/oscuro y el idioma. No usamos cookies de analítica ni publicidad, así que no hace falta un banner de consentimiento.",
       ] },
       { h: "Terceros", p: [
-        "Cloudflare: alojamiento y base de datos. Resend: envío del email de acceso. Google: solo si eliges «Entrar con Google». TMDB y AniList: al buscar un título se les envía la búsqueda (no tu identidad); los pósteres se cargan desde sus servidores, que por tanto ven tu dirección IP. Los datos de los títulos vienen de TMDB (este producto usa la API de TMDB pero no está respaldado ni certificado por TMDB) y de AniList.",
+        "Cloudflare: alojamiento y base de datos. Resend: envío del email de acceso. Google: solo si eliges «Entrar con Google». TMDB y AniList: al buscar un título se les envía la búsqueda (no tu identidad); los pósteres se cargan desde sus servidores, que por tanto ven tu dirección IP. Si se activa, Cloudflare Web Analytics cuenta las visitas de forma agregada, sin cookies y sin identificarte. Los datos de los títulos vienen de TMDB (este producto usa la API de TMDB pero no está respaldado ni certificado por TMDB) y de AniList.",
       ] },
       { h: "Durante cuánto tiempo", p: [
         "Hasta que elimines tu cuenta. Al borrar un registro o un comentario desaparece al instante. Si dejas una Cerchia, tu contenido sigue visible para sus miembros hasta que lo borres o elimines la cuenta.",
