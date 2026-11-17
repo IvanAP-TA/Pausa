@@ -713,5 +713,25 @@
     "log": "Log it as watched",
     "credit": "Suggestions from TMDB.",
     "loading": "Looking for ideas for you…"
+  },
+  "push": {
+    "log": "{name} watched {title}",
+    "comment": "{name} commented on {title}",
+    "reaction": "{name} reacted to {title}",
+    "now_watching": "{name} is watching {title}",
+    "serata_invite": "{name} opened a Serata: time to pick what to watch",
+    "circle_join": "{name} joined {circle}"
+  },
+  "pushSettings": {
+    "title": "Phone notifications",
+    "body": "Get a heads-up when someone logs a watch, comments or opens a Serata.",
+    "enable": "Turn on notifications",
+    "disable": "Turn off",
+    "enabled": "Notifications are on for this device.",
+    "blocked": "Notifications are blocked in the browser settings.",
+    "unsupported": "This browser does not support notifications.",
+    "iosHint": "On iPhone, first add Pausa to the Home Screen (Share → Add to Home Screen), then reopen it from there and turn notifications on.",
+    "off": "Notifications are not set up on this server.",
+    "failed": "I could not turn them on. Try again."
   }
 }

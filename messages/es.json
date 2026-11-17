@@ -713,5 +713,25 @@
     "log": "Marcar como vista",
     "credit": "Sugerencias de TMDB.",
     "loading": "Buscando ideas para ti…"
+  },
+  "push": {
+    "log": "{name} vio {title}",
+    "comment": "{name} comentó {title}",
+    "reaction": "{name} reaccionó a {title}",
+    "now_watching": "{name} está viendo {title}",
+    "serata_invite": "{name} abrió una Serata: toca elegir qué ver",
+    "circle_join": "{name} se unió a {circle}"
+  },
+  "pushSettings": {
+    "title": "Notificaciones en el móvil",
+    "body": "Recibe un aviso cuando alguien registre una visión, comente o abra una Serata.",
+    "enable": "Activar notificaciones",
+    "disable": "Desactivar",
+    "enabled": "Notificaciones activas en este dispositivo.",
+    "blocked": "Las notificaciones están bloqueadas en los ajustes del navegador.",
+    "unsupported": "Este navegador no admite notificaciones.",
+    "iosHint": "En iPhone, primero añade Pausa a la pantalla de inicio (Compartir → Añadir a pantalla de inicio), luego ábrela desde ahí y activa las notificaciones.",
+    "off": "Las notificaciones no están configuradas en este servidor.",
+    "failed": "No pude activarlas. Inténtalo de nuevo."
   }
 }

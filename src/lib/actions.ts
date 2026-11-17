@@ -8,6 +8,7 @@ import { and, eq, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { atomically, getDb, schema as s } from "@/db";
 import { requireUser } from "./session";
+import { pushNotifications } from "./push";
 import { getCircleForMember, logVisibleTo, searchLocalMedia, type MediaSummary } from "./data";
 import { searchTmdb } from "./tmdb";
 import { MAX_EPISODE, MAX_SEASON, nextEpisode, nextSeason, setWatching, toPosition } from "./core/progress";
@@ -44,7 +45,9 @@ export async function joinCircle(formData: FormData) {
     const others = await db.select({ userId: s.circleMember.userId }).from(s.circleMember)
       .where(and(eq(s.circleMember.circleId, res.circleId), ne(s.circleMember.userId, user.id)));
     if (others.length) {
-      await db.insert(s.notification).values(others.map((o) => ({ userId: o.userId, type: "circle_join" as const, actorId: user.id, circleId: res.circleId })));
+      const rows = others.map((o) => ({ userId: o.userId, type: "circle_join" as const, actorId: user.id, circleId: res.circleId }));
+      await db.insert(s.notification).values(rows);
+      pushNotifications(rows);
     }
   }
   redirect(`/${locale}/c/${res.circleId}`);
@@ -162,6 +165,7 @@ export async function createLog(formData: FormData) {
     // Logging a title you were "watching" clears the status.
     db.delete(s.nowWatching).where(and(eq(s.nowWatching.userId, user.id), eq(s.nowWatching.mediaId, input.mediaId))),
   ]);
+  pushNotifications(notify.map((userId) => ({ userId, type: "log" as const, actorId: user.id, circleId: input.circleId, logId })));
 
   redirect(`/${localeFrom(formData.get("locale"))}/c/${input.circleId}`);
 }
@@ -181,6 +185,7 @@ export async function toggleReaction(logId: string, emoji: string) {
     await db.insert(s.reaction).values({ logId, userId: user.id, emoji });
     if (row.authorId !== user.id) {
       await db.insert(s.notification).values({ userId: row.authorId, type: "reaction", actorId: user.id, logId });
+      pushNotifications([{ userId: row.authorId, type: "reaction", actorId: user.id, logId }]);
     }
   }
 
@@ -252,6 +257,7 @@ export async function addComment(formData: FormData) {
     db.insert(s.comment).values({ logId, userId: user.id, body, isSpoiler }),
     notify.size > 0 && db.insert(s.notification).values([...notify].map((userId) => ({ userId, type: "comment" as const, actorId: user.id, logId, circleId }))),
   ]);
+  pushNotifications([...notify].map((userId) => ({ userId, type: "comment" as const, actorId: user.id, logId, circleId })));
   revalidatePath(`/[locale]/c/[circleId]/l/[logId]`, "page");
 }
 
@@ -273,7 +279,9 @@ export async function setNowWatching(formData: FormData) {
     const others = await db.select({ userId: s.circleMember.userId }).from(s.circleMember)
       .where(and(eq(s.circleMember.circleId, circleId), ne(s.circleMember.userId, user.id)));
     if (others.length) {
-      await db.insert(s.notification).values(others.map((o) => ({ userId: o.userId, type: "now_watching" as const, actorId: user.id, circleId, mediaId })));
+      const rows = others.map((o) => ({ userId: o.userId, type: "now_watching" as const, actorId: user.id, circleId, mediaId }));
+      await db.insert(s.notification).values(rows);
+      pushNotifications(rows);
     }
   }
   redirect(`/${localeFrom(formData.get("locale"))}/c/${circleId}`);

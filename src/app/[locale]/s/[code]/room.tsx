@@ -5,6 +5,7 @@ import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { forceAdvance, startSerata, submitBallot, tick, voteBracket } from "@/lib/serata/actions";
+import { trackEvent } from "@/lib/events";
 import { DOTS, MATCH_MS, TABLE_MS } from "@/lib/serata/engine";
 import type { RoomView } from "@/lib/serata/server";
 import type { MediaSummary } from "@/lib/data";
@@ -174,8 +175,9 @@ function Lobby({ view, pending, onStart }: { view: RoomView; pending: boolean; o
   async function share() {
     const url = `${location.origin}/${locale}/s/${view.code}`;
     if (navigator.share) {
-      try { await navigator.share({ title: "Pausa", text: t("shareText"), url }); return; } catch { return; }
+      try { await navigator.share({ title: "Pausa", text: t("shareText"), url }); void trackEvent("invite_shared", view.code); return; } catch { return; }
     }
+    void trackEvent("invite_shared", view.code);
     try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); }
     catch { window.prompt(t("share"), url); }
   }
@@ -323,9 +325,10 @@ function Result({ view, meId, isGuest }: { view: RoomView; meId: string; isGuest
   async function share() {
     const text = tr("shareText", { title: result.winner.title });
     try {
-      if (file && navigator.canShare?.({ files: [file] })) return await navigator.share({ files: [file], text });
-      if (navigator.share) return await navigator.share({ title: "Pausa", text, url: cardUrl });
+      if (file && navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], text }); void trackEvent("card_shared", view.code); return; }
+      if (navigator.share) { await navigator.share({ title: "Pausa", text, url: cardUrl }); void trackEvent("card_shared", view.code); return; }
     } catch { return; }
+    void trackEvent("card_shared", view.code);
     await navigator.clipboard.writeText(cardUrl).catch(() => {});
     setCopied(true);
   }

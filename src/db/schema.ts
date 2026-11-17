@@ -275,3 +275,26 @@ export const notification = sqliteTable("notification", {
   readAt: integer("read_at", { mode: "timestamp_ms" }),
   createdAt: createdAt(),
 }, (t) => [index("notification_user_idx").on(t.userId, t.createdAt)]);
+
+/* ───────────── Web Push ───────────── */
+
+/** One browser/device that agreed to push notifications. Dead endpoints (404/410) are deleted when a send fails. */
+export const pushSubscription = sqliteTable("push_subscription", {
+  id: id(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  locale: text("locale").notNull().default("it"),
+  createdAt: createdAt(),
+}, (t) => [index("push_user_idx").on(t.userId)]);
+
+/* ───────────── Metrics events (only what the database cannot already tell us) ───────────── */
+
+export const event = sqliteTable("event", {
+  id: id(),
+  name: text("name", { enum: ["card_shared", "invite_shared"] }).notNull(),
+  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  serataId: text("serata_id").references(() => serata.id, { onDelete: "cascade" }),
+  createdAt: createdAt(),
+}, (t) => [index("event_name_idx").on(t.name, t.createdAt)]);

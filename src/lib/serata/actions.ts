@@ -8,6 +8,7 @@ import { atomically, getDb, schema as s } from "@/db";
 import { routing, type Locale } from "@/i18n/routing";
 import { getSession } from "@/lib/auth";
 import { getCircleForMember } from "@/lib/data";
+import { pushNotifications } from "@/lib/push";
 import { isGuestAvatar, toAvatarImage } from "@/lib/avatars";
 import { requireUser } from "@/lib/session";
 import { DOTS, MAX_CANDIDATES, MIN_CANDIDATES, currentMatch, initBracket, initTable, validBallot, type SerataState } from "./engine";
@@ -64,6 +65,7 @@ export async function createSerata(formData: FormData) {
     db.insert(s.serataParticipant).values({ serataId: id, userId: user.id, name: user.name }),
     others.length > 0 && db.insert(s.notification).values(others.map((o) => ({ userId: o.userId, type: "serata_invite" as const, actorId: user.id, circleId }))),
   ]);
+  pushNotifications(others.map((o) => ({ userId: o.userId, type: "serata_invite" as const, actorId: user.id, circleId, serataCode: code })));
   redirect(`/${locale}/s/${code}`);
 }
 

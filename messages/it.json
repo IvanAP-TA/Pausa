@@ -713,5 +713,25 @@
     "log": "Segnalo come visto",
     "credit": "Consigli da TMDB.",
     "loading": "Cerco idee per te…"
+  },
+  "push": {
+    "log": "{name} ha visto {title}",
+    "comment": "{name} ha commentato {title}",
+    "reaction": "{name} ha reagito a {title}",
+    "now_watching": "{name} sta guardando {title}",
+    "serata_invite": "{name} ha aperto una Serata: si sceglie cosa guardare",
+    "circle_join": "{name} è entrato in {circle}"
+  },
+  "pushSettings": {
+    "title": "Notifiche sul telefono",
+    "body": "Ricevi un avviso quando qualcuno registra una visione, commenta o apre una Serata.",
+    "enable": "Attiva le notifiche",
+    "disable": "Disattiva",
+    "enabled": "Notifiche attive su questo dispositivo.",
+    "blocked": "Le notifiche sono bloccate nelle impostazioni del browser.",
+    "unsupported": "Questo browser non supporta le notifiche.",
+    "iosHint": "Su iPhone prima aggiungi Pausa alla schermata Home (Condividi → Aggiungi alla schermata Home), poi riapri da lì e attiva le notifiche.",
+    "off": "Le notifiche non sono configurate su questo server.",
+    "failed": "Non sono riuscito ad attivarle. Riprova."
   }
 }

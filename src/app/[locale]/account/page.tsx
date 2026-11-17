@@ -1,6 +1,8 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { LogoutButton } from "@/components/logout-button";
+import { PushToggle } from "@/components/push-toggle";
+import { pushEnabled } from "@/lib/push";
 import { requireUser } from "@/lib/session";
 import { getMyCircles } from "@/lib/data";
 import { deleteAccountAction, updateProfileAction } from "@/lib/manage-actions";
@@ -62,6 +64,10 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
             ))}
           </ul>
         </section>
+      )}
+
+      {pushEnabled() ? <PushToggle publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!} /> : (
+        <p className="text-sm text-muted">{(await getTranslations("pushSettings"))("off")}</p>
       )}
 
       <section className="grid gap-3">
