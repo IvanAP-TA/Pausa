@@ -16,6 +16,7 @@ export const user = sqliteTable("user", {
   image: text("image"),
   isAnonymous: integer("is_anonymous", { mode: "boolean" }).default(false),
   locale: text("locale"), // "it" | "en" | "es", null = follow browser
+  country: text("country"), // ISO 3166-1 alpha-2, for streaming availability (TMDB watch region)
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -121,6 +122,32 @@ export const mediaTitle = sqliteTable("media_title", {
   locale: text("locale").notNull(),
   title: text("title").notNull(),
 }, (t) => [primaryKey({ columns: [t.mediaId, t.locale] })]);
+
+/* ───────────── Streaming availability (TMDB watch providers, via JustWatch) ───────────── */
+
+/** The services a person subscribes to. */
+export const userProvider = sqliteTable("user_provider", {
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  providerId: integer("provider_id").notNull(),
+  name: text("name").notNull(),
+  logoPath: text("logo_path"),
+}, (t) => [primaryKey({ columns: [t.userId, t.providerId] })]);
+
+/** Where a title streams (flat-rate) in a country; cached, refreshed when older than a week. */
+export const mediaProvider = sqliteTable("media_provider", {
+  mediaId: text("media_id").notNull().references(() => mediaEntity.id, { onDelete: "cascade" }),
+  country: text("country").notNull(),
+  providerId: integer("provider_id").notNull(),
+  name: text("name").notNull(),
+  logoPath: text("logo_path"),
+}, (t) => [primaryKey({ columns: [t.mediaId, t.country, t.providerId] })]);
+
+/** Records that availability was looked up, so a title on no service is not asked again for a week. */
+export const mediaAvailabilityCheck = sqliteTable("media_availability_check", {
+  mediaId: text("media_id").notNull().references(() => mediaEntity.id, { onDelete: "cascade" }),
+  country: text("country").notNull(),
+  fetchedAt: integer("fetched_at", { mode: "timestamp_ms" }).notNull(),
+}, (t) => [primaryKey({ columns: [t.mediaId, t.country] })]);
 
 /* ───────────── Diario ───────────── */
 

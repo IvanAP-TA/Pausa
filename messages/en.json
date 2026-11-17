@@ -254,7 +254,13 @@
       "cta": "Join the room",
       "error": "Couldn't get you in. Try again.",
       "avatar": "Pick a picture"
-    }
+    },
+    "suggest": "Fill the roster for us",
+    "suggesting": "Choosing…",
+    "suggestHint": "It starts from the watchlist and from titles the group would love, and drops the ones half of you have already seen.",
+    "servicesCommon": "Services you all have: {names} ({setBy} of {members} have set theirs).",
+    "servicesNone": "Nobody has set their streaming services yet (it is on the Account page).",
+    "suggestEmpty": "I cannot find enough new titles for everyone. Add some yourself."
   },
   "join": {
     "title": "You're invited to {name}",
@@ -664,5 +670,24 @@
     "memoriesTitle": "A year ago… and beyond",
     "yearsAgo": "{count, plural, one {A year ago} other {# years ago}}",
     "saw": "watched"
+  },
+  "services": {
+    "title": "Your streaming services",
+    "body": "Tell us which services you subscribe to: the Serata can suggest only titles you can all watch.",
+    "off": "Availability data needs TMDB, which is not active here.",
+    "country": "Country",
+    "showServices": "Show",
+    "save": "Save services",
+    "credit": "Availability data provided by JustWatch, via TMDB."
+  },
+  "discover": {
+    "title": "For you",
+    "body": "New titles, picked from the ones you loved.",
+    "off": "Personal ideas need TMDB, which is not active here.",
+    "empty": "Give four stars or more to a few films or series TMDB knows, and suggestions show up here.",
+    "because": "Because you loved {titles}",
+    "on": "On your services: {services}",
+    "log": "Log it as watched",
+    "credit": "Suggestions from TMDB."
   }
 }

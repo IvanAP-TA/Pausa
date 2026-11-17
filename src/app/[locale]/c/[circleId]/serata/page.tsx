@@ -4,17 +4,19 @@ import { requireUser } from "@/lib/session";
 import { getCircleLists } from "@/lib/data";
 import { getRecentSerate } from "@/lib/serata/server";
 import { tmdbEnabled } from "@/lib/tmdb";
+import { circleServices } from "@/lib/discover";
 import { NewSerata } from "./new-serata";
 
 export default async function Serata({ params }: PageProps<"/[locale]/c/[circleId]/serata">) {
   const { locale, circleId } = await params;
   setRequestLocale(locale);
   await requireUser();
-  const [lists, recent, t, format] = await Promise.all([
+  const [lists, recent, t, format, services] = await Promise.all([
     getCircleLists(circleId, locale),
     getRecentSerate(circleId, locale),
     getTranslations("serata"),
     getFormatter(),
+    circleServices(circleId),
   ]);
 
   // Quick picks: titles already on the group's lists, watchlists first, de-duplicated.
@@ -31,7 +33,7 @@ export default async function Serata({ params }: PageProps<"/[locale]/c/[circleI
         <p className="mt-1 text-sm text-muted">{t("lede")}</p>
       </header>
 
-      <NewSerata circleId={circleId} quickPicks={quickPicks} tmdb={tmdbEnabled()} />
+      <NewSerata circleId={circleId} quickPicks={quickPicks} tmdb={tmdbEnabled()} services={{ names: services.common.map((p) => p.name), setBy: services.setBy, members: services.members }} />
 
       {recent.length > 0 && (
         <section className="grid gap-2">

@@ -1,0 +1,59 @@
+{
+  "it": {
+    "services": {
+      "title": "I tuoi servizi streaming", "body": "Dici su quali servizi hai l'abbonamento: la Serata può proporre solo titoli che potete guardare tutti.",
+      "off": "I dati di disponibilità richiedono TMDB, che qui non è attivo.", "country": "Paese", "showServices": "Mostra", "save": "Salva i servizi",
+      "credit": "Dati di disponibilità forniti da JustWatch, tramite TMDB."
+    },
+    "discover": {
+      "title": "Per te", "body": "Titoli nuovi, scelti partendo da quelli che hai amato.",
+      "off": "Le idee personalizzate richiedono TMDB, che qui non è attivo.", "empty": "Dai almeno quattro stelle a qualche film o serie con un titolo noto a TMDB, e qui compaiono i consigli.",
+      "because": "Perché hai amato {titles}", "on": "Sui tuoi servizi: {services}", "log": "Segnalo come visto", "credit": "Consigli da TMDB."
+    },
+    "serata": {
+      "suggest": "Riempi la rosa per noi", "suggesting": "Scelgo…",
+      "suggestHint": "Parte dalla watchlist e dai titoli che il gruppo amerebbe, e toglie quelli che metà di voi ha già visto.",
+      "servicesCommon": "Servizi che avete tutti: {names} ({setBy} su {members} li hanno indicati).",
+      "servicesNone": "Nessuno ha ancora indicato i propri servizi streaming (si fa dalla pagina Account).",
+      "suggestEmpty": "Non trovo abbastanza titoli nuovi per tutti. Aggiungine tu."
+    }
+  },
+  "en": {
+    "services": {
+      "title": "Your streaming services", "body": "Tell us which services you subscribe to: the Serata can suggest only titles you can all watch.",
+      "off": "Availability data needs TMDB, which is not active here.", "country": "Country", "showServices": "Show", "save": "Save services",
+      "credit": "Availability data provided by JustWatch, via TMDB."
+    },
+    "discover": {
+      "title": "For you", "body": "New titles, picked from the ones you loved.",
+      "off": "Personal ideas need TMDB, which is not active here.", "empty": "Give four stars or more to a few films or series TMDB knows, and suggestions show up here.",
+      "because": "Because you loved {titles}", "on": "On your services: {services}", "log": "Log it as watched", "credit": "Suggestions from TMDB."
+    },
+    "serata": {
+      "suggest": "Fill the roster for us", "suggesting": "Choosing…",
+      "suggestHint": "It starts from the watchlist and from titles the group would love, and drops the ones half of you have already seen.",
+      "servicesCommon": "Services you all have: {names} ({setBy} of {members} have set theirs).",
+      "servicesNone": "Nobody has set their streaming services yet (it is on the Account page).",
+      "suggestEmpty": "I cannot find enough new titles for everyone. Add some yourself."
+    }
+  },
+  "es": {
+    "services": {
+      "title": "Tus servicios de streaming", "body": "Indica en qué servicios tienes suscripción: la Serata puede proponer solo títulos que podáis ver todos.",
+      "off": "Los datos de disponibilidad necesitan TMDB, que aquí no está activo.", "country": "País", "showServices": "Mostrar", "save": "Guardar servicios",
+      "credit": "Datos de disponibilidad proporcionados por JustWatch, a través de TMDB."
+    },
+    "discover": {
+      "title": "Para ti", "body": "Títulos nuevos, elegidos a partir de los que te encantaron.",
+      "off": "Las ideas personales necesitan TMDB, que aquí no está activo.", "empty": "Da cuatro estrellas o más a algunas películas o series que TMDB conozca, y aquí aparecerán sugerencias.",
+      "because": "Porque te encantó {titles}", "on": "En tus servicios: {services}", "log": "Marcar como vista", "credit": "Sugerencias de TMDB."
+    },
+    "serata": {
+      "suggest": "Llenad la lista por nosotros", "suggesting": "Eligiendo…",
+      "suggestHint": "Parte de la watchlist y de los títulos que el grupo amaría, y quita los que la mitad ya ha visto.",
+      "servicesCommon": "Servicios que tenéis todos: {names} ({setBy} de {members} los han indicado).",
+      "servicesNone": "Nadie ha indicado aún sus servicios de streaming (se hace en la página Cuenta).",
+      "suggestEmpty": "No encuentro suficientes títulos nuevos para todos. Añade algunos tú."
+    }
+  }
+}

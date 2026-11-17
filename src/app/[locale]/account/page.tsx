@@ -3,15 +3,28 @@ import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
 import { getMyCircles } from "@/lib/data";
 import { deleteAccountAction, updateProfileAction } from "@/lib/manage-actions";
+import { saveServicesAction } from "@/lib/discover-actions";
+import { countryOf } from "@/lib/discover";
+import { getDb } from "@/db";
+import { COUNTRIES, getUserProviders, isCountry } from "@/lib/core/streaming";
+import { regionProviders, tmdbEnabled } from "@/lib/tmdb";
 
 const input = "min-h-12 w-full rounded-sm border border-rule bg-paper-2 px-4";
 
 export default async function Account({ params, searchParams }: PageProps<"/[locale]/account">) {
   const { locale } = await params;
-  const { saved, e } = await searchParams;
+  const { saved, e, country: countryParam } = await searchParams;
   setRequestLocale(locale);
   const user = await requireUser();
-  const [circles, t] = await Promise.all([getMyCircles(user.id), getTranslations("account")]);
+  const [circles, t, td, mineByUser] = await Promise.all([
+    getMyCircles(user.id), getTranslations("account"), getTranslations("services"),
+    getDb().then((db) => getUserProviders(db, [user.id])),
+  ]);
+  const myServices = mineByUser.get(user.id) ?? [];
+  // ?country= shows another region's services before saving.
+  const picked = typeof countryParam === "string" && isCountry(countryParam) ? countryParam : await countryOf(user.id, locale);
+  const catalogue = await regionProviders(picked, locale);
+  const regionNames = new Intl.DisplayNames([locale], { type: "region" });
 
   return (
     <main className="projector mx-auto grid max-w-md gap-8 px-4 py-10">
@@ -41,6 +54,45 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
           </ul>
         </section>
       )}
+
+      <section className="grid gap-3">
+        <div>
+          <h2 className="font-display text-lg">{td("title")}</h2>
+          <p className="text-sm text-muted">{td("body")}</p>
+        </div>
+        {!tmdbEnabled() ? (
+          <p className="text-sm text-muted">{td("off")}</p>
+        ) : (
+          <>
+            <form method="get" className="flex items-end gap-2">
+              <label className="grid min-w-0 flex-1 gap-1.5 text-sm text-muted">
+                {td("country")}
+                <select name="country" defaultValue={picked} className="min-h-12 rounded-sm border border-rule bg-paper-2 px-3 text-ink">
+                  {COUNTRIES.map((c) => <option key={c} value={c}>{regionNames.of(c)}</option>)}
+                </select>
+              </label>
+              <button className="min-h-12 shrink-0 rounded-full border border-rule px-4 text-sm hover:bg-paper-2">{td("showServices")}</button>
+            </form>
+            <form action={saveServicesAction} className="grid gap-3">
+              <input type="hidden" name="locale" value={locale} />
+              <input type="hidden" name="country" value={picked} />
+              <fieldset className="grid grid-cols-2 gap-2">
+                <legend className="sr-only">{td("title")}</legend>
+                {catalogue.map((p) => (
+                  <label key={p.id} className="cursor-pointer">
+                    <input type="checkbox" name="provider" value={p.id} defaultChecked={myServices.some((m) => m.id === p.id)} className="peer sr-only" />
+                    <span className="flex min-h-11 items-center gap-2 rounded-sm border border-rule px-3 text-sm text-muted transition-colors peer-checked:border-second peer-checked:bg-second peer-checked:text-on-second peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
+                      <span className="min-w-0 truncate">{p.name}</span>
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+              <button className="min-h-11 w-fit rounded-full border border-rule bg-paper-3 px-5 text-sm font-semibold hover:bg-rule">{td("save")}</button>
+            </form>
+            <p className="text-xs text-muted">{td("credit")}</p>
+          </>
+        )}
+      </section>
 
       <section className="grid gap-3 rounded-md bg-paper-2 p-4">
         <h2 className="font-display text-lg">{t("dataTitle")}</h2>

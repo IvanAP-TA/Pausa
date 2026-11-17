@@ -254,7 +254,13 @@
       "cta": "Entra in sala",
       "error": "Non sono riuscito a farti entrare. Riprova.",
       "avatar": "Scegli un'immagine"
-    }
+    },
+    "suggest": "Riempi la rosa per noi",
+    "suggesting": "Scelgo…",
+    "suggestHint": "Parte dalla watchlist e dai titoli che il gruppo amerebbe, e toglie quelli che metà di voi ha già visto.",
+    "servicesCommon": "Servizi che avete tutti: {names} ({setBy} su {members} li hanno indicati).",
+    "servicesNone": "Nessuno ha ancora indicato i propri servizi streaming (si fa dalla pagina Account).",
+    "suggestEmpty": "Non trovo abbastanza titoli nuovi per tutti. Aggiungine tu."
   },
   "join": {
     "title": "Ti hanno invitato in {name}",
@@ -664,5 +670,24 @@
     "memoriesTitle": "Un anno fa… e oltre",
     "yearsAgo": "{count, plural, one {Un anno fa} other {# anni fa}}",
     "saw": "ha visto"
+  },
+  "services": {
+    "title": "I tuoi servizi streaming",
+    "body": "Dici su quali servizi hai l'abbonamento: la Serata può proporre solo titoli che potete guardare tutti.",
+    "off": "I dati di disponibilità richiedono TMDB, che qui non è attivo.",
+    "country": "Paese",
+    "showServices": "Mostra",
+    "save": "Salva i servizi",
+    "credit": "Dati di disponibilità forniti da JustWatch, tramite TMDB."
+  },
+  "discover": {
+    "title": "Per te",
+    "body": "Titoli nuovi, scelti partendo da quelli che hai amato.",
+    "off": "Le idee personalizzate richiedono TMDB, che qui non è attivo.",
+    "empty": "Dai almeno quattro stelle a qualche film o serie con un titolo noto a TMDB, e qui compaiono i consigli.",
+    "because": "Perché hai amato {titles}",
+    "on": "Sui tuoi servizi: {services}",
+    "log": "Segnalo come visto",
+    "credit": "Consigli da TMDB."
   }
 }

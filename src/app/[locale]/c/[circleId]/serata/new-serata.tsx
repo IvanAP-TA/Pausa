@@ -5,13 +5,20 @@ import { useFormStatus } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
 import { searchMedia } from "@/lib/actions";
 import { createSerata } from "@/lib/serata/actions";
+import { suggestRosterAction } from "@/lib/discover-actions";
 import type { MediaSummary } from "@/lib/data";
 import { Poster } from "@/components/poster";
 
 const MAX = 8;
 
-export function NewSerata({ circleId, quickPicks, tmdb }: { circleId: string; quickPicks: MediaSummary[]; tmdb: boolean }) {
+type Services = { names: string[]; setBy: number; members: number };
+
+export function NewSerata({ circleId, quickPicks, tmdb, services }: { circleId: string; quickPicks: MediaSummary[]; tmdb: boolean; services: Services }) {
   const t = useTranslations("serata");
+  const [suggested, setSuggested] = useState<MediaSummary[]>([]);
+  const [on, setOn] = useState<Record<string, string[]>>({});
+  const [suggesting, startSuggest] = useTransition();
+  const [suggestEmpty, setSuggestEmpty] = useState(false);
   const tl = useTranslations("log");
   const locale = useLocale();
   const [mode, setMode] = useState<"bracket" | "table">("bracket");
@@ -24,7 +31,21 @@ export function NewSerata({ circleId, quickPicks, tmdb }: { circleId: string; qu
   const toggle = (m: MediaSummary) =>
     setPicked((cur) => (cur.some((p) => p.id === m.id) ? cur.filter((p) => p.id !== m.id) : cur.length < MAX ? [...cur, m] : cur));
 
-  const pool = [...quickPicks, ...(results ?? []).filter((r) => !quickPicks.some((q) => q.id === r.id))];
+  const known = new Set(quickPicks.map((q) => q.id));
+  const extra = suggested.filter((m) => !known.has(m.id));
+  extra.forEach((m) => known.add(m.id));
+  const pool = [...quickPicks, ...extra, ...(results ?? []).filter((r) => !known.has(r.id))];
+
+  function suggest() {
+    setSuggestEmpty(false);
+    startSuggest(async () => {
+      const res = await suggestRosterAction(circleId, locale);
+      setSuggested(res.titles);
+      setOn(res.on);
+      setPicked(res.titles.slice(0, MAX));
+      setSuggestEmpty(res.titles.length === 0);
+    });
+  }
 
   return (
     <form action={createSerata} className="grid gap-6">
@@ -53,6 +74,20 @@ export function NewSerata({ circleId, quickPicks, tmdb }: { circleId: string; qu
         <div className="flex items-baseline justify-between">
           <h2 className="text-sm font-semibold">{t("pickTitle")}</h2>
           <span className="tabular text-xs text-muted">{t("picked", { count: picked.length, max: MAX })}</span>
+        </div>
+
+        <div className="grid gap-1.5 rounded-md border border-dashed border-rule p-3">
+          <button type="button" onClick={suggest} disabled={suggesting}
+            className="min-h-11 w-full rounded-full border border-accent px-4 text-sm font-semibold text-accent hover:bg-accent hover:text-on-accent disabled:opacity-60">
+            {suggesting ? t("suggesting") : t("suggest")}
+          </button>
+          <p className="text-xs text-muted">{t("suggestHint")}</p>
+          {services.names.length > 0 ? (
+            <p className="text-xs text-second-text">{t("servicesCommon", { names: services.names.join(", "), setBy: services.setBy, members: services.members })}</p>
+          ) : (
+            <p className="text-xs text-muted">{t("servicesNone")}</p>
+          )}
+          {suggestEmpty && <p role="status" className="text-xs text-accent">{t("suggestEmpty")}</p>}
         </div>
 
         <div className="flex gap-2">
@@ -91,6 +126,7 @@ export function NewSerata({ circleId, quickPicks, tmdb }: { circleId: string; qu
                       <span className="tabular absolute left-1 top-1 grid size-5 place-items-center rounded-full bg-accent text-[11px] font-semibold text-on-accent">{n + 1}</span>
                     )}
                     <span className="line-clamp-2 text-[11px] leading-tight">{m.title}</span>
+                    {on[m.id]?.length ? <span className="truncate text-[10px] text-second-text">{on[m.id].join(", ")}</span> : null}
                   </button>
                 </li>
               );

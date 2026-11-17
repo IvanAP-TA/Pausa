@@ -6,6 +6,7 @@ import {
   MIN_COMMON, agreements, latestRatings, loadCircleFacts, recommend, tastePairs, yearInReview, yearsWithLogs,
   type TitleVerdict,
 } from "@/lib/core/insights";
+import { personalPicks } from "@/lib/discover";
 import { Poster } from "@/components/poster";
 import { Stars } from "@/components/stars";
 
@@ -15,13 +16,15 @@ export default async function Insights({ params, searchParams }: PageProps<"/[lo
   const { locale, circleId } = await params;
   const { year: yearParam } = await searchParams;
   setRequestLocale(locale);
-  await requireUser();
+  const user = await requireUser();
 
-  const [{ people, facts, watching }, t, tk, tc, format] = await Promise.all([
+  const [{ people, facts, watching }, t, tk, tc, tf, mine, format] = await Promise.all([
     getDb().then((db) => loadCircleFacts(db, circleId, locale)),
     getTranslations("insights"),
     getTranslations("kind"),
     getTranslations("common"),
+    getTranslations("discover"),
+    personalPicks(user.id, locale),
     getFormatter(),
   ]);
 
@@ -163,6 +166,35 @@ export default async function Insights({ params, searchParams }: PageProps<"/[lo
           )}
         </section>
       )}
+
+      {/* For you: what to watch next, from what this person loved (TMDB) */}
+      <section className="grid gap-3" aria-labelledby="foryou">
+        <div>
+          <h2 id="foryou" className="font-display text-[1.6rem] leading-tight">{tf("title")}</h2>
+          <p className="mt-1 text-sm text-muted">{tf("body")}</p>
+        </div>
+        {!mine.enabled ? (
+          <p className="text-sm text-muted">{tf("off")}</p>
+        ) : mine.picks.length === 0 ? (
+          <p className="text-sm text-muted">{tf("empty")}</p>
+        ) : (
+          <ul className="grid gap-4">
+            {mine.picks.map((p) => (
+              <li key={p.candidate.id} className="grid grid-cols-[64px_minmax(0,1fr)] gap-3">
+                <Poster media={{ id: p.candidate.id, title: p.candidate.title, posterPath: p.candidate.posterPath }} size="sm" />
+                <div className="min-w-0">
+                  <p className="font-display text-lg leading-tight">{p.candidate.title}</p>
+                  <p className="text-xs text-muted">{tk(p.candidate.kind)}{p.candidate.year ? ` · ${p.candidate.year}` : ""}</p>
+                  <p className="mt-1 text-sm">{tf("because", { titles: list(p.because.map((b) => b.title)) })}</p>
+                  {p.on.length > 0 && <p className="text-xs text-second-text">{tf("on", { services: list(p.on.map((x) => x.name)) })}</p>}
+                  <Link href={`/c/${circleId}/log?media=${p.candidate.id}`} className="mt-1 inline-flex min-h-8 items-center text-xs text-muted underline underline-offset-4 hover:text-ink">{tf("log")}</Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-xs text-muted">{tf("credit")}</p>
+      </section>
 
       {/* Recommendations */}
       <section className="grid gap-3" aria-labelledby="recs">
