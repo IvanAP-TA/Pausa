@@ -1,18 +1,24 @@
 "use client";
 
+import { BookOpen, List, Plus, Popcorn, Trophy, Users, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Avatar } from "./avatar";
 import { LogoutButton } from "./logout-button";
 
-const icons = {
-  diary: <path d="M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM9 8h6M9 12h6M9 16h4" />,
-  serata: <path d="M4 6h5v4H4zM4 14h5v4H4zM9 8h4v8H9M13 12h7" />,
-  ranking: <path d="M5 20V11M12 20V5M19 20v-6" />,
-  lists: <path d="M5 6h14M5 12h14M5 18h9" />,
-  circle: <path d="M9 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7 1.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM3.5 19c.8-3 3-4.5 5.5-4.5s4.7 1.5 5.5 4.5M14 15.2c2.6-.4 5 .9 6 3.8" />,
+const icons: Record<"diary" | "serata" | "lists" | "ranking" | "circle", LucideIcon> = {
+  diary: BookOpen,
+  serata: Popcorn,
+  lists: List,
+  ranking: Trophy,
+  circle: Users,
 };
 
+/**
+ * The navigation of the shell: a solid bar under the thumb on phones, a rail on the left from 64rem.
+ * On phones the bar is three tracks, `1fr auto 1fr`: the + sits in the middle one, so it is on the centre line of the
+ * screen whatever the number of tabs on each side. From 64rem the two groups dissolve (`lg:contents`) into one column.
+ */
 export function TabBar({ circleId, me }: { circleId: string; me: { id: string; name: string; image?: string | null } }) {
   const t = useTranslations("tabs");
   const ta = useTranslations("account");
@@ -21,16 +27,17 @@ export function TabBar({ circleId, me }: { circleId: string; me: { id: string; n
 
   const tab = (key: keyof typeof icons, href: string) => {
     const active = href === base ? pathname === base : pathname.startsWith(href);
+    const Icon = icons[key];
     return (
       <Link
         href={href}
         aria-current={active ? "page" : undefined}
-        className={`grid justify-items-center gap-1 py-1.5 text-[11px] transition-colors lg:flex lg:items-center lg:justify-start lg:gap-3 lg:rounded-md lg:px-3 lg:py-3 lg:text-[15px] lg:hover:bg-paper-2 ${active ? "text-ink lg:bg-paper-2" : "text-muted hover:text-ink"}`}
+        className={`grid min-h-12 min-w-0 content-center justify-items-center gap-1 text-xs transition-colors duration-150 lg:flex lg:min-h-11 lg:items-center lg:justify-start lg:gap-3 lg:px-3 lg:text-base ${
+          active ? "text-ink lg:bg-paper-2" : "text-muted hover:text-ink lg:hover:bg-paper-2"
+        }`}
       >
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={active ? "text-accent" : ""} aria-hidden="true">
-          {icons[key]}
-        </svg>
-        <span className="max-w-full truncate px-1">{t(key)}</span>
+        <Icon size={22} strokeWidth={1.6} aria-hidden="true" className={active ? "text-accent" : ""} />
+        <span className="max-w-full truncate px-0.5">{t(key)}</span>
       </Link>
     );
   };
@@ -38,29 +45,31 @@ export function TabBar({ circleId, me }: { circleId: string; me: { id: string; n
   return (
     <nav
       aria-label="Pausa"
-      className="sticky bottom-0 z-10 grid grid-cols-6 items-center border-t border-rule bg-paper/80 px-2 pb-[max(env(safe-area-inset-bottom),12px)] pt-2 backdrop-blur-md lg:top-0 lg:order-1 lg:h-dvh lg:w-56 lg:shrink-0 lg:grid-cols-1 lg:content-start lg:gap-1 lg:border-r lg:border-t-0 lg:bg-transparent lg:px-3 lg:pb-6 lg:pt-8 lg:backdrop-blur-none"
+      className="sticky bottom-0 z-[200] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1 border-t border-rule bg-paper px-1 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 lg:top-0 lg:order-1 lg:h-dvh lg:w-56 lg:shrink-0 lg:grid-cols-1 lg:content-start lg:gap-1 lg:border-r lg:border-t-0 lg:px-3 lg:pb-6 lg:pt-8"
     >
-      {tab("diary", base)}
-      {tab("serata", `${base}/serata`)}
+      <div className="grid grid-cols-2 lg:contents">
+        {tab("diary", base)}
+        {tab("serata", `${base}/serata`)}
+      </div>
       <Link
         href={`${base}/log`}
         aria-label={t("log")}
-        className="grid size-12 place-items-center justify-self-center rounded-full bg-accent text-on-accent transition-colors hover:bg-accent-hover active:translate-y-px lg:order-first lg:mb-4 lg:h-12 lg:w-full lg:justify-self-stretch"
+        className="grid size-12 place-items-center justify-self-center bg-accent text-accent-ink transition-[background-color,transform] duration-150 hover:bg-accent-hover active:translate-y-px lg:order-first lg:mb-4 lg:h-12 lg:w-full lg:justify-self-stretch"
       >
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
+        <Plus size={24} strokeWidth={1.8} aria-hidden="true" />
       </Link>
-      {tab("lists", `${base}/lists`)}
-      {tab("ranking", `${base}/ranking`)}
-      {tab("circle", `${base}/members`)}
+      <div className="grid grid-cols-3 lg:contents">
+        {tab("lists", `${base}/lists`)}
+        {tab("ranking", `${base}/ranking`)}
+        {tab("circle", `${base}/members`)}
+      </div>
       {/* Desktop only: who you are, and the way out. On phones the same lives in the Cerchia tab and the diary header. */}
       <div className="hidden lg:mt-auto lg:grid lg:gap-1 lg:border-t lg:border-rule lg:pt-4">
-        <Link href="/account" className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-paper-2">
+        <Link href="/account" className="flex items-center gap-3 px-3 py-2 text-sm transition-colors duration-150 hover:bg-paper-2">
           <Avatar user={me} size={28} />
           <span className="min-w-0"><span className="block truncate font-semibold">{me.name}</span><span className="block text-xs text-muted">{ta("profile")}</span></span>
         </Link>
-        <LogoutButton className="flex min-h-11 items-center rounded-md px-3 text-left text-sm text-muted hover:bg-paper-2 hover:text-ink" />
+        <LogoutButton className="flex min-h-11 items-center px-3 text-left text-sm text-muted transition-colors duration-150 hover:bg-paper-2 hover:text-ink" />
       </div>
     </nav>
   );

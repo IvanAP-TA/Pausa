@@ -26,7 +26,7 @@ export default async function NewLog({ params, searchParams }: PageProps<"/[loca
 
   return (
     <main className="grid gap-6 px-4 pb-8 pt-6">
-      <h1 className="font-display text-[1.75rem] font-semibold leading-tight">{t("title")}</h1>
+      <h1 className="display">{t("title")}</h1>
       <LogForm
         circleId={circleId}
         today={today}

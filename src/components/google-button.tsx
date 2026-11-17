@@ -24,9 +24,9 @@ export function GoogleButton({ callbackURL, enabled, className = "", hint = true
   if (!enabled) {
     if (process.env.NODE_ENV !== "development") return null;
     return (
-      <div className="grid gap-1">
-        <button type="button" disabled className={`inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-dashed border-rule px-5 font-semibold opacity-60 ${className}`}>{t("google")}</button>
-        {hint && <p className="text-center text-xs text-muted">Solo sviluppo: imposta GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET per attivarlo (docs/DEPLOY.md, sezione 5).</p>}
+      <div className="grid gap-2">
+        <button type="button" disabled className={`btn w-full border-dashed ${className}`}><GoogleMark />{t("google")}</button>
+        {hint && <p className="text-sm text-muted">Solo sviluppo: imposta GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET per attivarlo (docs/DEPLOY.md, sezione 5).</p>}
       </div>
     );
   }
@@ -34,15 +34,22 @@ export function GoogleButton({ callbackURL, enabled, className = "", hint = true
     <button
       type="button"
       onClick={() => authClient.signIn.social({ provider: "google", callbackURL })}
-      className={`inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-rule bg-paper-3 px-5 font-semibold hover:bg-rule ${className}`}
+      className={`btn ${className}`}
     >
-      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-        <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.7v3h3.9c2.3-2.1 3.5-5.2 3.5-8.9z" />
-        <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.2 0-5.8-2.1-6.8-5H1.2v3.1A12 12 0 0 0 12 24z" />
-        <path fill="#FBBC05" d="M5.2 14.3a7.2 7.2 0 0 1 0-4.6V6.6H1.2a12 12 0 0 0 0 10.8l4-3.1z" />
-        <path fill="#EA4335" d="M12 4.8c1.8 0 3.4.6 4.7 1.8l3.5-3.5A12 12 0 0 0 1.2 6.6l4 3.1c1-2.9 3.6-4.9 6.8-4.9z" />
-      </svg>
+      <GoogleMark />
       {t("google")}
     </button>
+  );
+}
+
+/** The Google "G", printed in the ink of the button: every colour on a Darkroom sheet goes through a token. */
+function GoogleMark() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" className="shrink-0">
+      <path fill="var(--color-google-blue)" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.7v3h3.9c2.3-2.1 3.5-5.2 3.5-8.9z" />
+      <path fill="var(--color-google-green)" d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.2 0-5.8-2.1-6.8-5H1.2v3.1A12 12 0 0 0 12 24z" />
+      <path fill="var(--color-google-yellow)" d="M5.2 14.3a7.2 7.2 0 0 1 0-4.6V6.6H1.2a12 12 0 0 0 0 10.8l4-3.1z" />
+      <path fill="var(--color-google-red)" d="M12 4.8c1.8 0 3.4.6 4.7 1.8l3.5-3.5A12 12 0 0 0 1.2 6.6l4 3.1c1-2.9 3.6-4.9 6.8-4.9z" />
+    </svg>
   );
 }

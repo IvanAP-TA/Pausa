@@ -49,29 +49,29 @@ export function TrySerata({ films, strings: s, ctaHref }: Props) {
     <div className="mx-auto w-full max-w-xl" aria-live="polite">
       {pair ? (
         <div className="grid gap-5">
-          <div className="flex items-baseline justify-between gap-3 text-on-second-muted">
-            <p className="font-display text-xl text-on-second">{round}</p>
-            <p className="tabular text-sm">{s.progress.replace("{n}", String(stage + 1))}</p>
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="title">{round}</p>
+            <p className="tabular text-sm text-muted">{s.progress.replace("{n}", String(stage + 1))}</p>
           </div>
           <div className="flex gap-1.5" aria-hidden="true">
-            {[0, 1, 2].map((i) => <i key={i} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i < stage ? "bg-on-second" : i === stage ? "bg-accent" : "bg-on-second-muted/30"}`} />)}
+            {[0, 1, 2].map((i) => <i key={i} className={`h-0.5 flex-1 transition-colors duration-200 ${i < stage ? "bg-ink" : i === stage ? "bg-accent" : "bg-rule"}`} />)}
           </div>
-          <p className="text-sm text-on-second-muted">{s.pick}</p>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+          <p className="text-sm text-ink-2">{s.pick}</p>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-5">
             {pair.map((f, i) => (
               <div key={f.key} className="contents">
-                {i === 1 && <span className="font-display text-sm text-on-second-muted">{s.vs}</span>}
+                {i === 1 && <span className="font-display text-xl text-muted">{s.vs}</span>}
                 <button
                   type="button"
                   onClick={() => pick(f)}
                   aria-pressed={chosen === f.key}
-                  className={`group grid gap-2 rounded-md border-2 p-1.5 text-left transition-[transform,border-color,opacity] duration-300 ease-out hover:-translate-y-1 focus-visible:-translate-y-1 ${
-                    chosen === f.key ? "scale-[1.03] border-accent" : chosen ? "scale-95 border-transparent opacity-40" : "border-transparent hover:border-on-second-muted/60"}`}
+                  className={`grid gap-2 border-2 p-1.5 text-left transition-[border-color,opacity,transform] duration-200 ease-out active:translate-y-px ${
+                    chosen === f.key ? "border-accent" : chosen ? "cursor-default border-transparent opacity-40" : "border-rule hover:border-ink"}`}
                 >
                   <Poster media={{ id: f.key, title: f.title, posterPath: f.posterPath }} size="md" />
                   <span className="px-1 pb-1">
-                    <span className="block text-sm font-semibold leading-tight text-on-second">{f.title}</span>
-                    <span className="tabular text-xs text-on-second-muted">{f.year}</span>
+                    <span className="block font-semibold leading-tight text-ink">{f.title}</span>
+                    <span className="tabular text-sm text-muted">{f.year}</span>
                   </span>
                 </button>
               </div>
@@ -79,13 +79,14 @@ export function TrySerata({ films, strings: s, ctaHref }: Props) {
           </div>
         </div>
       ) : champion ? (
-        <div className="grid justify-items-center gap-5 text-center">
-          <div className="w-full max-w-[260px] animate-[rise_.7s_var(--ease-out)_both]">
+        <div className="grid justify-items-center gap-6 text-center">
+          <div className="rise w-full max-w-[260px]">
             <SerataCard kicker={s.kicker} subtitle={s.subtitle} title={champion.title} posterPath={champion.posterPath} lines={[s.line1, s.line2]} />
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <a href={ctaHref} className="inline-flex min-h-12 items-center rounded-full bg-accent px-6 font-semibold text-on-accent transition-colors hover:bg-accent-hover">{s.cta}</a>
-            <button type="button" onClick={reset} className="min-h-12 rounded-full border border-on-second-muted/50 px-5 text-sm text-on-second hover:bg-paper/10">{s.again}</button>
+            {/* Amber from md up; on phones the sticky bar already holds the one amber action. */}
+            <a href={ctaHref} className="btn md:border-accent md:bg-accent md:text-accent-ink md:hover:border-accent-hover md:hover:bg-accent-hover">{s.cta}</a>
+            <button type="button" onClick={reset} className="btn btn-quiet">{s.again}</button>
           </div>
         </div>
       ) : null}

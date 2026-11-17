@@ -10,7 +10,8 @@ export function RevealOnScroll() {
   useEffect(() => {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) return;
     const els = [...document.querySelectorAll<HTMLElement>("[data-reveal]")];
-    document.documentElement.classList.add("reveal-ready");
+    // The hidden state is scoped to `.js .reveal-ready` in globals.css: both classes land together, only once a script runs.
+    document.documentElement.classList.add("js", "reveal-ready");
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {

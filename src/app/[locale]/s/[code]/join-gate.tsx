@@ -38,38 +38,37 @@ export function JoinGate({ code, asGuest, hasSession, defaultName }: { code: str
 
   return (
     <main className="projector mx-auto grid min-h-dvh max-w-md content-center gap-8 px-4 py-12">
-      <header>
-        <p className="font-display text-sm font-semibold text-accent">Pausa</p>
-        <h1 className="mt-2 font-display text-[2.2rem] font-semibold leading-[1.05]">{t("title")}</h1>
-        <p className="mt-3 text-muted">{asGuest ? t("bodyGuest") : t("bodyMember")}</p>
+      <header className="min-w-0">
+        <h1 className="display">{t("title")}</h1>
+        <p className="mt-3 text-ink-2">{asGuest ? t("bodyGuest") : t("bodyMember")}</p>
       </header>
-      <form onSubmit={enter} className="grid gap-3">
+      <form onSubmit={enter} className="grid gap-6">
         {asGuest && (
-          <label className="grid gap-1.5 text-sm text-muted">
+          <label className="field-label">
             {t("name")}
             <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={24} autoComplete="nickname" autoFocus
-              className="min-h-12 rounded-sm border border-rule bg-paper-2 px-4 text-[17px] text-ink" />
+              className="field min-h-12 text-lg" />
           </label>
         )}
         {asGuest && (
           <fieldset className="grid gap-2">
-            <legend className="mb-1 text-sm text-muted">{t("avatar")}</legend>
-            <div role="radiogroup" aria-label={t("avatar")} className="grid grid-cols-8 gap-1.5">
+            <legend className="mb-2 text-sm text-ink-2">{t("avatar")}</legend>
+            <div role="radiogroup" aria-label={t("avatar")} className="grid grid-cols-4 justify-items-start gap-3 sm:grid-cols-8">
               {GUEST_AVATARS.map((g) => (
                 <button key={g} type="button" role="radio" aria-checked={avatar === g} onClick={() => setAvatar(g)}
-                  className={`grid aspect-square min-h-10 place-items-center rounded-full text-xl transition-transform ${avatar === g ? "scale-110 bg-accent/20 ring-2 ring-accent" : "bg-paper-2 hover:bg-paper-3"}`}>
+                  className={`grid size-12 place-items-center rounded-full text-2xl transition-[background-color,transform] duration-150 active:translate-y-px motion-reduce:transition-none ${avatar === g ? "scale-110 bg-paper-3 outline-2 outline-offset-2 outline-accent" : "bg-paper-2 hover:bg-paper-3"}`}>
                   <span aria-hidden="true">{g}</span>
                 </button>
               ))}
             </div>
           </fieldset>
         )}
-        <button disabled={busy || (asGuest && !name.trim())}
-          className="min-h-12 rounded-full bg-accent font-semibold text-on-accent hover:bg-accent-hover disabled:opacity-50">
+        <button disabled={busy || (asGuest && !name.trim())} className="btn btn-primary min-h-12 w-full">
           {t("cta")}
         </button>
-        {error && <p role="alert" className="text-sm text-accent">{t("error")}</p>}
+        {error && <p role="alert" className="text-sm text-error">{t("error")}</p>}
       </form>
+      <p className="font-display text-xl text-muted">Pausa</p>
     </main>
   );
 }

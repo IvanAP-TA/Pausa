@@ -16,8 +16,11 @@ import { getDb } from "@/db";
 import { COUNTRIES, getUserProviders, isCountry } from "@/lib/core/streaming";
 import { regionProviders, tmdbEnabled } from "@/lib/tmdb";
 import { FOUNDER_AT, peopleBrought } from "@/lib/core/circles";
+import { Check } from "lucide-react";
 
-const input = "min-h-12 w-full rounded-sm border border-rule bg-paper-2 px-4";
+// A settings row: the label and its help on the left, the control on the right.
+const row = "flex min-h-11 cursor-pointer items-center justify-between gap-4 py-3";
+const check = "size-5 shrink-0 accent-[var(--color-accent)]";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -46,38 +49,37 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
   const regionNames = new Intl.DisplayNames([locale], { type: "region" });
 
   return (
-    <main className="projector mx-auto grid max-w-md gap-8 px-4 py-10">
-      <header className="grid gap-1">
-        <Link href={circles[0] ? `/c/${circles[0].id}/members` : "/"} className="inline-flex min-h-10 w-fit items-center text-sm text-muted hover:text-ink">← {t("back")}</Link>
-        <h1 className="font-display text-[1.75rem] leading-tight">{t("title")}</h1>
-        <p className="text-sm text-muted">{user.email}</p>
+    <main className="projector mx-auto grid max-w-[40rem] gap-10 px-4 py-10">
+      <header className="grid gap-2">
+        <Link href={circles[0] ? `/c/${circles[0].id}/members` : "/"} className="link inline-flex min-h-11 w-fit items-center text-sm">{t("back")}</Link>
+        <h1 className="display">{t("title")}</h1>
+        <p className="text-sm text-muted [overflow-wrap:anywhere]">{user.email}</p>
+        {brought > 0 && (
+          <p className="flex flex-wrap items-center gap-2 text-ink-2">
+            {t("brought", { count: brought })}
+            {brought >= FOUNDER_AT && <span className="tag border-accent text-accent">{t("founder")}</span>}
+          </p>
+        )}
       </header>
 
-      {brought > 0 && (
-        <p className="flex flex-wrap items-center gap-2 rounded-md bg-paper-2 p-3 text-sm">
-          {t("brought", { count: brought })}
-          {brought >= FOUNDER_AT && <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold text-on-accent">{t("founder")}</span>}
-        </p>
-      )}
-
-      <LogoutButton className="min-h-11 w-fit rounded-full border border-rule px-5 text-sm font-semibold hover:bg-paper-2" />
-
-      <form action={updateProfileAction} className="grid gap-3">
+      <form action={updateProfileAction} className="grid gap-4">
         <input type="hidden" name="locale" value={locale} />
-        <label htmlFor="name" className="text-sm text-muted">{t("name")}</label>
-        <input id="name" name="name" required maxLength={40} defaultValue={user.name} className={input} />
-        <div className="flex items-center gap-3">
-          <button className="min-h-11 rounded-full bg-accent px-5 font-semibold text-on-accent hover:bg-accent-hover">{t("save")}</button>
-          {saved && <p role="status" className="text-sm text-second">{t("saved")}</p>}
+        <div className="field-label">
+          <label htmlFor="name">{t("name")}</label>
+          <input id="name" name="name" required maxLength={40} defaultValue={user.name} className="field" />
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button className="btn w-full sm:w-fit">{t("save")}</button>
+          {saved && <p role="status" className="text-sm text-success">{t("saved")}</p>}
         </div>
       </form>
 
       {circles.length > 1 && (
-        <section className="grid gap-2">
-          <h2 className="text-sm text-muted">{t("circles")}</h2>
-          <ul className="grid">
+        <section className="grid gap-3">
+          <h2 className="title">{t("circles")}</h2>
+          <ul className="rows grid">
             {circles.map((c) => (
-              <li key={c.id}><Link href={`/c/${c.id}`} className="flex min-h-12 items-center justify-between border-b border-rule hover:text-accent">{c.name}<span aria-hidden="true" className="text-muted">→</span></Link></li>
+              <li key={c.id}><Link href={`/c/${c.id}`} className="title flex min-h-12 items-center text-xl transition-colors duration-150 hover:text-accent">{c.name}</Link></li>
             ))}
           </ul>
         </section>
@@ -87,87 +89,95 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
         <p className="text-sm text-muted">{(await getTranslations("pushSettings"))("off")}</p>
       )}
 
-      <form action={saveNotificationPrefsAction} className="grid gap-3 rounded-md border border-rule p-4">
+      <form action={saveNotificationPrefsAction} className="grid gap-4">
         <input type="hidden" name="locale" value={locale} />
-        <div>
-          <h2 className="font-display text-lg">{tn("title")}</h2>
-          <p className="text-sm text-muted">{tn("body")}</p>
+        <div className="grid gap-2">
+          <h2 className="title">{tn("title")}</h2>
+          <p className="text-ink-2">{tn("body")}</p>
         </div>
-        <ul className="grid gap-1">
+        <ul className="rows grid">
           {NOTIFICATION_TYPES.map((n) => (
-            <li key={n}><label className="flex min-h-10 items-center gap-3 text-sm"><input type="checkbox" name={`type_${n}`} defaultChecked={!disabled.has(n)} className="size-5 accent-[var(--color-accent)]" />{tn(`types.${n}`)}</label></li>
+            <li key={n}><label className={row}>{tn(`types.${n}`)}<input type="checkbox" name={`type_${n}`} defaultChecked={!disabled.has(n)} className={check} /></label></li>
           ))}
+          <li>
+            <label className={row}>
+              <span>{tn("digest")}<span className="block text-sm text-muted">{tn("digestHint")}</span></span>
+              <input type="checkbox" name="emailDigest" defaultChecked={digest} className={check} />
+            </label>
+          </li>
         </ul>
-        <label className="flex min-h-10 items-start gap-3 text-sm border-t border-rule pt-3">
-          <input type="checkbox" name="emailDigest" defaultChecked={digest} className="mt-0.5 size-5 accent-[var(--color-accent)]" />
-          <span>{tn("digest")}<span className="block text-xs text-muted">{tn("digestHint")}</span></span>
-        </label>
-        <button className="min-h-11 w-fit rounded-full border border-rule bg-paper-3 px-5 text-sm font-semibold hover:bg-rule">{tn("save")}</button>
+        <button className="btn w-full sm:w-fit">{tn("save")}</button>
       </form>
 
-      <section className="grid gap-3">
-        <div>
-          <h2 className="font-display text-lg">{td("title")}</h2>
-          <p className="text-sm text-muted">{td("body")}</p>
+      <section className="grid gap-4">
+        <div className="grid gap-2">
+          <h2 className="title">{td("title")}</h2>
+          <p className="text-ink-2">{td("body")}</p>
         </div>
         {!tmdbEnabled() ? (
           <p className="text-sm text-muted">{td("off")}</p>
         ) : (
           <>
             <form method="get" className="flex items-end gap-2">
-              <label className="grid min-w-0 flex-1 gap-1.5 text-sm text-muted">
+              <label className="field-label min-w-0 flex-1">
                 {td("country")}
-                <select name="country" defaultValue={picked} className="min-h-12 rounded-sm border border-rule bg-paper-2 px-3 text-ink">
+                <select name="country" defaultValue={picked} className="field">
                   {COUNTRIES.map((c) => <option key={c} value={c}>{regionNames.of(c)}</option>)}
                 </select>
               </label>
-              <button className="min-h-12 shrink-0 rounded-full border border-rule px-4 text-sm hover:bg-paper-2">{td("showServices")}</button>
+              <button className="btn btn-quiet shrink-0">{td("showServices")}</button>
             </form>
-            <form action={saveServicesAction} className="grid gap-3">
+            <form action={saveServicesAction} className="grid gap-4">
               <input type="hidden" name="locale" value={locale} />
               <input type="hidden" name="country" value={picked} />
               <fieldset className="grid grid-cols-2 gap-2">
                 <legend className="sr-only">{td("title")}</legend>
                 {catalogue.map((p) => (
-                  <label key={p.id} className="cursor-pointer">
+                  <label key={p.id} className="min-w-0 cursor-pointer">
                     <input type="checkbox" name="provider" value={p.id} defaultChecked={myServices.some((m) => m.id === p.id)} className="peer sr-only" />
-                    <span className="flex min-h-11 items-center gap-2 rounded-sm border border-rule px-3 text-sm text-muted transition-colors peer-checked:border-second peer-checked:bg-second peer-checked:text-on-second peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
-                      <span className="min-w-0 truncate">{p.name}</span>
+                    <span className="flex min-h-11 items-center gap-2 border border-rule px-3 text-sm text-ink-2 transition-colors duration-150 hover:border-muted peer-checked:border-accent peer-checked:text-ink peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus peer-checked:[&>svg]:opacity-100">
+                      <span className="mr-auto min-w-0 truncate">{p.name}</span>
+                      <Check size={16} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-accent opacity-0 transition-opacity duration-150" />
                     </span>
                   </label>
                 ))}
               </fieldset>
-              <button className="min-h-11 w-fit rounded-full border border-rule bg-paper-3 px-5 text-sm font-semibold hover:bg-rule">{td("save")}</button>
+              <button className="btn w-full sm:w-fit">{td("save")}</button>
             </form>
-            <p className="text-xs text-muted">{td("credit")}</p>
+            <p className="text-sm text-muted">{td("credit")}</p>
           </>
         )}
       </section>
 
-      <section className="grid gap-3 rounded-md bg-paper-2 p-4">
-        <h2 className="font-display text-lg">{t("dataTitle")}</h2>
-        <p className="text-sm text-muted">{t("dataBody")}</p>
-        <a href="/api/account/export" download className="inline-flex min-h-11 w-fit items-center rounded-full border border-rule bg-paper-3 px-5 text-sm font-semibold hover:bg-rule">{t("export")}</a>
+      <section className="grid gap-3">
+        <h2 className="title">{t("dataTitle")}</h2>
+        <p className="text-ink-2">{t("dataBody")}</p>
+        <a href="/api/account/export" download className="btn w-full sm:w-fit">{t("export")}</a>
       </section>
 
-      <section className="grid gap-3 rounded-md border border-accent p-4">
-        <h2 className="font-display text-lg text-accent">{t("deleteTitle")}</h2>
-        <p className="text-sm text-muted">{t("deleteBody")}</p>
-        {e === "confirm" && <p role="alert" className="text-sm text-accent">{t("deleteMismatch")}</p>}
+      {/* Signing out and deleting sit apart, at the end of the sheet. */}
+      <div className="plate pt-6">
+        <LogoutButton className="btn btn-quiet w-full sm:w-fit" />
+      </div>
+
+      <section className="plate grid gap-3 pt-6">
+        <h2 className="title">{t("deleteTitle")}</h2>
+        <p className="text-ink-2">{t("deleteBody")}</p>
+        {e === "confirm" && <p role="alert" className="text-sm text-error">{t("deleteMismatch")}</p>}
         <details>
-          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center rounded-full border border-accent px-5 text-sm font-semibold text-accent marker:content-none">{t("deleteOpen")}</summary>
-          <form action={deleteAccountAction} className="mt-3 grid gap-3">
+          <summary className="btn btn-quiet w-fit list-none text-error marker:content-none">{t("deleteOpen")}</summary>
+          <form action={deleteAccountAction} className="mt-4 grid gap-3">
             <input type="hidden" name="locale" value={locale} />
-            <label htmlFor="email" className="text-sm">{t("deleteConfirm", { email: user.email })}</label>
-            <input id="email" name="email" type="email" required autoComplete="off" className={input} />
-            <button className="min-h-11 w-fit rounded-full bg-accent px-5 font-semibold text-on-accent hover:bg-accent-hover">{t("deleteGo")}</button>
+            <label htmlFor="email" className="text-sm text-ink-2">{t("deleteConfirm", { email: user.email })}</label>
+            <input id="email" name="email" type="email" required autoComplete="off" className="field" />
+            <button className="btn btn-quiet w-full text-error sm:w-fit">{t("deleteGo")}</button>
           </form>
         </details>
       </section>
 
-      <nav className="flex gap-4 text-sm text-muted" aria-label={t("legal")}>
-        <Link href="/privacy" className="inline-flex min-h-10 items-center underline underline-offset-4 hover:text-ink">{t("privacy")}</Link>
-        <Link href="/terms" className="inline-flex min-h-10 items-center underline underline-offset-4 hover:text-ink">{t("terms")}</Link>
+      <nav className="flex gap-5 text-sm" aria-label={t("legal")}>
+        <Link href="/privacy" className="link inline-flex min-h-11 items-center">{t("privacy")}</Link>
+        <Link href="/terms" className="link inline-flex min-h-11 items-center">{t("terms")}</Link>
       </nav>
     </main>
   );

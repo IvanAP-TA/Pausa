@@ -24,7 +24,7 @@ export function Reactions({ logId, initial }: { logId: string; initial: Reaction
     <div className="flex flex-wrap gap-1.5">
       {REACTIONS.map((emoji) => {
         const r = byEmoji.get(emoji);
-        // Show used reactions always; unused ones stay quiet until hover/focus of the row.
+        // Used reactions are cells with a count; mine is lit by the safelight. Unused ones stay quiet until hover or focus.
         return (
           <button
             key={emoji}
@@ -32,12 +32,12 @@ export function Reactions({ logId, initial }: { logId: string; initial: Reaction
             aria-pressed={r?.mine ?? false}
             aria-label={t("react", { emoji })}
             onClick={() => startTransition(async () => { toggle(emoji); await toggleReaction(logId, emoji); })}
-            className={`min-h-10 rounded-full border px-2.5 text-xs transition-colors duration-150 ${
-              r?.mine ? "border-accent text-accent" : "border-rule text-muted hover:text-ink"
-            } ${r ? "" : "opacity-60 hover:opacity-100 focus-visible:opacity-100"}`}
+            className={`inline-flex min-h-10 min-w-10 items-center justify-center gap-1.5 border px-2.5 text-sm transition-[background-color,border-color,opacity] duration-150 active:translate-y-px ${
+              r?.mine ? "pop border-accent bg-accent font-semibold text-accent-ink" : r ? "border-muted text-ink hover:border-ink" : "border-transparent opacity-55 hover:border-rule hover:opacity-100 focus-visible:opacity-100"
+            }`}
           >
-            {emoji}
-            {r ? <span className="tabular ml-1">{r.count}</span> : null}
+            <span aria-hidden="true">{emoji}</span>
+            {r ? <span className="tabular">{r.count}</span> : null}
           </button>
         );
       })}

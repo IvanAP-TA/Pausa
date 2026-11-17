@@ -5,9 +5,7 @@ import { requireUser } from "@/lib/session";
 import { loadCircleFacts } from "@/lib/core/insights";
 import { PAGE_SIZE, RANK_SORTS, rankTitles, yearSpan, type RankFilters, type RankSort } from "@/lib/core/ranking";
 import { Poster } from "@/components/poster";
-import { Stars } from "@/components/stars";
-
-const field = "min-h-11 min-w-0 rounded-sm border border-rule bg-paper px-2 text-sm text-ink";
+import { ChevronDown, Search } from "lucide-react";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -62,106 +60,114 @@ export default async function Ranking({ params, searchParams }: PageProps<"/[loc
   const first = (name: string) => name.split(/\s+/)[0] ?? name;
 
   return (
-    <main className="grid gap-5 px-4 pb-10 pt-6">
-      <header className="grid gap-1">
-        <h1 className="font-display text-[1.9rem] leading-tight">{t("title")}</h1>
-        <p className="text-sm text-muted">{t("lede")}</p>
+    <main className="grid gap-6 px-4 pb-10 pt-8">
+      <header className="grid gap-2">
+        <h1 className="display">{t("title")}</h1>
+        <p className="max-w-prose text-ink-2">{t("lede")}</p>
       </header>
 
-      <details open={hasFilters} className="rounded-md border border-rule bg-paper-2">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm font-semibold marker:content-none">
-          <span>{t("filters.title")}</span>
-          <span className="rounded-full bg-paper-3 px-2 py-0.5 text-xs tabular">{t("count", { count: all.length })}</span>
+      <details open={hasFilters} className="group border-y border-rule">
+        <summary className="flex min-h-12 list-none items-center gap-3 text-base font-semibold marker:content-none">
+          <Search size={20} strokeWidth={1.6} aria-hidden="true" />
+          <span className="mr-auto">{t("filters.title")}</span>
+          <span className="tabular text-sm font-normal text-muted">{t("count", { count: all.length })}</span>
+          <ChevronDown size={18} strokeWidth={1.6} aria-hidden="true" className="text-muted transition-transform duration-150 group-open:rotate-180" />
         </summary>
-        <form method="get" role="search" className="grid gap-3 border-t border-rule p-4">
-          <label className="grid gap-1 text-xs text-muted">{t("filters.q")}
-            <input type="search" name="q" defaultValue={filters.q ?? ""} maxLength={80} className={field} />
+        <form method="get" role="search" className="grid gap-4 pb-5 pt-1">
+          <label className="field-label">{t("filters.q")}
+            <input type="search" name="q" defaultValue={filters.q ?? ""} maxLength={80} className="field" />
           </label>
           <div className="grid grid-cols-2 gap-3">
-            <label className="grid gap-1 text-xs text-muted">{t("filters.kind")}
-              <select name="kind" defaultValue={kind ?? ""} className={field}>
+            <label className="field-label">{t("filters.kind")}
+              <select name="kind" defaultValue={kind ?? ""} className="field">
                 <option value="">{t("filters.any")}</option>
                 {(["movie", "tv", "anime"] as const).map((k) => <option key={k} value={k}>{tk(k)}</option>)}
               </select>
             </label>
-            <label className="grid gap-1 text-xs text-muted">{t("filters.by")}
-              <select name="by" defaultValue={by ?? ""} className={field}>
+            <label className="field-label">{t("filters.by")}
+              <select name="by" defaultValue={by ?? ""} className="field">
                 <option value="">{t("filters.everyone")}</option>
                 {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </label>
-            <label className="grid gap-1 text-xs text-muted">{t("filters.from")}
-              <input type="number" name="from" min={span?.min ?? 1870} max={span?.max ?? 2200} placeholder={span ? String(span.min) : ""} defaultValue={filters.yearFrom ?? ""} inputMode="numeric" className={field} />
+            <label className="field-label">{t("filters.from")}
+              <input type="number" name="from" min={span?.min ?? 1870} max={span?.max ?? 2200} placeholder={span ? String(span.min) : ""} defaultValue={filters.yearFrom ?? ""} inputMode="numeric" className="field tabular" />
             </label>
-            <label className="grid gap-1 text-xs text-muted">{t("filters.to")}
-              <input type="number" name="to" min={span?.min ?? 1870} max={span?.max ?? 2200} placeholder={span ? String(span.max) : ""} defaultValue={filters.yearTo ?? ""} inputMode="numeric" className={field} />
+            <label className="field-label">{t("filters.to")}
+              <input type="number" name="to" min={span?.min ?? 1870} max={span?.max ?? 2200} placeholder={span ? String(span.max) : ""} defaultValue={filters.yearTo ?? ""} inputMode="numeric" className="field tabular" />
             </label>
-            <label className="grid gap-1 text-xs text-muted">{t("filters.votes")}
-              <select name="votes" defaultValue={String(minVotes)} className={field}>
+            <label className="field-label">{t("filters.votes")}
+              <select name="votes" defaultValue={String(minVotes)} className="field">
                 {Array.from({ length: people.length + 1 }, (_, i) => i).map((n) => <option key={n} value={n}>{n === 0 ? t("filters.anyVotes") : t("filters.atLeast", { count: n })}</option>)}
               </select>
             </label>
-            <label className="grid gap-1 text-xs text-muted">{t("filters.sort")}
-              <select name="sort" defaultValue={sort} className={field}>
+            <label className="field-label">{t("filters.sort")}
+              <select name="sort" defaultValue={sort} className="field">
                 {RANK_SORTS.map((s) => <option key={s} value={s}>{t(`sort.${s}`)}</option>)}
               </select>
             </label>
           </div>
-          <label className="flex min-h-10 items-center gap-3 text-sm">
-            <input type="checkbox" name="all" value="1" defaultChecked={filters.everyone} className="size-5 accent-[var(--color-accent)]" />
+          <label className="flex min-h-11 items-center gap-3">
+            <input type="checkbox" name="all" value="1" defaultChecked={filters.everyone} className="size-5 shrink-0 accent-[var(--color-accent)]" />
             {t("filters.everyoneSaw")}
           </label>
           <div className="flex flex-wrap items-center gap-3">
-            <button className="min-h-11 rounded-full bg-accent px-5 text-sm font-semibold text-on-accent hover:bg-accent-hover">{t("filters.apply")}</button>
-            {hasFilters && <Link href={`/c/${circleId}/ranking`} className="inline-flex min-h-11 items-center px-2 text-sm text-muted underline underline-offset-4 hover:text-ink">{t("filters.reset")}</Link>}
+            <button className="btn btn-primary">{t("filters.apply")}</button>
+            {hasFilters && <Link href={`/c/${circleId}/ranking`} className="link inline-flex min-h-11 items-center text-sm">{t("filters.reset")}</Link>}
           </div>
         </form>
       </details>
 
       {shown.length === 0 ? (
-        <p className="rounded-md border border-dashed border-rule p-6 text-center text-sm text-muted">{facts.length === 0 ? t("emptyAll") : t("empty")}</p>
+        <p className="well grained p-6 text-ink-2">{facts.length === 0 ? t("emptyAll") : t("empty")}</p>
       ) : (
-        <ol className="grid gap-3" start={(page - 1) * PAGE_SIZE + 1}>
-          {shown.map((r, i) => (
-            <li key={r.mediaId} className="grid grid-cols-[1.75rem_48px_minmax(0,1fr)_auto] items-start gap-3 rounded-md border border-rule bg-paper-2 p-3">
-              <span className="tabular pt-1 text-center font-display text-lg text-muted" aria-label={t("position", { n: (page - 1) * PAGE_SIZE + i + 1 })}>{(page - 1) * PAGE_SIZE + i + 1}</span>
-              <Poster media={{ id: r.mediaId, title: r.title, posterPath: r.posterPath }} size="sm" />
-              <div className="min-w-0">
-                <h2 className="font-display text-lg leading-tight [overflow-wrap:anywhere]">{r.title}</h2>
-                <p className="text-xs text-muted">{[tk(r.kind), r.year].filter(Boolean).join(" · ")}</p>
-                <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={t("who")}>
+        // The league table: one title a row under a full-width hairline, the rank as the leading numeral.
+        <ol className="rows grid" start={(page - 1) * PAGE_SIZE + 1}>
+          {shown.map((r, i) => {
+            const n = (page - 1) * PAGE_SIZE + i + 1;
+            return (
+              <li key={r.mediaId} className="grid grid-cols-[2.75rem_56px_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-3 py-4 sm:grid-cols-[3.5rem_56px_minmax(0,1fr)_auto] sm:gap-x-4">
+                <span className={`figure min-w-10 ${n > 99 ? "text-[2rem]" : "text-[3rem]"} ${n === 1 ? "text-accent" : "text-ink"}`} aria-label={t("position", { n })}>{n}</span>
+                <Poster media={{ id: r.mediaId, title: r.title, posterPath: r.posterPath }} size="sm" />
+                <div className="grid min-w-0 gap-1">
+                  <h2 className="title text-xl [overflow-wrap:anywhere] sm:text-2xl">{r.title}</h2>
+                  <p className="text-sm text-muted">{[tk(r.kind), r.year].filter(Boolean).join(", ")}</p>
+                </div>
+                <div className="grid justify-items-end gap-1.5 text-right">
+                  {r.avg === null ? <span className="text-sm text-muted">{t("notRated")}</span> : (
+                    <>
+                      <span className="figure text-[2.5rem] text-ink">{nfFixed.format(r.avg / 2)}</span>
+                      <span className="meter block w-16" role="img" aria-label={t("avgLabel", { stars: nfShort.format(r.avg / 2) })}>
+                        <span style={{ transform: `scaleX(${Math.min(1, Math.max(0, r.avg / 10))})` }} />
+                      </span>
+                      <span className="tabular text-sm text-muted">{t("votes", { count: r.votes })}</span>
+                    </>
+                  )}
+                </div>
+                <ul className="col-span-full flex flex-wrap gap-1.5 sm:col-start-3 sm:col-end-[-1]" aria-label={t("who")}>
                   {people.filter((p) => r.watchedBy.has(p.id)).map((p) => {
                     const rating = r.ratings.get(p.id);
                     return (
-                      <li key={p.id} className={`rounded-full border px-2 py-0.5 text-xs ${p.id === me.id ? "border-accent" : "border-rule"}`}>
-                        <span className="text-muted">{first(p.name)}</span>{" "}
+                      <li key={p.id} className={`tag gap-1.5 ${p.id === me.id ? "border-accent" : ""}`}>
+                        <span>{first(p.name)}</span>
                         {rating === undefined
-                          ? <span className="text-muted"><span aria-hidden="true">·</span><span className="sr-only">{t("noRating")}</span></span>
-                          : <span className="tabular font-semibold"><span className="sr-only">{t("rated", { stars: rating / 2 })}</span><span aria-hidden="true">{num(rating)}★</span></span>}
+                          ? <span className="sr-only">{t("noRating")}</span>
+                          : <span className="tabular font-semibold text-ink"><span className="sr-only">{t("rated", { stars: rating / 2 })}</span><span aria-hidden="true">{num(rating)}<span className="text-accent">★</span></span></span>}
                       </li>
                     );
                   })}
                 </ul>
-              </div>
-              <div className="grid justify-items-end gap-1 text-right">
-                {r.avg === null ? <span className="text-xs text-muted">{t("notRated")}</span> : (
-                  <>
-                    <span className="tabular font-display text-2xl leading-none">{nfFixed.format(r.avg / 2)}</span>
-                    <Stars rating={r.avg} label={t("avgLabel", { stars: nfShort.format(r.avg / 2) })} className="text-[11px]" />
-                    <span className="text-xs text-muted">{t("votes", { count: r.votes })}</span>
-                  </>
-                )}
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ol>
       )}
 
       {all.length > PAGE_SIZE && (
-        <nav aria-label={t("pages")} className="flex items-center justify-between gap-3 text-sm">
-          {page > 1 ? <Link href={link(page - 1)} className="inline-flex min-h-11 items-center rounded-full border border-rule px-5 font-semibold hover:bg-paper-2">← {t("prev")}</Link> : <span />}
-          <span className="tabular text-muted">{page} / {Math.ceil(all.length / PAGE_SIZE)}</span>
-          {page * PAGE_SIZE < all.length ? <Link href={link(page + 1)} className="inline-flex min-h-11 items-center rounded-full border border-rule px-5 font-semibold hover:bg-paper-2">{t("next")} →</Link> : <span />}
+        <nav aria-label={t("pages")} className="flex items-center justify-between gap-3">
+          {page > 1 ? <Link href={link(page - 1)} className="btn">{t("prev")}</Link> : <span />}
+          <span className="tabular text-sm text-muted">{page} / {Math.ceil(all.length / PAGE_SIZE)}</span>
+          {page * PAGE_SIZE < all.length ? <Link href={link(page + 1)} className="btn">{t("next")}</Link> : <span />}
         </nav>
       )}
     </main>

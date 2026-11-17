@@ -53,44 +53,47 @@ export default async function GuidePage({ params }: PageProps<"/[locale]/guide/[
   };
 
   return (
-    <main className="projector mx-auto grid max-w-2xl gap-8 px-5 py-12">
+    <main className="projector mx-auto grid w-full max-w-[72rem] gap-10 px-4 pb-16 pt-6 lg:px-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <nav aria-label="breadcrumb" className="flex items-center gap-2 text-sm text-muted">
-        <Link href="/" className="inline-flex min-h-10 items-center font-display text-lg text-ink">Pausa</Link>
+      <nav aria-label="breadcrumb" className="flex items-center gap-3 text-sm text-muted">
+        <Link href="/" className="inline-flex min-h-11 items-center font-display text-2xl text-ink">Pausa</Link>
         <span aria-hidden="true">/</span>
-        <Link href="/guide" className="inline-flex min-h-10 items-center underline-offset-4 hover:text-ink hover:underline">{s.index}</Link>
+        <Link href="/guide" className="link inline-flex min-h-11 items-center">{s.index}</Link>
       </nav>
-      <article className="grid gap-6">
-        <header className="grid gap-3">
-          <h1 className="font-display text-[2rem] leading-[1.08]">{g.title}</h1>
-          <p className="text-xs text-muted">{s.updated}: {GUIDES_UPDATED}</p>
-          <p className="text-[17px] leading-relaxed text-muted">{g.intro}</p>
+      <article className="grid gap-10">
+        <header className="grid min-w-0 gap-4">
+          <h1 className="display text-poster max-w-[22ch]">{g.title}</h1>
+          <p className="text-sm text-muted">{s.updated}: {GUIDES_UPDATED}</p>
+          <p className="subtitle max-w-[60ch]">{g.intro}</p>
         </header>
+        {/* Each block is a plate: the subhead in the margin from 64rem, the prose at a reading measure beside it. */}
         {g.blocks.map((b) => (
-          <section key={b.h} className="grid gap-2">
-            <h2 className="font-display text-xl leading-tight">{b.h}</h2>
-            {b.p?.map((p) => <p key={p} className="text-[16px] leading-relaxed">{p}</p>)}
-            {b.list && (
-              <ul className="grid list-disc gap-1.5 pl-5 text-[16px] leading-relaxed marker:text-accent">
-                {b.list.map((li) => <li key={li}>{li}</li>)}
-              </ul>
-            )}
+          <section key={b.h} className="plate grid gap-4 pt-6 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:gap-12">
+            <h2 className="title">{b.h}</h2>
+            <div className="grid min-w-0 max-w-[65ch] content-start gap-4 text-[17px] leading-relaxed">
+              {b.p?.map((p) => <p key={p}>{p}</p>)}
+              {b.list && (
+                <ul className="grid list-disc gap-2 pl-5 marker:text-muted">
+                  {b.list.map((li) => <li key={li}>{li}</li>)}
+                </ul>
+              )}
+            </div>
           </section>
         ))}
       </article>
-      <aside className="grid gap-3 rounded-md bg-second-deep p-5 text-on-second">
-        <p className="text-[16px] leading-relaxed">{g.cta}</p>
-        <Link href="/#try" className="inline-flex min-h-12 w-fit items-center rounded-full bg-accent px-6 font-semibold text-on-accent hover:bg-accent-hover">{s.try}</Link>
+      <aside className="well grained grid gap-5 p-6 sm:p-8">
+        <p className="max-w-[60ch] text-lead">{g.cta}</p>
+        <Link href="/#try" className="btn btn-primary btn-lg w-full sm:w-fit">{s.try}</Link>
       </aside>
-      <section aria-labelledby="more-guides" className="grid gap-3">
-        <h2 id="more-guides" className="font-display text-xl">{s.more}</h2>
-        <ul className="grid gap-2">
+      <section aria-labelledby="more-guides" className="grid gap-4">
+        <h2 id="more-guides" className="title">{s.more}</h2>
+        <ul className="rows grid">
           {GUIDE_SLUGS.filter((o) => o !== slug).slice((GUIDE_SLUGS.indexOf(slug)) % 3, ((GUIDE_SLUGS.indexOf(slug)) % 3) + 3).map((o) => (
-            <li key={o}><Link href={`/guide/${o}`} className="inline-flex min-h-10 items-center text-[15px] underline underline-offset-4 hover:text-accent">{guideFor(locale, o).title}</Link></li>
+            <li key={o}><Link href={`/guide/${o}`} className="flex min-h-12 items-center py-3 font-display text-2xl text-ink transition-colors duration-150 hover:bg-paper-2">{guideFor(locale, o).title}</Link></li>
           ))}
         </ul>
       </section>
-      <nav className="flex flex-wrap gap-4 text-sm"><Link href="/guide" className="inline-flex min-h-10 items-center text-muted underline underline-offset-4 hover:text-ink">← {s.back}</Link></nav>
+      <nav className="flex flex-wrap gap-4 text-sm"><Link href="/guide" className="link inline-flex min-h-11 items-center">{s.back}</Link></nav>
     </main>
   );
 }

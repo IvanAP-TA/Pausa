@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Download } from "lucide-react";
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 type Platform = "ios" | "android" | "desktop";
@@ -54,25 +55,24 @@ export function InstallApp({ className = "" }: { className?: string }) {
   return (
     <>
       <button type="button" onClick={click} className={className}>
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mr-2 shrink-0">
-          <path d="M12 4v10m0 0-4-4m4 4 4-4M5 19h14" />
-        </svg>
+        <Download size={18} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />
         {t("button")}
       </button>
       <dialog ref={dialog} aria-labelledby="install-title"
-        className="fixed inset-0 m-auto h-fit w-[min(92vw,30rem)] rounded-md border border-rule bg-paper p-0 text-ink backdrop:bg-black/50">
-        <form method="dialog" className="grid gap-4 p-6">
-          <h2 id="install-title" className="font-display text-2xl leading-tight">{t("title")}</h2>
-          <p className="text-sm text-muted">{t("intro")}</p>
-          <ol className="grid gap-3">
+        className="fixed inset-0 m-auto h-fit w-[min(92vw,32rem)] border border-rule bg-paper p-0 text-left text-ink backdrop:bg-scrim">
+        <form method="dialog" className="grid gap-5 p-6">
+          <h2 id="install-title" className="title">{t("title")}</h2>
+          <p className="text-ink-2">{t("intro")}</p>
+          {/* The device in hand comes first, marked by the amber edge of a current selection. */}
+          <ol className="rows">
             {order.map((p, i) => (
-              <li key={p} className={`rounded-md border p-3 text-sm ${i === 0 ? "border-accent bg-paper-2" : "border-rule"}`}>
-                <strong className="block font-semibold">{t(`${p}.name`)}{i === 0 ? ` · ${t("yours")}` : ""}</strong>
-                <span className="text-muted">{t(`${p}.steps`)}</span>
+              <li key={p} className={`grid gap-1 py-4 ${i === 0 ? "border-l-2 border-l-accent pl-4" : ""}`}>
+                <strong className="block">{t(`${p}.name`)}{i === 0 ? `, ${t("yours")}` : ""}</strong>
+                <span className="text-sm text-ink-2">{t(`${p}.steps`)}</span>
               </li>
             ))}
           </ol>
-          <button className="min-h-11 w-fit rounded-full bg-ink px-6 text-sm font-semibold text-paper hover:opacity-90">{t("close")}</button>
+          <button className="btn w-full sm:w-fit">{t("close")}</button>
         </form>
       </dialog>
     </>

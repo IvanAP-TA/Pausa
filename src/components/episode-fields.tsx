@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { EpisodeLimits } from "@/lib/core/episodes";
 
-const input = "tabular min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-3 text-ink placeholder:text-muted/60 disabled:opacity-40";
+const input = "field tabular";
 
 /**
  * Season and episode inputs. When the counts of the title are known the season is a menu and the episode input stops at the
@@ -22,8 +22,8 @@ export function EpisodeFields({ limits, seasonName, episodeName, defaultSeason =
   const maxEpisode = chosen !== null && seasons.length ? seasons.find((s) => s.season === chosen)?.episodes : seasons.length ? undefined : limits?.total ?? undefined;
 
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <label className="grid gap-1.5 text-sm text-muted">
+    <div className="grid grid-cols-2 items-end gap-3">
+      <label className="field-label">
         {optionalSeasonLabel ?? t("season")}
         {seasons.length > 0 ? (
           <select name={seasonName} value={season} onChange={(e) => setSeason(e.target.value)} disabled={disabled} className={input}>
@@ -31,12 +31,12 @@ export function EpisodeFields({ limits, seasonName, episodeName, defaultSeason =
             {seasons.map((s) => <option key={s.season} value={s.season}>{t("seasonOf", { n: s.season, count: s.episodes })}</option>)}
           </select>
         ) : (
-          <input type="number" name={seasonName} min={1} max={99} inputMode="numeric" value={season} onChange={(e) => setSeason(e.target.value)} disabled={disabled} placeholder="–" className={input} />
+          <input type="number" name={seasonName} min={1} max={99} inputMode="numeric" value={season} onChange={(e) => setSeason(e.target.value)} disabled={disabled} placeholder="1" className={input} />
         )}
       </label>
-      <label className="grid gap-1.5 text-sm text-muted">
+      <label className="field-label">
         {t("episode")}
-        <input type="number" name={episodeName} min={1} max={maxEpisode ?? 9999} inputMode="numeric" defaultValue={defaultEpisode ?? ""} placeholder={maxEpisode ? `1–${maxEpisode}` : "1"} disabled={disabled} className={input} />
+        <input type="number" name={episodeName} min={1} max={maxEpisode ?? 9999} inputMode="numeric" defaultValue={defaultEpisode ?? ""} placeholder={maxEpisode ? `1 / ${maxEpisode}` : "1"} disabled={disabled} className={input} />
       </label>
     </div>
   );

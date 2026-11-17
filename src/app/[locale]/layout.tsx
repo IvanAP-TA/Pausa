@@ -1,19 +1,19 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import { Gloock, Instrument_Sans } from "next/font/google";
+import { Barlow, Sofia_Sans_Extra_Condensed } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
-import { THEME_COOKIE, parseTheme } from "@/lib/theme";
+import { THEME_COLOR, THEME_COOKIE, parseTheme } from "@/lib/theme";
 import { siteUrl } from "@/lib/site";
 import { splashLinks } from "@/lib/splash";
 import { RegisterSw } from "@/components/register-sw";
 import "../globals.css";
 
-// Display: Gloock (one weight, poster serif). Text: Instrument Sans.
-const gloock = Gloock({ subsets: ["latin"], variable: "--font-gloock", weight: "400" });
-const instrument = Instrument_Sans({ subsets: ["latin"], variable: "--font-instrument" });
+// Display: Sofia Sans Extra Condensed (200 on heads and figures, 400 on item titles and controls). Text: Barlow.
+const sofia = Sofia_Sans_Extra_Condensed({ subsets: ["latin"], variable: "--font-sofia", weight: ["200", "400"] });
+const barlow = Barlow({ subsets: ["latin"], variable: "--font-barlow", weight: ["300", "400", "600"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
@@ -23,11 +23,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F2EEE5" },
-    { media: "(prefers-color-scheme: dark)", color: "#0D1220" },
-  ],
-  colorScheme: "light dark",
+  // The app opens dark unless someone pinned a theme: the browser bar takes the dark ground.
+  themeColor: THEME_COLOR.dark,
+  colorScheme: "dark light",
 };
 
 export function generateStaticParams() {
@@ -44,8 +42,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   return (
     <html
       lang={locale}
-      data-theme={theme === "system" ? undefined : theme}
-      className={`${gloock.variable} ${instrument.variable}`}
+      data-theme={theme}
+      className={`${sofia.variable} ${barlow.variable}`}
     >
       <body className="min-h-dvh">
         <NextIntlClientProvider>

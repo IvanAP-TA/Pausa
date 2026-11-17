@@ -94,7 +94,7 @@ async function readTrakt(files: File[]): Promise<TraktFiles> {
   return out;
 }
 
-/** Jikan (api.jikan.moe) serves MyAnimeList's public lists with CORS, so the list goes browser → Jikan → us as plain rows. It allows ~3 requests a second: go gently, and wait when it says so. */
+/** Jikan (api.jikan.moe) serves MyAnimeList's public lists with CORS, so the list goes browser to Jikan to us as plain rows. It allows ~3 requests a second: go gently, and wait when it says so. */
 async function fetchJikan(userName: string): Promise<JikanPage[]> {
   const pages: JikanPage[] = [];
   for (let page = 1; page <= 40; page++) {
@@ -243,16 +243,31 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
     setTotals(sum); setBusy(false);
   }
 
-  const field = "min-h-12 w-full rounded-sm border border-rule bg-paper-2 px-3 text-ink file:mr-3 file:rounded-full file:border-0 file:bg-paper-3 file:px-4 file:py-2 file:text-sm file:font-semibold";
+  // A choice cell: a square 1px rule border, amber when chosen.
+  const cell = (on: boolean) => `min-h-11 border px-2 text-sm font-semibold transition-colors duration-150 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 ${on ? "border-accent text-ink" : "border-rule text-ink-2 hover:border-muted hover:text-ink"}`;
+  // The drop zone: a dashed rectangle on the ground, the file input inside it.
+  const drop = "grid gap-3 border border-dashed border-muted p-5 text-sm text-ink-2 transition-colors duration-150 hover:border-ink";
+  const file = "w-full min-w-0 text-base text-ink disabled:cursor-not-allowed disabled:opacity-50 file:mr-3 file:min-h-11 file:cursor-pointer file:border file:border-solid file:border-ink file:bg-transparent file:px-4 file:font-display file:text-lg file:uppercase file:text-ink";
+  const row = "flex min-h-11 cursor-pointer items-center justify-between gap-4 py-3";
+  const check = "size-5 shrink-0 accent-[var(--color-accent)]";
   const steps = t.raw(`${source}.steps`) as string[];
   const percent = progress ? Math.round((progress.done / Math.max(1, progress.total)) * 100) : 0;
+  // Each result line opens with its count: the count is set as a figure, the rest of the line is its label.
+  const label = (line: string) => line.replace(/^[\d.,'\s  ]+/, "");
+  const results: { key: string; n: number; text: string; strong?: boolean }[] = [];
+  if (totals) {
+    if (totals.lists > 0) results.push({ key: "lists", n: totals.lists, text: t("done.lists", { count: totals.lists, items: totals.listItems }) });
+    if (totals.newTitles > 0) results.push({ key: "newTitles", n: totals.newTitles, text: t("done.newTitles", { count: totals.newTitles }) });
+    if (totals.alreadyHad > 0) results.push({ key: "alreadyHad", n: totals.alreadyHad, text: t("done.alreadyHad", { count: totals.alreadyHad }) });
+    if (totals.undatedSkipped > 0) results.push({ key: "undated", n: totals.undatedSkipped, text: t("done.undated", { count: totals.undatedSkipped }) });
+    if (totals.failed > 0) results.push({ key: "failed", n: totals.failed, text: t("done.failed", { count: totals.failed }), strong: true });
+  }
 
   return (
-    <div className="grid gap-6">
-      <div role="tablist" aria-label={t("title")} className="grid grid-cols-3 gap-1 rounded-2xl border border-rule bg-paper-2 p-1 text-sm sm:grid-cols-5">
+    <div className="grid gap-8">
+      <div role="tablist" aria-label={t("title")} className="grid grid-cols-3 gap-2 sm:grid-cols-5">
         {SOURCES.map((s) => (
-          <button key={s} type="button" role="tab" aria-selected={source === s} disabled={busy} onClick={() => choose(s)}
-            className={`min-h-10 rounded-full px-2 text-[13px] font-semibold transition-colors ${source === s ? "bg-accent text-on-accent" : "text-muted hover:text-ink"}`}>
+          <button key={s} type="button" role="tab" aria-selected={source === s} disabled={busy} onClick={() => choose(s)} className={cell(source === s)}>
             {t(`tabs.${s}`)}
           </button>
         ))}
@@ -260,57 +275,56 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
 
       {!totals && (
         <section className="grid gap-4" aria-labelledby="how-to">
-          <h2 id="how-to" className="font-display text-xl leading-tight">{t(`${source}.title`)}</h2>
+          <h2 id="how-to" className="title">{t(`${source}.title`)}</h2>
           {source === "anilist" ? (
-            <p className="text-sm text-muted">{t("anilist.body")}</p>
+            <p className="text-ink-2">{t("anilist.body")}</p>
           ) : source === "mal" ? (
-            <div role="radiogroup" aria-label={t("mal.mode")} className="grid grid-cols-2 gap-1 rounded-full border border-rule p-1 text-sm">
+            <div role="radiogroup" aria-label={t("mal.mode")} className="grid grid-cols-2 gap-2">
               {(["user", "file"] as const).map((m) => (
-                <button key={m} type="button" role="radio" aria-checked={malMode === m} disabled={busy} onClick={() => { setMalMode(m); reset(); }}
-                  className={`min-h-10 rounded-full px-2 font-semibold ${malMode === m ? "bg-paper-3 text-ink" : "text-muted hover:text-ink"}`}>{t(`mal.mode_${m}`)}</button>
+                <button key={m} type="button" role="radio" aria-checked={malMode === m} disabled={busy} onClick={() => { setMalMode(m); reset(); }} className={cell(malMode === m)}>{t(`mal.mode_${m}`)}</button>
               ))}
             </div>
           ) : null}
-          {source === "mal" && malMode === "user" ? <p className="text-sm text-muted">{t("mal.userBody")}</p>
-            : source !== "anilist" && <ol className="grid list-decimal gap-1.5 pl-5 text-sm text-muted">{steps.map((s) => <li key={s}>{s}</li>)}</ol>}
+          {source === "mal" && malMode === "user" ? <p className="text-ink-2">{t("mal.userBody")}</p>
+            : source !== "anilist" && <ol className="grid list-decimal gap-2 pl-5 text-ink-2 marker:tabular-nums marker:text-muted">{steps.map((s) => <li key={s}>{s}</li>)}</ol>}
 
           {source === "letterboxd" && (
             <>
-              {!tmdb && <p className="text-xs text-muted">{t("letterboxd.noCovers")}</p>}
-              <label className="grid gap-1.5 text-sm text-muted">{t("letterboxd.pick")}
-                <input type="file" accept=".zip,.csv,application/zip,text/csv" multiple disabled={busy} className={field} onChange={(e) => onLetterboxd(e.target.files)} />
+              {!tmdb && <p className="text-sm text-muted">{t("letterboxd.noCovers")}</p>}
+              <label className={drop}>{t("letterboxd.pick")}
+                <input type="file" accept=".zip,.csv,application/zip,text/csv" multiple disabled={busy} className={file} onChange={(e) => onLetterboxd(e.target.files)} />
               </label>
             </>
           )}
           {source === "imdb" && (
-            <label className="grid gap-1.5 text-sm text-muted">{t("imdb.pick")}
-              <input type="file" accept=".csv,text/csv" disabled={busy} className={field} onChange={(e) => onImdb(e.target.files)} />
+            <label className={drop}>{t("imdb.pick")}
+              <input type="file" accept=".csv,text/csv" disabled={busy} className={file} onChange={(e) => onImdb(e.target.files)} />
             </label>
           )}
           {source === "trakt" && (
-            <label className="grid gap-1.5 text-sm text-muted">{t("trakt.pick")}
-              <input type="file" accept=".zip,.json,application/zip,application/json" multiple disabled={busy} className={field} onChange={(e) => onTrakt(e.target.files)} />
+            <label className={drop}>{t("trakt.pick")}
+              <input type="file" accept=".zip,.json,application/zip,application/json" multiple disabled={busy} className={file} onChange={(e) => onTrakt(e.target.files)} />
             </label>
           )}
           {source === "mal" && malMode === "user" && (
             <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); onJikan(); }}>
               <label className="sr-only" htmlFor="mal-user">{t("mal.user")}</label>
               <input id="mal-user" value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t("mal.user")} autoCapitalize="none" autoCorrect="off" spellCheck={false}
-                className="min-h-12 min-w-0 flex-1 rounded-sm border border-rule bg-paper-2 px-3" />
-              <button disabled={busy || !username.trim()} className="min-h-12 shrink-0 rounded-full border border-rule bg-paper-3 px-5 font-semibold hover:bg-rule disabled:opacity-50">{t("anilist.find")}</button>
+                className="field flex-1" />
+              <button disabled={busy || !username.trim()} className="btn shrink-0">{t("anilist.find")}</button>
             </form>
           )}
           {source === "mal" && malMode === "file" && (
-            <label className="grid gap-1.5 text-sm text-muted">{t("mal.pick")}
-              <input type="file" accept=".xml,.gz,application/xml,application/gzip,text/xml" disabled={busy} className={field} onChange={(e) => onMal(e.target.files)} />
+            <label className={drop}>{t("mal.pick")}
+              <input type="file" accept=".xml,.gz,application/xml,application/gzip,text/xml" disabled={busy} className={file} onChange={(e) => onMal(e.target.files)} />
             </label>
           )}
           {source === "anilist" && (
             <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); onAniList(); }}>
               <label className="sr-only" htmlFor="al-user">{t("anilist.user")}</label>
               <input id="al-user" value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t("anilist.user")} autoCapitalize="none" autoCorrect="off" spellCheck={false}
-                className="min-h-12 min-w-0 flex-1 rounded-sm border border-rule bg-paper-2 px-3" />
-              <button disabled={busy || !username.trim()} className="min-h-12 shrink-0 rounded-full border border-rule bg-paper-3 px-5 font-semibold hover:bg-rule disabled:opacity-50">{t("anilist.find")}</button>
+                className="field flex-1" />
+              <button disabled={busy || !username.trim()} className="btn shrink-0">{t("anilist.find")}</button>
             </form>
           )}
         </section>
@@ -318,11 +332,11 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
 
       <div aria-live="polite" className="grid gap-4">
         {busy && !progress && <p className="text-sm text-muted">{t("reading")}</p>}
-        {error && <p role="alert" className="rounded-md border border-accent p-3 text-sm text-accent">{t(`errors.${error}`)}</p>}
+        {error && <p role="alert" className="border border-error p-3 text-sm text-error">{t(`errors.${error}`)}</p>}
 
         {parsed && !totals && (
-          <section className="grid gap-4 rounded-md border border-rule bg-paper-2 p-4">
-            {parsed.rows.length > 0 && <p className="font-semibold">
+          <section className="plate grid gap-4 pt-6">
+            {parsed.rows.length > 0 && <p className="title tabular">
               {parsed.films !== undefined
                 ? t("found.films", { films: parsed.films, views: parsed.rows.length })
                 : parsed.titles ? t("found.titles", { count: parsed.rows.length }) : t("found.anime", { count: parsed.rows.length })}
@@ -330,42 +344,49 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
             {parsed.skipped && (parsed.skipped.watching + parsed.skipped.planned + parsed.skipped.onHold + parsed.skipped.dropped) > 0 && (
               <p className="text-sm text-muted">{t("found.skipped", parsed.skipped)}</p>
             )}
-            {parsed.lists && parsed.lists.length > 0 && (
-              <div className="grid gap-2 rounded-md border border-rule p-3">
-                <label className="flex min-h-9 items-start gap-3 text-sm">
-                  <input type="checkbox" checked={withLists} disabled={busy} onChange={(e) => setWithLists(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-[var(--color-accent)]" />
-                  <span>{t("lists.include", { count: parsed.lists.length, items: parsed.lists.reduce((n, l) => n + l.rows.length, 0) })}
-                    <span className="mt-0.5 block text-xs text-muted">{parsed.lists.map((l) => l.name).join(" · ")}</span></span>
+            <div className="rows grid">
+              {parsed.lists && parsed.lists.length > 0 && (
+                <div className="grid">
+                  <label className={row}>
+                    <span className="min-w-0">{t("lists.include", { count: parsed.lists.length, items: parsed.lists.reduce((n, l) => n + l.rows.length, 0) })}
+                      <span className="mt-0.5 block text-sm text-muted [overflow-wrap:anywhere]">{parsed.lists.map((l) => l.name).join(", ")}</span></span>
+                    <input type="checkbox" checked={withLists} disabled={busy} onChange={(e) => setWithLists(e.target.checked)} className={check} />
+                  </label>
+                  {withLists && (
+                    <div role="radiogroup" aria-label={t("lists.scope")} className="grid pb-3 pl-4">
+                      {(["personal", "group"] as const).map((v) => (
+                        <label key={v} className="flex min-h-11 cursor-pointer items-center gap-3 text-ink-2">
+                          <input type="radio" name="list-scope" checked={listScope === v} disabled={busy} onChange={() => setListScope(v)} className={check} />
+                          {t(`lists.scope_${v}`)}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {parsed.rows.length > 0 && <label className={row}>
+                {t("options.reviews")}
+                <input type="checkbox" checked={reviews} disabled={busy} onChange={(e) => setReviews(e.target.checked)} className={check} />
+              </label>}
+              {parsed.undated > 0 && (
+                <label className={row}>
+                  <span>{t("options.undated", { count: parsed.undated })}<span className="mt-0.5 block text-sm text-muted">{t("options.undatedHint")}</span></span>
+                  <input type="checkbox" checked={undated} disabled={busy} onChange={(e) => setUndated(e.target.checked)} className={check} />
                 </label>
-                {withLists && (
-                  <div role="radiogroup" aria-label={t("lists.scope")} className="grid gap-1 text-sm">
-                    {(["personal", "group"] as const).map((v) => (
-                      <label key={v} className="flex min-h-9 items-center gap-3">
-                        <input type="radio" name="list-scope" checked={listScope === v} disabled={busy} onChange={() => setListScope(v)} className="size-5 accent-[var(--color-accent)]" />
-                        {t(`lists.scope_${v}`)}
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            {parsed.rows.length > 0 && <label className="flex min-h-9 items-center gap-3 text-sm">
-              <input type="checkbox" checked={reviews} disabled={busy} onChange={(e) => setReviews(e.target.checked)} className="size-5 accent-[var(--color-accent)]" />
-              {t("options.reviews")}
-            </label>}
-            {parsed.undated > 0 && (
-              <label className="flex min-h-9 items-start gap-3 text-sm">
-                <input type="checkbox" checked={undated} disabled={busy} onChange={(e) => setUndated(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-[var(--color-accent)]" />
-                <span>{t("options.undated", { count: parsed.undated })}<span className="mt-0.5 block text-xs text-muted">{t("options.undatedHint")}</span></span>
-              </label>
-            )}
+              )}
+            </div>
             {progress ? (
-              <div className="grid gap-2">
-                <progress value={percent} max={100} aria-label={t("progress", { done: progress.done, total: progress.total })} className="h-2 w-full overflow-hidden rounded-full accent-[var(--color-accent)]" />
-                <p className="tabular text-sm text-muted">{t("progress", { done: progress.done, total: progress.total })}</p>
+              <div className="grid gap-3">
+                <p className="flex items-baseline gap-3">
+                  <span aria-hidden="true" className="figure text-display">{progress.done}</span>
+                  <span className="tabular text-sm text-muted">{t("progress", { done: progress.done, total: progress.total })}</span>
+                </p>
+                <div role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label={t("progress", { done: progress.done, total: progress.total })} className="meter">
+                  <span className="transition-transform duration-200 motion-reduce:transition-none" style={{ transform: `scaleX(${percent / 100})` }} />
+                </div>
               </div>
             ) : (
-              <button type="button" onClick={run} disabled={busy || (parsed.rows.length === 0 && !withLists)} className="min-h-12 rounded-full bg-accent font-semibold text-on-accent hover:bg-accent-hover disabled:opacity-50">
+              <button type="button" onClick={run} disabled={busy || (parsed.rows.length === 0 && !withLists)} className="btn btn-primary w-full">
                 {parsed.rows.length === 0 ? t("lists.run", { count: (parsed.lists ?? []).reduce((n, l) => n + l.rows.length, 0) }) : t("run", { count: parsed.rows.length + (withLists ? (parsed.lists ?? []).reduce((n, l) => n + l.rows.length, 0) : 0) })}
               </button>
             )}
@@ -373,20 +394,23 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
         )}
 
         {totals && (
-          <section className="grid gap-4 rounded-md bg-second-deep p-5 text-on-second">
-            <h2 className="font-display text-2xl leading-tight">{totals.imported === 0 && totals.lists > 0 ? t("done.listsOnly") : t("done.title", { count: totals.imported })}</h2>
-            <ul className="grid gap-1 text-sm text-on-second-muted">
-              {totals.lists > 0 && <li>{t("done.lists", { count: totals.lists, items: totals.listItems })}</li>}
-              {totals.newTitles > 0 && <li>{t("done.newTitles", { count: totals.newTitles })}</li>}
-              {totals.alreadyHad > 0 && <li>{t("done.alreadyHad", { count: totals.alreadyHad })}</li>}
-              {totals.undatedSkipped > 0 && <li>{t("done.undated", { count: totals.undatedSkipped })}</li>}
-              {totals.failed > 0 && <li className="text-on-second">{t("done.failed", { count: totals.failed })}</li>}
-            </ul>
+          <section className="well grained grid gap-5 p-5">
+            <h2 className="title tabular">{totals.imported === 0 && totals.lists > 0 ? t("done.listsOnly") : t("done.title", { count: totals.imported })}</h2>
+            {results.length > 0 && (
+              <ul className="rows grid">
+                {results.map((r) => (
+                  <li key={r.key} className="grid grid-cols-[minmax(4.5rem,auto)_minmax(0,1fr)] items-baseline gap-4 py-3">
+                    <span className="figure text-display">{r.n}</span>
+                    <span className={`text-sm ${r.strong ? "text-ink" : "text-muted"}`}>{label(r.text)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="flex flex-wrap gap-2">
-              <Link href={`/c/${circleId}`} className="inline-flex min-h-11 items-center rounded-full bg-accent px-5 font-semibold text-on-accent hover:bg-accent-hover">{t("done.toDiary")}</Link>
-              {totals.lists > 0 && <Link href={`/c/${circleId}/lists`} className="inline-flex min-h-11 items-center rounded-full border border-on-second-muted/50 px-5 text-sm hover:bg-paper/10">{t("done.toLists")}</Link>}
-              <Link href={`/c/${circleId}/insights`} className="inline-flex min-h-11 items-center rounded-full border border-on-second-muted/50 px-5 text-sm hover:bg-paper/10">{t("done.toInsights")}</Link>
-              <button type="button" onClick={reset} className="min-h-11 rounded-full px-4 text-sm text-on-second-muted underline underline-offset-4 hover:text-on-second">{t("done.again")}</button>
+              <Link href={`/c/${circleId}`} className="btn btn-primary">{t("done.toDiary")}</Link>
+              {totals.lists > 0 && <Link href={`/c/${circleId}/lists`} className="btn">{t("done.toLists")}</Link>}
+              <Link href={`/c/${circleId}/insights`} className="btn">{t("done.toInsights")}</Link>
+              <button type="button" onClick={reset} className="btn btn-quiet">{t("done.again")}</button>
             </div>
           </section>
         )}

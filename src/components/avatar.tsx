@@ -1,11 +1,11 @@
 import { emojiOf } from "@/lib/avatars";
 
-const TONES = ["#8A4B2E", "#2D6A4F", "#4B4F8A", "#6E5A2B", "#5A4B6E", "#2B5E6E"];
+const TONES = 8;
 
 function toneFor(id: string) {
   let h = 0;
   for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return TONES[h % TONES.length];
+  return `var(--color-tint-${(h % TONES) + 1})`;
 }
 
 type Props = { user: { id: string; name: string; image?: string | null }; size?: number; className?: string };
@@ -24,7 +24,7 @@ export function Avatar({ user, size = 26, className = "" }: Props) {
     <span
       aria-hidden="true"
       style={{ ...style, backgroundColor: toneFor(user.id) }}
-      className={`grid shrink-0 place-items-center rounded-full font-semibold text-[#F4F1EC] ${className}`}
+      className={`grid shrink-0 place-items-center rounded-full font-semibold text-on-tint ${className}`}
     >
       {user.name.slice(0, 1).toUpperCase()}
     </span>

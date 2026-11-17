@@ -5,10 +5,12 @@ import { createList } from "@/lib/actions";
 import { deleteListAction, moveListItemAction, removeListItemAction, renameListAction } from "@/lib/manage-actions";
 import { Poster } from "@/components/poster";
 import { ListAdd } from "./list-add";
+import { ArrowDown, ArrowUp, ChevronDown, X } from "lucide-react";
 
 type ListRow = Awaited<ReturnType<typeof getCircleLists>>[number];
 
-const small = "inline-flex min-h-9 min-w-9 items-center justify-center rounded-full border border-rule px-2 text-sm text-muted hover:text-ink disabled:opacity-30";
+// A square icon button inside a row: 44px, a rule outline.
+const small = "btn btn-quiet size-11 shrink-0 p-0";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -33,72 +35,86 @@ export default async function Lists({ params }: PageProps<"/[locale]/c/[circleId
     const canDelete = list.ownerId === user.id || (!personal && isAdmin);
     const ranking = list.kind === "ranking";
     return (
-      <section key={list.id} className="grid gap-3 rounded-md bg-paper-2 p-4">
-        <header className="min-w-0">
-          <h3 className="font-display text-xl font-semibold leading-tight">{list.name}</h3>
-          <p className="text-xs text-muted">
-            {t(`kind.${list.kind}`)} · {t("items", { count: list.items.length })} · {personal ? t("personal") : t("by", { name: list.owner })}
+      <section key={list.id} className="plate grid gap-4 pb-2 pt-5">
+        <header className="grid min-w-0 gap-1">
+          <h3 className="title">{list.name}</h3>
+          <p className="text-sm text-muted">
+            {t(`kind.${list.kind}`)}, {t("items", { count: list.items.length })}, {personal ? t("personal") : t("by", { name: list.owner })}
           </p>
         </header>
-        {list.description && <p className="text-sm text-muted">{list.description}</p>}
+        {list.description && <p className="text-ink-2">{list.description}</p>}
         {list.items.length > 0 && (
-          <ol className="grid grid-cols-4 gap-2">
+          // The contact strip: prints side by side, scrolling sideways on a phone.
+          <ol tabIndex={0} className="-mx-4 flex snap-x scroll-pl-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
             {list.items.slice(0, 8).map((m, i) => (
-              <li key={m.id} className="relative">
+              <li key={m.id} className="grid w-[104px] shrink-0 snap-start content-start gap-2">
                 <Poster media={m} size="sm" />
-                {ranking && <span className="tabular absolute left-1 top-1 grid size-5 place-items-center rounded-full bg-paper/85 text-[11px] font-semibold">{i + 1}</span>}
-                <span className="sr-only">{m.title}</span>
+                <span className="flex min-w-0 items-baseline gap-2">
+                  {ranking && <span className="figure text-2xl text-ink">{i + 1}</span>}
+                  <span className="line-clamp-2 min-w-0 text-sm leading-snug text-ink-2 [overflow-wrap:anywhere]">{m.title}</span>
+                </span>
               </li>
             ))}
           </ol>
         )}
 
-        <details className="border-t border-rule pt-2">
-          <summary className="inline-flex min-h-9 cursor-pointer list-none items-center text-sm text-muted marker:content-none hover:text-ink">{tm("manageList")}</summary>
-          <div className="mt-3 grid gap-4">
+        <details className="group">
+          <summary className="flex min-h-11 w-fit list-none items-center gap-2 text-sm text-ink-2 transition-colors duration-150 marker:content-none hover:text-ink">
+            {tm("manageList")}
+            <ChevronDown size={16} strokeWidth={1.6} aria-hidden="true" className="text-muted transition-transform duration-150 group-open:rotate-180" />
+          </summary>
+          <div className="grid gap-6 pb-4 pt-2">
             <ListAdd listId={list.id} />
 
             {list.items.length > 0 && (
-              <ol className="grid gap-1">
+              <ol className="rows grid">
                 {list.items.map((m, i) => (
-                  <li key={m.id} className="flex items-center gap-2 text-sm">
-                    {ranking && <span className="tabular w-5 text-right text-muted">{i + 1}</span>}
+                  <li key={m.id} className="flex items-center gap-2 py-1.5">
+                    {ranking && <span className="figure w-8 shrink-0 text-2xl text-ink">{i + 1}</span>}
                     <span className="min-w-0 flex-1 truncate">{m.title}</span>
                     {ranking && (
                       <>
                         <form action={moveListItemAction}>
                           <input type="hidden" name="listId" value={list.id} /><input type="hidden" name="mediaId" value={m.id} /><input type="hidden" name="direction" value="up" />
-                          <button disabled={i === 0} aria-label={tm("moveUp", { title: m.title })} className={small}>↑</button>
+                          <button disabled={i === 0} aria-label={tm("moveUp", { title: m.title })} className={small}>
+                            <ArrowUp size={18} strokeWidth={1.6} aria-hidden="true" />
+                          </button>
                         </form>
                         <form action={moveListItemAction}>
                           <input type="hidden" name="listId" value={list.id} /><input type="hidden" name="mediaId" value={m.id} /><input type="hidden" name="direction" value="down" />
-                          <button disabled={i === list.items.length - 1} aria-label={tm("moveDown", { title: m.title })} className={small}>↓</button>
+                          <button disabled={i === list.items.length - 1} aria-label={tm("moveDown", { title: m.title })} className={small}>
+                            <ArrowDown size={18} strokeWidth={1.6} aria-hidden="true" />
+                          </button>
                         </form>
                       </>
                     )}
                     <form action={removeListItemAction}>
                       <input type="hidden" name="listId" value={list.id} /><input type="hidden" name="mediaId" value={m.id} />
-                      <button aria-label={tm("removeItem", { title: m.title })} className={small}>×</button>
+                      <button aria-label={tm("removeItem", { title: m.title })} className={small}>
+                        <X size={18} strokeWidth={1.6} aria-hidden="true" />
+                      </button>
                     </form>
                   </li>
                 ))}
               </ol>
             )}
 
-            <form action={renameListAction} className="flex gap-2">
+            <form action={renameListAction} className="grid gap-2">
               <input type="hidden" name="listId" value={list.id} />
-              <label htmlFor={`rn-${list.id}`} className="sr-only">{t("name")}</label>
-              <input id={`rn-${list.id}`} name="name" required maxLength={80} defaultValue={list.name} className="min-h-11 min-w-0 flex-1 rounded-sm border border-rule bg-paper px-3 text-sm" />
-              <button className="min-h-11 shrink-0 rounded-full border border-rule px-4 text-sm font-semibold hover:bg-paper-3">{tm("rename")}</button>
+              <label htmlFor={`rn-${list.id}`} className="field-label">{t("name")}</label>
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <input id={`rn-${list.id}`} name="name" required maxLength={80} defaultValue={list.name} className="field" />
+                <button className="btn w-full sm:w-fit">{tm("rename")}</button>
+              </div>
             </form>
 
             {canDelete && (
               <details>
-                <summary className="inline-flex min-h-9 cursor-pointer list-none items-center text-sm text-muted marker:content-none hover:text-accent">{tm("deleteList")}</summary>
-                <form action={deleteListAction} className="mt-2 flex flex-wrap items-center gap-3">
+                <summary className="inline-flex min-h-11 list-none items-center text-sm text-muted transition-colors duration-150 marker:content-none hover:text-error">{tm("deleteList")}</summary>
+                <form action={deleteListAction} className="grid gap-3 pt-1">
                   <input type="hidden" name="listId" value={list.id} />
-                  <p className="text-sm text-muted">{tm("deleteListWarn")}</p>
-                  <button className="min-h-9 rounded-full bg-accent px-4 text-sm font-semibold text-on-accent">{tm("deleteConfirm")}</button>
+                  <p className="text-sm text-ink-2">{tm("deleteListWarn")}</p>
+                  <button className="btn btn-quiet w-full text-error sm:w-fit">{tm("deleteConfirm")}</button>
                 </form>
               </details>
             )}
@@ -109,37 +125,38 @@ export default async function Lists({ params }: PageProps<"/[locale]/c/[circleId
   };
 
   return (
-    <main className="grid gap-8 px-4 pb-8 pt-6">
-      <h1 className="font-display text-[1.75rem] font-semibold leading-tight">{t("title")}</h1>
+    <main className="grid gap-10 px-4 pb-8 pt-8">
+      <h1 className="display">{t("title")}</h1>
 
       <div className="grid gap-4">
-        <h2 className="text-sm text-muted">{t("group")}</h2>
-        {groupLists.length === 0 ? <p className="text-sm text-muted">{t("empty")}</p> : groupLists.map((l) => card(l, false))}
+        <h2 className="text-ink-2">{t("group")}</h2>
+        {groupLists.length === 0 ? <p className="well grained p-5 text-ink-2">{t("empty")}</p> : <div className="grid">{groupLists.map((l) => card(l, false))}</div>}
       </div>
 
       <div className="grid gap-4">
-        <h2 className="text-sm text-muted">{t("mine")}</h2>
-        {myLists.length === 0 ? <p className="text-sm text-muted">{t("emptyPersonal")}</p> : myLists.map((l) => card(l, true))}
+        <h2 className="text-ink-2">{t("mine")}</h2>
+        {myLists.length === 0 ? <p className="well grained p-5 text-ink-2">{t("emptyPersonal")}</p> : <div className="grid">{myLists.map((l) => card(l, true))}</div>}
       </div>
 
-      <form action={createList} className="grid gap-3 border-t border-rule pt-6">
-        <h2 className="text-sm font-semibold">{t("newTitle")}</h2>
+      <form action={createList} className="well grid gap-4 p-5">
+        <h2 className="title">{t("newTitle")}</h2>
         <input type="hidden" name="circleId" value={circleId} />
-        <label htmlFor="list-name" className="sr-only">{t("name")}</label>
-        <input id="list-name" name="name" required maxLength={80} placeholder={t("name")}
-          className="min-h-12 rounded-sm border border-rule bg-paper-2 px-4 placeholder:text-muted/60" />
-        <div className="grid grid-cols-2 gap-2">
-          <select name="kind" aria-label={t("newTitle")} defaultValue="list" className="min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-2 text-sm">
+        <div className="grid gap-1">
+          <label htmlFor="list-name" className="field-label">{t("name")}</label>
+          <input id="list-name" name="name" required maxLength={80} className="field" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <select name="kind" aria-label={t("newTitle")} defaultValue="list" className="field">
             <option value="list">{t("kind.list")}</option>
             <option value="watchlist">{t("kind.watchlist")}</option>
             <option value="ranking">{t("kind.ranking")}</option>
           </select>
-          <select name="scope" aria-label={t("scopeCircle")} defaultValue="circle" className="min-h-12 min-w-0 rounded-sm border border-rule bg-paper-2 px-2 text-sm">
+          <select name="scope" aria-label={t("scopeCircle")} defaultValue="circle" className="field">
             <option value="circle">{t("scopeCircle")}</option>
             <option value="personal">{t("scopePersonal")}</option>
           </select>
         </div>
-        <button className="min-h-11 w-fit rounded-full border border-rule bg-paper-3 px-5 font-semibold hover:bg-rule">{t("create")}</button>
+        <button className="btn btn-primary w-full sm:w-fit">{t("create")}</button>
       </form>
     </main>
   );

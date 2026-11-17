@@ -23,21 +23,22 @@ export default async function GuideIndex({ params }: PageProps<"/[locale]/guide"
   const locale = raw as Locale;
   const s = guideStrings[locale];
   return (
-    <main className="projector mx-auto grid max-w-2xl gap-8 px-5 py-12">
-      <Link href="/" className="inline-flex min-h-10 w-fit items-center font-display text-lg text-ink">Pausa</Link>
-      <header className="grid gap-2">
-        <h1 className="font-display text-[2rem] leading-tight">{s.indexTitle}</h1>
-        <p className="text-muted">{s.indexLede}</p>
+    <main className="projector mx-auto grid w-full max-w-[72rem] gap-10 px-4 pb-16 pt-6 lg:px-8">
+      <Link href="/" className="inline-flex min-h-11 w-fit items-center font-display text-2xl text-ink">Pausa</Link>
+      <header className="grid min-w-0 gap-4">
+        <h1 className="display text-poster">{s.indexTitle}</h1>
+        <p className="max-w-[65ch] text-lg text-ink-2">{s.indexLede}</p>
       </header>
-      <ul className="grid gap-4">
+      {/* The index is a sheet of rows: the title in capitals, the summary beside it from 64rem. */}
+      <ul className="rows grid">
         {GUIDE_SLUGS.map((slug) => {
           const g = guideFor(locale, slug);
           return (
             <li key={slug}>
-              <Link href={`/guide/${slug}`} className="grid gap-1 rounded-md border border-rule bg-paper-2 p-4 hover:border-muted">
-                <h2 className="font-display text-xl leading-tight">{g.title}</h2>
-                <p className="text-sm text-muted">{g.description}</p>
-                <span className="mt-1 text-sm font-semibold text-accent">{s.read} →</span>
+              <Link href={`/guide/${slug}`} className="group grid gap-2 py-5 transition-colors duration-150 hover:bg-paper-2 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)_auto] lg:items-baseline lg:gap-8">
+                <h2 className="title">{g.title}</h2>
+                <p className="max-w-[65ch] text-ink-2">{g.description}</p>
+                <span className="text-sm text-ink underline decoration-muted underline-offset-4 transition-colors duration-150 group-hover:decoration-accent">{s.read}</span>
               </Link>
             </li>
           );

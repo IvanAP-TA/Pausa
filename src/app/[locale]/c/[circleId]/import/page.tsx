@@ -15,11 +15,11 @@ export default async function ImportPage({ params }: PageProps<"/[locale]/c/[cir
   return (
     <main className="grid gap-6 px-4 pb-10 pt-6">
       <div className="grid gap-3">
-        <Link href={`/c/${circleId}/members`} className="inline-flex min-h-10 w-fit items-center text-sm text-muted hover:text-ink">← {tc("back")}</Link>
-        <h1 className="font-display text-[1.9rem] leading-[1.05]">{t("title")}</h1>
-        <p className="text-muted">{t("lede")}</p>
+        <Link href={`/c/${circleId}/members`} className="link inline-flex min-h-11 w-fit items-center text-sm">{tc("back")}</Link>
+        <h1 className="display">{t("title")}</h1>
+        <p className="max-w-prose text-ink-2">{t("lede")}</p>
+        <p className="text-sm text-muted">{t("visibility")}</p>
       </div>
-      <p className="rounded-md border border-rule bg-paper-2 p-3 text-sm text-muted">{t("visibility")}</p>
       <ImportClient circleId={circleId} tmdb={tmdbEnabled()} />
     </main>
   );

@@ -18,8 +18,7 @@ export function CopyInvite({ url }: { url: string }) {
   }
 
   return (
-    <button type="button" onClick={copy} aria-live="polite"
-      className="min-h-11 w-fit rounded-full bg-accent px-5 font-semibold text-on-accent hover:bg-accent-hover">
+    <button type="button" onClick={copy} aria-live="polite" className="btn btn-primary">
       {copied ? t("copied") : t("copy")}
     </button>
   );
