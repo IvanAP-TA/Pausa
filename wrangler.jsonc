@@ -1,24 +1,49 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "pausa",
-  "main": "worker.ts",
-  "compatibility_date": "2026-11-01",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  // Variables typed in the Cloudflare dashboard (GOOGLE_CLIENT_ID, EMAIL_FROM, ADMIN_EMAILS, ...) survive every deploy. Without this,
-  // each `wrangler deploy` wipes them and, for example, the Google button disappears.
-  "keep_vars": true,
-  // 03:17 UTC housekeeping and 17:00 UTC email digest (see scheduled() in worker.ts).
-  "triggers": { "crons": ["17 3 * * *", "0 17 * * *"] },
-  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
-  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "pausa" }],
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "pausa",
-      // Replace with the id from `npx wrangler d1 create pausa` before the first deploy.
-      // Local dev (`npm run db:migrate:local`) works with this placeholder.
-      "database_id": "00000000-0000-0000-0000-000000000000",
-      "migrations_dir": "drizzle"
-    }
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "pausa",
+	"main": "worker.ts",
+	"compatibility_date": "2026-11-01",
+	"compatibility_flags": [
+		"nodejs_compat",
+		"global_fetch_strictly_public"
+	],
+	// Variables typed in the Cloudflare dashboard (GOOGLE_CLIENT_ID, EMAIL_FROM, ADMIN_EMAILS, ...) survive every deploy. Without this,
+	// each `wrangler deploy` wipes them and, for example, the Google button disappears.
+	"keep_vars": true,
+	"routes": [
+		{
+			"pattern": "pausa.gnagno.org",
+			"custom_domain": true
+		}
+	],
+	// 03:17 UTC housekeeping and 17:00 UTC email digest (see scheduled() in worker.ts).
+	"triggers": {
+		"crons": [
+			"17 3 * * *",
+			"0 17 * * *"
+		]
+	},
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"services": [
+		{
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "pausa"
+		}
+	],
+	"vars": {
+		"BETTER_AUTH_URL": "https://pausa.gnagno.org",
+		"EMAIL_FROM": "Pausa <accesso@pausa.gnagno.org>",
+		"VAPID_SUBJECT": "https://pausa.gnagno.org"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "pausa",
+			"database_id": "f1de67d1-7e4b-450e-ba59-34402f3e5d8b",
+			"migrations_dir": "drizzle"
+		}
+	]
 }
