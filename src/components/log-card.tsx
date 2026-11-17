@@ -17,8 +17,17 @@ export function LogCard({ log, now, circleId }: { log: FeedLog; now: Date; circl
   return (
     <article className="ticket grid grid-cols-[72px_minmax(0,1fr)] gap-3 rounded-md bg-paper-2 p-4">
       <header className="col-span-full flex items-center gap-2 text-[13px] text-muted">
-        <Avatar user={log.author} />
-        <strong className="font-semibold text-ink">{log.author.name}</strong>
+        {circleId ? (
+          <Link href={`/c/${circleId}/p/${log.author.id}`} className="inline-flex min-h-10 items-center gap-2 text-ink hover:text-accent">
+            <Avatar user={log.author} />
+            <strong className="font-semibold">{log.author.name}</strong>
+          </Link>
+        ) : (
+          <>
+            <Avatar user={log.author} />
+            <strong className="font-semibold text-ink">{log.author.name}</strong>
+          </>
+        )}
         <span>{log.isRewatch ? t("rewatched") : t("watched")}</span>
         <time className="tabular ml-auto text-xs" dateTime={log.createdAt.toISOString()}>
           {format.relativeTime(log.createdAt, now)}

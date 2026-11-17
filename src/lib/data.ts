@@ -62,8 +62,20 @@ export async function getCircleStats(circleId: string, year: number) {
 
 /* ───────────── Feed ───────────── */
 
-export async function getCircleFeed(circleId: string, viewerId: string, locale: string, limit = 30, logId?: string, before?: Date) {
+/** What the feed can be narrowed by (all optional, all combinable). */
+export type FeedFilters = { q?: string; kind?: "movie" | "tv" | "anime"; by?: string; year?: number; minRating?: number };
+
+export async function getCircleFeed(circleId: string, viewerId: string, locale: string, limit = 30, logId?: string, before?: Date, filters: FeedFilters = {}) {
   const db = await getDb();
+  const q = filters.q?.trim().toLowerCase().replace(/[%_\\]/g, (c) => "\\" + c);
+  const narrow = and(
+    filters.by ? eq(s.log.userId, filters.by) : undefined,
+    filters.kind ? eq(s.mediaEntity.kind, filters.kind) : undefined,
+    filters.year ? like(s.log.watchedOn, `${filters.year}-%`) : undefined,
+    filters.minRating ? sql`${s.log.rating} >= ${filters.minRating}` : undefined,
+    // Title: the localized one or the original, any part of it, any case.
+    q ? sql`(lower(${titleFor(locale)}) like ${"%" + q + "%"} escape '\\' or lower(${s.mediaEntity.originalTitle}) like ${"%" + q + "%"} escape '\\')` : undefined,
+  );
   const logs = await db
     .select({
       id: s.log.id,
@@ -83,7 +95,7 @@ export async function getCircleFeed(circleId: string, viewerId: string, locale: 
     .innerJoin(s.circleMember, and(eq(s.circleMember.userId, s.log.userId), eq(s.circleMember.circleId, circleId)))
     .innerJoin(s.user, eq(s.user.id, s.log.userId))
     .innerJoin(s.mediaEntity, eq(s.mediaEntity.id, s.log.mediaId))
-    .where(and(logId ? eq(s.log.id, logId) : undefined, before ? lt(s.log.createdAt, before) : undefined))
+    .where(and(logId ? eq(s.log.id, logId) : undefined, before ? lt(s.log.createdAt, before) : undefined, narrow))
     .orderBy(desc(s.log.createdAt))
     .limit(limit);
 

@@ -66,7 +66,21 @@
     "endOfFeed": "Nothing further back than this.",
     "nextEpisode": "+1 episode",
     "nextSeason": "New season",
-    "season": "Season {n}"
+    "season": "Season {n}",
+    "filter": {
+      "title": "Search and filter",
+      "q": "Title",
+      "kind": "Type",
+      "by": "Watched by",
+      "everyone": "Everyone",
+      "year": "Year",
+      "rating": "Rating",
+      "any": "Any",
+      "atLeast": "{stars} stars or more",
+      "apply": "Search",
+      "clear": "Clear filters",
+      "none": "No log matches."
+    }
   },
   "log": {
     "title": "What did you watch?",
@@ -857,5 +871,22 @@
     },
     "digest": "Daily email summary",
     "digestHint": "One email a day with what you missed, only if you have push turned on on no device."
+  },
+  "person": {
+    "title": "Person",
+    "back": "The Cerchia",
+    "admin": "admin",
+    "since": "in the Cerchia since {date}",
+    "watching": "Is watching {title}",
+    "stats": "Numbers",
+    "logs": "logs",
+    "titles": "titles",
+    "avg": "average stars",
+    "taste": "Taste in common with you: {percent}% over {count} titles you both watched.",
+    "tasteNone": "You have {count} titles in common: at least 3 are needed to compare taste.",
+    "loved": "Their favourites",
+    "recent": "Latest logs",
+    "noLogs": "No logs yet.",
+    "all": "See all their logs"
   }
 }

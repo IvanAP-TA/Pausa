@@ -213,7 +213,7 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
             <li key={m.id} className="grid gap-2 border-b border-rule py-2">
               <div className="flex min-h-10 items-center gap-3">
                 <Avatar user={m} size={32} />
-                <span className="font-semibold">{m.name}</span>
+                <Link href={`/c/${circleId}/p/${m.id}`} className="inline-flex min-h-10 items-center font-semibold hover:text-accent">{m.name}</Link>
                 {m.role === "admin" && <span className="ml-auto rounded-full border border-rule px-2 text-[11px] text-muted">{t("admin")}</span>}
               </div>
               {isAdmin && m.id !== user.id && (

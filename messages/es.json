@@ -66,7 +66,21 @@
     "endOfFeed": "No hay nada más atrás.",
     "nextEpisode": "+1 episodio",
     "nextSeason": "Nueva temporada",
-    "season": "Temporada {n}"
+    "season": "Temporada {n}",
+    "filter": {
+      "title": "Buscar y filtrar",
+      "q": "Título",
+      "kind": "Tipo",
+      "by": "Visto por",
+      "everyone": "Todos",
+      "year": "Año",
+      "rating": "Nota",
+      "any": "Cualquiera",
+      "atLeast": "{stars} estrellas o más",
+      "apply": "Buscar",
+      "clear": "Quitar filtros",
+      "none": "Ningún registro coincide."
+    }
   },
   "log": {
     "title": "¿Qué viste?",
@@ -857,5 +871,22 @@
     },
     "digest": "Resumen diario por email",
     "digestHint": "Un email al día con lo que te perdiste, solo si no tienes el push activo en ningún dispositivo."
+  },
+  "person": {
+    "title": "Persona",
+    "back": "La Cerchia",
+    "admin": "admin",
+    "since": "en la Cerchia desde {date}",
+    "watching": "Está viendo {title}",
+    "stats": "Números",
+    "logs": "registros",
+    "titles": "títulos",
+    "avg": "estrellas de media",
+    "taste": "Gustos en común contigo: {percent}% sobre {count} títulos que visteis los dos.",
+    "tasteNone": "Tenéis {count} títulos en común: hacen falta al menos 3 para comparar gustos.",
+    "loved": "Sus favoritos",
+    "recent": "Últimos registros",
+    "noLogs": "Aún no hay registros.",
+    "all": "Ver todos sus registros"
   }
 }

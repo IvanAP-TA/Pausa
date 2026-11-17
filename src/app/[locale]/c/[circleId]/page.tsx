@@ -1,7 +1,8 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
-import { getCircleFeed, getCircleForMember, getCircleStats, getMembers, getNowWatching, getUnreadCount } from "@/lib/data";
+import { FilterBar } from "./filter-bar";
+import { getCircleFeed, getCircleForMember, getCircleStats, getMembers, getNowWatching, getUnreadCount, type FeedFilters } from "@/lib/data";
 import { advanceWatching, clearNowWatching } from "@/lib/actions";
 import { formatProgress } from "@/lib/core/progress";
 import { Suspense } from "react";
@@ -22,13 +23,22 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function Feed({ params, searchParams }: PageProps<"/[locale]/c/[circleId]">) {
   const { locale, circleId } = await params;
-  const { before: beforeParam } = await searchParams;
+  const sp = await searchParams;
+  const { before: beforeParam } = sp;
+  const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
   setRequestLocale(locale);
   const user = await requireUser();
   const now = new Date();
   // Older entries: ?before=<ms of the last log shown>.
   const beforeMs = typeof beforeParam === "string" ? Number(beforeParam) : NaN;
   const before = Number.isFinite(beforeMs) ? new Date(beforeMs) : undefined;
+  // Search and filters (all from the address, so a filtered view can be shared and the back button works).
+  const kind = (["movie", "tv", "anime"] as const).find((k) => k === one("kind"));
+  const year = Number(one("year")) || undefined;
+  const minRating = Number(one("min")) || undefined;
+  const filters: FeedFilters = { q: one("q")?.slice(0, 80) || undefined, kind, by: one("by"), year: year && year > 1900 && year < 2200 ? year : undefined, minRating: minRating && minRating >= 1 && minRating <= 10 ? minRating : undefined };
+  const filtered = Object.values(filters).some(Boolean);
+  const qs = new URLSearchParams(Object.entries({ q: filters.q, kind: filters.kind, by: filters.by, year: filters.year, min: filters.minRating }).flatMap(([k, v]) => (v ? [[k, String(v)]] : []))).toString();
 
   const [circle, members, stats, watching, feed, unread, t, ta, about] = await Promise.all([
     getCircleForMember(circleId, user.id),
@@ -36,7 +46,7 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
     getCircleStats(circleId, now.getFullYear()),
     getNowWatching(circleId, locale, user.id),
     // One extra row tells us whether there is a next page.
-    getCircleFeed(circleId, user.id, locale, PAGE + 1, undefined, before),
+    getCircleFeed(circleId, user.id, locale, PAGE + 1, undefined, before, filters),
     getUnreadCount(user.id),
     getTranslations("feed"),
     getTranslations("account"),
@@ -113,13 +123,17 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
         </ul>
       )}
 
-      {!before && (
+      <FilterBar circleId={circleId} members={members} filters={filters} qs={qs} year={now.getFullYear()} resultCount={filtered ? Math.min(feed.length, PAGE) : null} hasMore={feed.length > PAGE} />
+
+      {!before && !filtered && (
         <Suspense fallback={null}>
           <Extras circleId={circleId} userId={user.id} locale={locale} now={now} />
         </Suspense>
       )}
 
-      {feed.length === 0 && before ? (
+      {feed.length === 0 && filtered ? (
+        <p className="px-4 text-sm text-muted">{t("filter.none")}</p>
+      ) : feed.length === 0 && before ? (
         <p className="px-4 text-sm text-muted">{t("endOfFeed")}</p>
       ) : feed.length === 0 ? (
         <section className="mx-4 mt-6 grid gap-3 rounded-md border border-dashed border-rule p-6">
@@ -133,7 +147,7 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
         <div className="grid gap-4 px-4">
           {feed.slice(0, PAGE).map((log) => <LogCard key={log.id} log={log} now={now} circleId={circleId} />)}
           {feed.length > PAGE && (
-            <Link href={`/c/${circleId}?before=${feed[PAGE - 1].createdAt.getTime()}`} className="inline-flex min-h-11 w-fit items-center justify-self-center rounded-full border border-rule px-5 text-sm font-semibold hover:bg-paper-2">
+            <Link href={`/c/${circleId}?before=${feed[PAGE - 1].createdAt.getTime()}${qs ? `&${qs}` : ""}`} className="inline-flex min-h-11 w-fit items-center justify-self-center rounded-full border border-rule px-5 text-sm font-semibold hover:bg-paper-2">
               {t("older")}
             </Link>
           )}

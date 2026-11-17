@@ -66,7 +66,21 @@
     "endOfFeed": "Non c'è altro, più indietro di così.",
     "nextEpisode": "+1 episodio",
     "nextSeason": "Nuova stagione",
-    "season": "Stagione {n}"
+    "season": "Stagione {n}",
+    "filter": {
+      "title": "Cerca e filtra",
+      "q": "Titolo",
+      "kind": "Tipo",
+      "by": "Visto da",
+      "everyone": "Tutti",
+      "year": "Anno",
+      "rating": "Voto",
+      "any": "Qualsiasi",
+      "atLeast": "{stars} stelle o più",
+      "apply": "Cerca",
+      "clear": "Azzera i filtri",
+      "none": "Nessuna visione corrisponde."
+    }
   },
   "log": {
     "title": "Cosa hai visto?",
@@ -857,5 +871,22 @@
     },
     "digest": "Riepilogo giornaliero per email",
     "digestHint": "Una mail al giorno con ciò che ti sei perso, solo se non hai le notifiche push attive su nessun dispositivo."
+  },
+  "person": {
+    "title": "Persona",
+    "back": "La Cerchia",
+    "admin": "admin",
+    "since": "in Cerchia da {date}",
+    "watching": "Sta guardando {title}",
+    "stats": "Numeri",
+    "logs": "visioni",
+    "titles": "titoli",
+    "avg": "stelle medie",
+    "taste": "Gusti in comune con te: {percent}% su {count} titoli visti da tutti e due.",
+    "tasteNone": "Avete {count} titoli in comune: ne servono almeno 3 per confrontare i gusti.",
+    "loved": "I suoi preferiti",
+    "recent": "Ultime visioni",
+    "noLogs": "Ancora nessuna visione.",
+    "all": "Vedi tutte le sue visioni"
   }
 }
