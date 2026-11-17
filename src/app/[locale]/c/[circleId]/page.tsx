@@ -2,13 +2,13 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
 import { FilterBar } from "./filter-bar";
-import { getCircleFeed, getCircleForMember, getCircleStats, getMembers, getNowWatching, getUnreadCount, type FeedFilters } from "@/lib/data";
+import { getCircleFeed, getCircleForMember, getCircleStats, getMembers, getMyCircleSettings, getNowWatching, getUnreadCount, type FeedFilters } from "@/lib/data";
 import { advanceWatching, clearNowWatching } from "@/lib/actions";
 import { formatProgress } from "@/lib/core/progress";
 import { Suspense } from "react";
 import { getDb } from "@/db";
 import { memoriesFor, onboardingFor } from "@/lib/core/retention";
-import { COVER_GLYPH, getCircleSettings } from "@/lib/core/settings";
+import { COVER_GLYPH } from "@/lib/core/settings";
 import { Avatar } from "@/components/avatar";
 import { LogCard } from "@/components/log-card";
 import { Poster } from "@/components/poster";
@@ -50,7 +50,7 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
     getUnreadCount(user.id),
     getTranslations("feed"),
     getTranslations("account"),
-    getDb().then((db) => getCircleSettings(db, circleId, user.id)),
+    getMyCircleSettings(circleId, user.id),
     getTranslations("ranking"),
   ]);
   const coverGlyph = about?.cover ? COVER_GLYPH[about.cover] : null;

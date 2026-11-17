@@ -1,4 +1,4 @@
-import { and, count, desc, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
 import { circleMember, log, mediaEntity, mediaTitle, serata, user } from "../../db/schema";
 import type { AnyDb } from "./db-types";
 
@@ -50,13 +50,14 @@ export type Onboarding = { hasLog: boolean; hasCompany: boolean; hasSerata: bool
 
 /** Three first steps: log something, have someone else in the Cerchia, run a Serata. The checklist disappears when all are done. */
 export async function onboardingFor(db: AnyDb, circleId: string, userId: string): Promise<Onboarding> {
-  const [[mine], [members], [serate]] = await Promise.all([
-    db.select({ n: count() }).from(log).where(eq(log.userId, userId)),
-    db.select({ n: count() }).from(circleMember).where(eq(circleMember.circleId, circleId)),
-    db.select({ n: count() }).from(serata).where(and(eq(serata.circleId, circleId), eq(serata.status, "done"))),
-  ]);
-  const hasLog = mine.n > 0;
-  const hasCompany = members.n > 1;
-  const hasSerata = serate.n > 0;
+  // One query, three counts: one round trip instead of three.
+  const [row] = await db.select({
+    mine: sql<number>`(select count(*) from ${log} where ${log.userId} = ${userId})`,
+    members: sql<number>`(select count(*) from ${circleMember} where ${circleMember.circleId} = ${circleId})`,
+    serate: sql<number>`(select count(*) from ${serata} where ${serata.circleId} = ${circleId} and ${serata.status} = 'done')`,
+  }).from(sql`(select 1)`);
+  const hasLog = row.mine > 0;
+  const hasCompany = row.members > 1;
+  const hasSerata = row.serate > 0;
   return { hasLog, hasCompany, hasSerata, done: hasLog && hasCompany && hasSerata };
 }

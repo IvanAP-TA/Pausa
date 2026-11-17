@@ -4,7 +4,7 @@
 
 import { asc, eq, inArray, sql } from "drizzle-orm";
 import { circleMember, log, logWatchedWith, mediaEntity, mediaTitle, nowWatching, user } from "../../db/schema";
-import type { AnyDb } from "./db-types";
+import { readAll, type AnyDb } from "./db-types";
 
 /* ───────────── Types ───────────── */
 
@@ -260,29 +260,31 @@ export function recommend(facts: LogFact[], people: Person[], limit = 6, watchin
 
 /** Everything the insights need, in chronological order. Members are the Cerchia's current members. */
 export async function loadCircleFacts(db: AnyDb, circleId: string, locale: string) {
-  const people = await db.select({ id: user.id, name: user.name }).from(circleMember)
-    .innerJoin(user, eq(user.id, circleMember.userId))
-    .where(eq(circleMember.circleId, circleId)).orderBy(asc(circleMember.joinedAt));
 
   const memberIds = db.select({ id: circleMember.userId }).from(circleMember).where(eq(circleMember.circleId, circleId));
   const title = sql<string>`coalesce((select ${mediaTitle.title} from ${mediaTitle} where ${mediaTitle.mediaId} = ${mediaEntity.id} and ${mediaTitle.locale} = ${locale}), ${mediaEntity.originalTitle})`;
 
-  const rows = await db.select({
+  // One D1 batch for the four reads: one round trip instead of four.
+  const [people, rows, withRows, watching] = await readAll(db, [
+    db.select({ id: user.id, name: user.name }).from(circleMember)
+      .innerJoin(user, eq(user.id, circleMember.userId))
+      .where(eq(circleMember.circleId, circleId)).orderBy(asc(circleMember.joinedAt)),
+    db.select({
     logId: log.id, userId: log.userId, mediaId: log.mediaId, rating: log.rating, watchedOn: log.watchedOn, platform: log.platform,
     title, kind: mediaEntity.kind, year: mediaEntity.year, posterPath: mediaEntity.posterPath, runtimeMin: mediaEntity.runtimeMin,
   }).from(log).innerJoin(mediaEntity, eq(mediaEntity.id, log.mediaId))
     .where(inArray(log.userId, memberIds))
-    .orderBy(asc(log.watchedOn), asc(log.createdAt));
-
-  // Subquery instead of a bound id list: D1 limits a query to 100 bound variables.
-  const withRows = await db.select({ logId: logWatchedWith.logId, userId: logWatchedWith.userId }).from(logWatchedWith)
-    .where(inArray(logWatchedWith.logId, db.select({ id: log.id }).from(log).where(inArray(log.userId, memberIds))));
+    .orderBy(asc(log.watchedOn), asc(log.createdAt)),
+    // Subquery instead of a bound id list: D1 limits a query to 100 bound variables.
+    db.select({ logId: logWatchedWith.logId, userId: logWatchedWith.userId }).from(logWatchedWith)
+      .where(inArray(logWatchedWith.logId, db.select({ id: log.id }).from(log).where(inArray(log.userId, memberIds)))),
+    db.select({ userId: nowWatching.userId, mediaId: nowWatching.mediaId }).from(nowWatching)
+      .where(inArray(nowWatching.userId, memberIds)),
+  ]);
   const withByLog = new Map<string, string[]>();
   for (const w of withRows) withByLog.set(w.logId, [...(withByLog.get(w.logId) ?? []), w.userId]);
 
   const facts: LogFact[] = rows.map((r) => ({ ...r, watchedWith: withByLog.get(r.logId) ?? [] }));
-  const watching: Watching[] = await db.select({ userId: nowWatching.userId, mediaId: nowWatching.mediaId }).from(nowWatching)
-    .where(inArray(nowWatching.userId, memberIds));
-  return { people: people as Person[], facts, watching };
+  return { people: people as Person[], facts, watching: watching as Watching[] };
 }
 

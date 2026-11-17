@@ -1,4 +1,4 @@
-import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/session";
@@ -28,9 +28,9 @@ export default async function Ranking({ params, searchParams }: PageProps<"/[loc
   const me = await requireUser();
   const one = (k: string) => { const v = sp[k]; return (Array.isArray(v) ? v[0] : v) || undefined; };
 
-  const [{ people, facts }, t, tk, format] = await Promise.all([
+  const [{ people, facts }, t, tk] = await Promise.all([
     getDb().then((db) => loadCircleFacts(db, circleId, locale)),
-    getTranslations("ranking"), getTranslations("kind"), getFormatter(),
+    getTranslations("ranking"), getTranslations("kind"),
   ]);
 
   const kind = (["movie", "tv", "anime"] as const).find((k) => k === one("kind"));
@@ -55,7 +55,10 @@ export default async function Ranking({ params, searchParams }: PageProps<"/[loc
     const s = q.toString();
     return `/c/${circleId}/ranking${s ? `?${s}` : ""}`;
   };
-  const num = (r: number) => format.number(r / 2, { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  // Built once: constructing an Intl.NumberFormat per cell (hundreds per page) cost over a second.
+  const nfShort = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+  const nfFixed = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const num = (r: number) => nfShort.format(r / 2);
   const first = (name: string) => name.split(/\s+/)[0] ?? name;
 
   return (
@@ -143,8 +146,8 @@ export default async function Ranking({ params, searchParams }: PageProps<"/[loc
               <div className="grid justify-items-end gap-1 text-right">
                 {r.avg === null ? <span className="text-xs text-muted">{t("notRated")}</span> : (
                   <>
-                    <span className="tabular font-display text-2xl leading-none">{format.number(r.avg / 2, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</span>
-                    <Stars rating={r.avg} label={t("avgLabel", { stars: format.number(r.avg / 2, { maximumFractionDigits: 1 }) })} className="text-[11px]" />
+                    <span className="tabular font-display text-2xl leading-none">{nfFixed.format(r.avg / 2)}</span>
+                    <Stars rating={r.avg} label={t("avgLabel", { stars: nfShort.format(r.avg / 2) })} className="text-[11px]" />
                     <span className="text-xs text-muted">{t("votes", { count: r.votes })}</span>
                   </>
                 )}

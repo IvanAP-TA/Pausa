@@ -3,14 +3,14 @@ import { getFormatter, getTranslations, setRequestLocale } from "next-intl/serve
 import { THEME_COOKIE, parseTheme } from "@/lib/theme";
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
-import { getCircleForMember, getMembers, getMyCircles } from "@/lib/data";
+import { getCircleForMember, getMembers, getMyCircles, getMyCircleSettings } from "@/lib/data";
 import { getDb } from "@/db";
 import { EXPIRY_CHOICES, MAX_USES_CHOICES, listInvites } from "@/lib/core/circles";
 import {
   createInviteAction, leaveCircleAction, removeMemberAction, revokeInviteAction, setMemberRoleAction,
 } from "@/lib/actions";
 import { deleteCircleAction, renameCircleAction, saveCircleSettingsAction, saveMemberPrefsAction } from "@/lib/manage-actions";
-import { COVERS, COVER_GLYPH, getCircleSettings } from "@/lib/core/settings";
+import { COVERS, COVER_GLYPH } from "@/lib/core/settings";
 import { Avatar } from "@/components/avatar";
 import { TmdbAttribution } from "@/components/tmdb-attribution";
 import { CopyInvite } from "./copy-invite";
@@ -39,7 +39,7 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
     getTranslations("circle"),
     getTranslations("manage"),
     getFormatter(),
-    getDb().then((db) => getCircleSettings(db, circleId, user.id)),
+    getMyCircleSettings(circleId, user.id),
     getTranslations("settings"),
     getTranslations("ranking"),
   ]);

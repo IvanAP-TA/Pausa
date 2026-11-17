@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { and, asc, desc, eq, inArray, like, lt, or, sql } from "drizzle-orm";
 import { getDb, schema as s } from "@/db";
+import { isCover, type CircleSettings } from "@/lib/core/settings";
 
 /* Localized title: media_title for the locale, else the original title. */
 const titleFor = (locale: string) =>
@@ -29,15 +30,34 @@ export async function getMyCircles(userId: string) {
     .orderBy(asc(s.circleMember.joinedAt));
 }
 
-/** Returns the circle only if the user is a member. Every circle read goes through this. */
-export const getCircleForMember = cache(async (circleId: string, userId: string) => {
+/**
+ * The circle and what the viewer's membership says about it (role, mute, live-watching switches, profile), in ONE query shared by
+ * everything on the page (layout, feed, members): D1 charges a round trip per query, so asking once is the cheapest speed-up.
+ */
+const getCircleContext = cache(async (circleId: string, userId: string) => {
   const db = await getDb();
   const [row] = await db
-    .select({ id: s.circle.id, name: s.circle.name, role: s.circleMember.role })
+    .select({
+      id: s.circle.id, name: s.circle.name, role: s.circleMember.role,
+      liveWatching: s.circle.liveWatching, description: s.circle.description, cover: s.circle.cover,
+      muted: s.circleMember.muted, hideWatching: s.circleMember.hideWatching,
+    })
     .from(s.circle)
     .innerJoin(s.circleMember, and(eq(s.circleMember.circleId, s.circle.id), eq(s.circleMember.userId, userId)))
     .where(eq(s.circle.id, circleId));
   return row ?? null;
+});
+
+/** Returns the circle only if the user is a member. Every circle read goes through this. */
+export const getCircleForMember = cache(async (circleId: string, userId: string) => {
+  const c = await getCircleContext(circleId, userId);
+  return c ? { id: c.id, name: c.name, role: c.role } : null;
+});
+
+/** The viewer's settings for this Cerchia (same single query as getCircleForMember). */
+export const getMyCircleSettings = cache(async (circleId: string, userId: string): Promise<CircleSettings | null> => {
+  const c = await getCircleContext(circleId, userId);
+  return c ? { liveWatching: c.liveWatching, description: c.description, cover: isCover(c.cover) ? c.cover : null, muted: c.muted, hideWatching: c.hideWatching, role: c.role } : null;
 });
 
 export const getMembers = cache(async (circleId: string) => {
@@ -102,7 +122,8 @@ export async function getCircleFeed(circleId: string, viewerId: string, locale: 
   const ids = logs.map((l) => l.id);
   if (ids.length === 0) return [];
 
-  const [withRows, reactionRows, commentRows] = await Promise.all([
+  // One D1 batch: three small reads, one round trip.
+  const [withRows, reactionRows, commentRows] = await db.batch([
     db.select({ logId: s.logWatchedWith.logId, id: s.user.id, name: s.user.name })
       .from(s.logWatchedWith).innerJoin(s.user, eq(s.user.id, s.logWatchedWith.userId))
       .where(inArray(s.logWatchedWith.logId, ids)),
@@ -207,10 +228,8 @@ export async function getUnreadCount(userId: string) {
 
 export async function getNowWatching(circleId: string, locale: string, viewerId: string) {
   const db = await getDb();
-  const [c] = await db.select({ live: s.circle.liveWatching }).from(s.circle).where(eq(s.circle.id, circleId));
-  const [me] = await db.select({ hide: s.circleMember.hideWatching }).from(s.circleMember)
-    .where(and(eq(s.circleMember.circleId, circleId), eq(s.circleMember.userId, viewerId)));
-  if (!c?.live || me?.hide) return [];
+  const me = await getMyCircleSettings(circleId, viewerId); // already fetched by the layout: no query here
+  if (!me?.liveWatching || me.hideWatching) return [];
   return db
     .select({ user: { id: s.user.id, name: s.user.name, image: s.user.image }, progress: s.nowWatching.progress, season: s.nowWatching.season, episode: s.nowWatching.episode, updatedAt: s.nowWatching.updatedAt, media: mediaFields(locale) })
     .from(s.nowWatching)
