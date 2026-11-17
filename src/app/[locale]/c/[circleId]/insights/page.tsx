@@ -3,10 +3,11 @@ import { Link } from "@/i18n/navigation";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/session";
 import {
-  MIN_COMMON, agreements, latestRatings, loadCircleFacts, recommend, tastePairs, yearInReview, yearsWithLogs,
+  MIN_COMMON, agreements, loadCircleFacts, yearInReview, yearsWithLogs,
   type TitleVerdict,
 } from "@/lib/core/insights";
 import { Suspense } from "react";
+import { recommendFast, tastePairsFast } from "@/lib/engine";
 import { personalPicks } from "@/lib/discover";
 import { ShareYear } from "./share-year";
 import { Poster } from "@/components/poster";
@@ -38,10 +39,9 @@ export default async function Insights({ params, searchParams }: PageProps<"/[lo
   const requested = Number(Array.isArray(yearParam) ? yearParam[0] : yearParam);
   const year = years.includes(requested) ? requested : (years[0] ?? new Date().getFullYear());
   const review = yearInReview(facts, people, year);
-  const ratings = latestRatings(facts);
-  const pairs = tastePairs(people, ratings);
+  const pairs = await tastePairsFast(facts, people);
   const { agree, split } = agreements(facts, people);
-  const recs = recommend(facts, people, 6, watching);
+  const recs = await recommendFast(facts, people, 6, watching);
   const list = (names: string[]) => format.list(names, { type: "conjunction" });
   const stat = "grid gap-0.5 rounded-md border border-rule bg-paper-2 p-4";
 

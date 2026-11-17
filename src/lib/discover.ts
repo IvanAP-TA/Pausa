@@ -3,7 +3,8 @@ import { eq, inArray } from "drizzle-orm";
 import { getDb, schema as s } from "@/db";
 import { getCircleLists, type MediaSummary } from "./data";
 import { rankDiscovery, topSeeds, type Ranked } from "./core/discovery";
-import { loadCircleFacts, recommend } from "./core/insights";
+import { loadCircleFacts } from "./core/insights";
+import { recommendFast } from "./engine";
 import { buildRoster } from "./core/roster";
 import { commonProviders, defaultCountry, getUserProviders, isCountry, onServices, type Provider } from "./core/streaming";
 import { ensureAvailability, similarTitles, tmdbEnabled } from "./tmdb";
@@ -60,7 +61,7 @@ export async function suggestedRoster(circleId: string, viewerId: string, locale
   for (const id of new Set(facts.map((f) => f.mediaId))) seenBy.set(id, new Set(facts.filter((f) => f.mediaId === id).map((f) => f.userId)).size);
 
   const watchlist = [...lists].sort((a, b) => Number(b.kind === "watchlist") - Number(a.kind === "watchlist")).flatMap((l) => l.items);
-  const recommended = recommend(facts, people, 12, watching).map((r) => ({
+  const recommended = (await recommendFast(facts, people, 12, watching)).map((r) => ({
     id: r.mediaId, kind: r.kind, title: r.title, year: r.year, posterPath: r.posterPath, score: r.score,
   }));
 
