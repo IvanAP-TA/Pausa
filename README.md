@@ -188,3 +188,5 @@ Landing in three languages (hreflang, JSON-LD, OG) plus four public guides per l
 - `npm run tauri android init` / `npm run tauri ios init`, then `... dev` / `... build`, once the Android SDK / Xcode are installed.
 
 Not done yet: native push notifications (they need a Tauri notification plugin plus a server-side sender, not in the web app yet) and store submission. Android needs the Android SDK and NDK; iOS needs a Mac with Xcode.
+
+**Windows prerequisite.** Building the Tauri shell needs the Microsoft C++ Build Tools ("Desktop development with C++" workload, which provides `link.exe`) and WebView2. On the dev machine used so far they are not installed, so `cargo check` stops at "linker `link.exe` not found": the shell's code has not been compiled yet. In Git Bash a GNU `link` can also shadow the MSVC one; run Tauri commands from PowerShell.
