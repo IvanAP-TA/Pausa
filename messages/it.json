@@ -562,6 +562,25 @@
       "privacy": "Privacy",
       "terms": "Termini",
       "guides": "Guide"
+    },
+    "install": {
+      "button": "Scarica l'app",
+      "title": "Porta Pausa sul telefono",
+      "intro": "Si installa dal browser, senza store: ha la sua icona e si apre a schermo intero.",
+      "yours": "il tuo",
+      "close": "Chiudi",
+      "ios": {
+        "name": "iPhone e iPad (Safari)",
+        "steps": "Tocca Condividi, poi «Aggiungi alla schermata Home»."
+      },
+      "android": {
+        "name": "Android (Chrome)",
+        "steps": "Tocca il menu ⋮, poi «Installa app» o «Aggiungi a schermata Home»."
+      },
+      "desktop": {
+        "name": "Computer (Chrome, Edge)",
+        "steps": "Clicca l'icona di installazione nella barra dell'indirizzo, oppure il menu → «Installa Pausa»."
+      }
     }
   },
   "import": {

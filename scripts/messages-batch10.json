@@ -1,0 +1,23 @@
+{
+  "it": { "landing": { "install": {
+    "button": "Scarica l'app", "title": "Porta Pausa sul telefono", "intro": "Si installa dal browser, senza store: ha la sua icona e si apre a schermo intero.",
+    "yours": "il tuo", "close": "Chiudi",
+    "ios": { "name": "iPhone e iPad (Safari)", "steps": "Tocca Condividi, poi «Aggiungi alla schermata Home»." },
+    "android": { "name": "Android (Chrome)", "steps": "Tocca il menu ⋮, poi «Installa app» o «Aggiungi a schermata Home»." },
+    "desktop": { "name": "Computer (Chrome, Edge)", "steps": "Clicca l'icona di installazione nella barra dell'indirizzo, oppure il menu → «Installa Pausa»." }
+  } } },
+  "en": { "landing": { "install": {
+    "button": "Get the app", "title": "Put Pausa on your phone", "intro": "It installs from the browser, no store needed: it gets its own icon and opens full screen.",
+    "yours": "yours", "close": "Close",
+    "ios": { "name": "iPhone and iPad (Safari)", "steps": "Tap Share, then \"Add to Home Screen\"." },
+    "android": { "name": "Android (Chrome)", "steps": "Tap the ⋮ menu, then \"Install app\" or \"Add to Home screen\"." },
+    "desktop": { "name": "Computer (Chrome, Edge)", "steps": "Click the install icon in the address bar, or the menu → \"Install Pausa\"." }
+  } } },
+  "es": { "landing": { "install": {
+    "button": "Descargar la app", "title": "Lleva Pausa al móvil", "intro": "Se instala desde el navegador, sin tienda: tiene su propio icono y se abre a pantalla completa.",
+    "yours": "el tuyo", "close": "Cerrar",
+    "ios": { "name": "iPhone y iPad (Safari)", "steps": "Toca Compartir y luego «Añadir a pantalla de inicio»." },
+    "android": { "name": "Android (Chrome)", "steps": "Toca el menú ⋮ y luego «Instalar app» o «Añadir a pantalla de inicio»." },
+    "desktop": { "name": "Ordenador (Chrome, Edge)", "steps": "Haz clic en el icono de instalación de la barra de direcciones, o en el menú → «Instalar Pausa»." }
+  } } }
+}

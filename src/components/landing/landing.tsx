@@ -8,6 +8,7 @@ import { HowItWorks } from "./how-it-works";
 import { MockInvite, MockLogCard, MockMatchup, MockResultCard } from "./mock-ui";
 import { RevealOnScroll } from "./reveal";
 import { SmoothScroll } from "./smooth-scroll";
+import { InstallApp } from "./install-app";
 import { StickyCta } from "./sticky-cta";
 import { TrySerata } from "./try-serata";
 
@@ -104,6 +105,7 @@ export function Landing() {
               <div className="rise mt-9 flex flex-wrap gap-3" style={{ ["--d" as string]: "280ms" }}>
                 <a href={signIn} className={btnPrimary}>{t("hero.cta")}</a>
                 <a href="#try" className={btnGhost}>{t("hero.secondary")}</a>
+                <InstallApp className={btnGhost} />
               </div>
               <p className="rise mt-5 max-w-md text-sm text-muted" style={{ ["--d" as string]: "380ms" }}>{t("hero.note")}</p>
             </div>
@@ -236,6 +238,7 @@ export function Landing() {
           <div className="grid gap-3">
             <p className="flex items-center gap-2.5">{pauseMark("h-4")}<span className="font-display text-xl">Pausa</span></p>
             <p className="text-sm text-muted">{t("footer.tagline")}</p>
+            <InstallApp className="inline-flex min-h-10 w-fit items-center text-sm font-semibold text-ink underline underline-offset-4 hover:text-accent" />
             <div className="max-w-md"><TmdbAttribution /></div>
           </div>
           <div className="grid gap-3 md:justify-items-end">

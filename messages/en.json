@@ -562,6 +562,25 @@
       "privacy": "Privacy",
       "terms": "Terms",
       "guides": "Guides"
+    },
+    "install": {
+      "button": "Get the app",
+      "title": "Put Pausa on your phone",
+      "intro": "It installs from the browser, no store needed: it gets its own icon and opens full screen.",
+      "yours": "yours",
+      "close": "Close",
+      "ios": {
+        "name": "iPhone and iPad (Safari)",
+        "steps": "Tap Share, then \"Add to Home Screen\"."
+      },
+      "android": {
+        "name": "Android (Chrome)",
+        "steps": "Tap the ⋮ menu, then \"Install app\" or \"Add to Home screen\"."
+      },
+      "desktop": {
+        "name": "Computer (Chrome, Edge)",
+        "steps": "Click the install icon in the address bar, or the menu → \"Install Pausa\"."
+      }
     }
   },
   "import": {

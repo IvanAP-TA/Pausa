@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-// No custom install prompt: iOS uses "Add to Home Screen", Android shows its own banner.
+// Installable from the browser: the landing has a "Get the app" button (one tap where the browser allows it, steps elsewhere).
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Pausa",
