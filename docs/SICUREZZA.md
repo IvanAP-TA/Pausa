@@ -20,7 +20,7 @@ Revisione fatta a mano sul codice a fine sviluppo (17 novembre 2026). Non sostit
 
 ## Non fatto (da decidere)
 
-- **Content-Security-Policy**: non impostata. Il tema e gli script inline di Next richiedono i nonce; va aggiunta con un middleware se il modello di rischio lo richiede.
+- **CSP con nonce**: la Content-Security-Policy c'è ma è statica (`next.config.ts`): vieta plugin, frame, form e `base` verso altri siti e limita immagini, connessioni e worker ai soli host usati; gli script inline di Next e del tema restano ammessi (`'unsafe-inline'`). Il nonce richiederebbe il rendering dinamico di ogni pagina (niente landing statica) e non è verificabile su OpenNext/Cloudflare da qui. Se serve, si aggiunge con `proxy.ts` seguendo la guida di Next.
 - **Test di intrusione** e scansione automatica delle dipendenze (`npm audit` segnala avvisi su pacchetti di sviluppo; da valutare in CI con Dependabot).
 - **2FA** e controllo di dispositivi: l'accesso è solo via link email o Google.
 - **Antivirus/ritaglio delle immagini**: non si caricano file dagli utenti (le locandine vengono da TMDB), quindi non serve oggi.

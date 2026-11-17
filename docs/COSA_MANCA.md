@@ -35,17 +35,13 @@ Stato al 17 novembre 2026, a lavoro di sviluppo concluso. Il codice è pronto pe
 - [ ] Schede degli store (screenshot, descrizione, informativa), link profondi per aprire le Serate nell'app, aggiornamenti automatici, notifiche native.
 - [ ] Pulsante di download diretto sulla landing, quando esistono i file (oggi "Scarica l'app" installa la PWA dal browser).
 
-## 4. Poi (funzioni non necessarie al lancio)
+## 4. Poi (solo se serve)
 
-- Diario per singolo episodio e conteggio episodi da TMDB (oggi: stagione sul log e "S3·E4" in corso).
-- Preferenze di notifica per tipo, silenziare una Cerchia, email come ripiego.
-- Pagina per ogni persona, ricerca e filtri nel feed, descrizione e immagine della Cerchia.
-- Filtro streaming per gli anime (AniList non ha dati di disponibilità).
-- Pagina offline (PWA) e splash per iPhone.
-- Content-Security-Policy con nonce (oggi ci sono gli altri header di sicurezza).
-- Altre importazioni (IMDb, Trakt), altre guide SEO.
-- Se il carico cresce: Durable Objects per il realtime della Serata (oggi polling).
+- Durable Objects per il realtime della Serata: oggi la Serata si aggiorna con il polling, che regge un gruppo di amici. Da fare solo se il carico cresce.
+- Content-Security-Policy con nonce: oggi la policy è statica (vedi `SICUREZZA.md`). Il nonce obbliga ogni pagina al rendering dinamico e non è verificato su OpenNext/Cloudflare.
+- Altre guide SEO oltre alle 8 per lingua, altre fonti di importazione.
+- Verificare con un utente vero l'importazione MyAnimeList (Jikan): il formato della risposta è letto in modo prudente ma non è stato provato dal vivo.
 
 ## 5. Fatto
 
-Diario, Cerchie, Serata (torneo e tavolo con veto), liste e classifiche, "sto guardando" con stagione ed episodio, raccomandazioni di gruppo e individuali, streaming in comune, importazione da Letterboxd/AniList/MyAnimeList, riepilogo dell'anno con card, memorie, notifiche push, metriche, tre lingue, accessibilità (audit axe WCAG 2.1 AA: 32 controlli, zero rilievi), landing con animazioni, 8 guide SEO per lingua con immagini social, anteprime d'invito, QR sulle card, account (modifica, esportazione dati, eliminazione), moderazione (segnalazioni e pagina operatore), eliminazione della Cerchia, limiti anti-spam, pulizia automatica quotidiana, motore di raccomandazioni in Rust/WebAssembly con test di parità, 190 test sulla logica, 43 test end-to-end, CI su GitHub, documentazione di deploy e architettura.
+Diario, Cerchie, Serata (torneo e tavolo con veto), liste e classifiche, "sto guardando" con stagione ed episodio, raccomandazioni di gruppo e individuali, streaming in comune, importazione da Letterboxd/IMDb/Trakt/AniList/MyAnimeList, diario per singolo episodio con conteggi da TMDB e AniList, impostazioni della Cerchia (descrizione e immagine, "sta guardando" acceso/spento, silenzio), preferenze di notifica per tipo e riepilogo email giornaliero, pagina di ogni persona, ricerca e filtri nel feed, filtro streaming per gli anime, pagina offline e splash iPhone, Content-Security-Policy, riepilogo dell'anno con card, memorie, notifiche push, metriche, tre lingue, accessibilità (audit axe WCAG 2.1 AA: 32 controlli, zero rilievi), landing con animazioni, 8 guide SEO per lingua con immagini social, anteprime d'invito, QR sulle card, account (modifica, esportazione dati, eliminazione), moderazione (segnalazioni e pagina operatore), eliminazione della Cerchia, limiti anti-spam, pulizia automatica quotidiana, motore di raccomandazioni in Rust/WebAssembly con test di parità, 190 test sulla logica, 43 test end-to-end, CI su GitHub, documentazione di deploy e architettura.

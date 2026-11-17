@@ -58,6 +58,8 @@ Due tipi. I **segreti** non finiscono mai nel repository: si impostano con `npx 
 | `NEXT_PUBLIC_CF_ANALYTICS_TOKEN` | **variabile di build**, facoltativa | contatore visite senza cookie (Cloudflare Web Analytics) | Cloudflare → Web Analytics → aggiungi il sito → token del beacon. Serve per sapere quanti visitatori della landing si iscrivono. |
 | `NEXT_PUBLIC_SITE_URL` | variabile, facoltativo | se diverso da `BETTER_AUTH_URL` | — |
 
+Note: `RESEND_API_KEY` serve anche al riepilogo email giornaliero (opzionale per chi lo attiva dall'account). AniList e Jikan (MyAnimeList) sono API pubbliche e non vogliono chiavi. `wrangler.jsonc` ha **due cron**: `17 3 * * *` (pulizia) e `0 17 * * *` (riepilogo email); vengono creati dal deploy, non servono altri passaggi.
+
 **Importante:** `NEXT_PUBLIC_VAPID_PUBLIC_KEY` entra nel codice **durante la build**, quindi deve esistere quando lanci `npm run deploy` (vedi sotto), non solo nel pannello Cloudflare. Le chiavi VAPID vanno **generate di nuovo** per la produzione (`node scripts/vapid.cjs`): quelle del computer di sviluppo non si riutilizzano.
 
 Esempio:
