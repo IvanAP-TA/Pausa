@@ -18,7 +18,9 @@ async function createAuth() {
     secret: process.env.BETTER_AUTH_SECRET,
     baseURL: process.env.BETTER_AUTH_URL,
     // Dev only: 127.0.0.1 has its own cookie jar, handy for testing a second person (e.g. a Serata guest).
-    trustedOrigins: process.env.NODE_ENV === "development" ? ["http://127.0.0.1:3000"] : [],
+    trustedOrigins: process.env.NODE_ENV === "development"
+      ? ["http://127.0.0.1:3000", ...(process.env.DEV_ORIGINS ?? "").split(",").filter(Boolean).map((h) => `http://${h}:3000`)]
+      : [],
     database: drizzleAdapter(db, {
       provider: "sqlite",
       schema: { user: schema.user, session: schema.session, account: schema.account, verification: schema.verification, rateLimit: schema.rateLimit },

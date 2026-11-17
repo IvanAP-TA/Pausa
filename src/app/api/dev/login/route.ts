@@ -7,6 +7,9 @@ import { getAuth } from "@/lib/auth";
 export async function GET(request: Request) {
   if (process.env.NODE_ENV !== "development") return new Response("Not found", { status: 404 });
   const url = new URL(request.url);
+  // Only from this computer or its local network: never through a public tunnel or proxy.
+  const local = /^(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/;
+  if (!local.test(url.hostname)) return new Response("Not found", { status: 404 });
   const email = url.searchParams.get("email") ?? "";
   const next = url.searchParams.get("next") ?? "/it";
   if (!email.endsWith("@pausa.test") || !next.startsWith("/")) return new Response("Bad request", { status: 400 });

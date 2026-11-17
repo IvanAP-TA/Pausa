@@ -190,3 +190,9 @@ Landing in three languages (hreflang, JSON-LD, OG) plus four public guides per l
 Not done yet: native push notifications (they need a Tauri notification plugin plus a server-side sender, not in the web app yet) and store submission. Android needs the Android SDK and NDK; iOS needs a Mac with Xcode.
 
 **Windows prerequisite.** Building the Tauri shell needs the Microsoft C++ Build Tools ("Desktop development with C++" workload, which provides `link.exe`) and WebView2. On the dev machine used so far they are not installed, so `cargo check` stops at "linker `link.exe` not found": the shell's code has not been compiled yet. In Git Bash a GNU `link` can also shadow the MSVC one; run Tauri commands from PowerShell.
+
+## Notifications, metrics and phone tests
+
+- **Web Push** (`src/lib/push.ts`, `public/sw.js`, toggle on the Account page): sent when someone logs, comments, reacts, starts watching, joins, or opens a Serata (the tap opens the log or the Serata). It uses WebCrypto (`@block65/webcrypto-web-push`), so it runs on Workers; dead subscriptions are deleted. Generate keys with `node scripts/vapid.cjs --write-env` (local) and in production set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (build-time variable), `VAPID_PRIVATE_KEY` (`wrangler secret put`) and optionally `VAPID_SUBJECT`. Needs HTTPS; on iPhone only from the installed Home Screen app. Without keys the Account page says notifications are not configured and nothing is sent.
+- **Metrics** (`/it/admin/metrics`, `src/lib/core/metrics.ts`): the §10 numbers from the database plus `event` rows for shared Cards and invites. Only emails in `ADMIN_EMAILS` can open it (in dev, the first seed person). "n.d." means not enough data.
+- **Phone tests**: `npm run dev:lan` and the checklist in `docs/PHONE_TEST.md`.

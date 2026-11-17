@@ -6,7 +6,8 @@ import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 // and OpenNext on Cloudflare is the deploy target. Revisit once the app is stable.
 const nextConfig: NextConfig = {
   // Dev only: lets 127.0.0.1 load dev assets, so a second "person" can be tested with its own cookies.
-  allowedDevOrigins: ["127.0.0.1"],
+  // DEV_ORIGINS (set by `npm run dev:lan`) adds this computer's LAN address, so a phone on the same Wi-Fi can load dev assets.
+  allowedDevOrigins: ["127.0.0.1", ...(process.env.DEV_ORIGINS ? process.env.DEV_ORIGINS.split(",") : [])],
   turbopack: {
     root: import.meta.dirname,
     rules: {
