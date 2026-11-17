@@ -605,7 +605,9 @@
     "tabs": {
       "letterboxd": "Letterboxd",
       "anilist": "AniList",
-      "mal": "MyAnimeList"
+      "mal": "MyAnimeList",
+      "imdb": "IMDb",
+      "trakt": "Trakt"
     },
     "letterboxd": {
       "title": "Films from Letterboxd",
@@ -630,13 +632,19 @@
         "Choose “Export My Anime List”: you get an .xml.gz file.",
         "Upload it here without unzipping it."
       ],
-      "pick": "Choose the .xml or .xml.gz file"
+      "pick": "Choose the .xml or .xml.gz file",
+      "mode": "How to import",
+      "mode_user": "With a username",
+      "mode_file": "With the export file",
+      "userBody": "Enter your MyAnimeList username (the list must be public). We read it through Jikan, MyAnimeList's public API.",
+      "user": "MyAnimeList username"
     },
     "reading": "Reading the file…",
     "found": {
       "films": "{films, plural, one {# film} other {# films}}, {views, plural, one {# viewing} other {# viewings}}.",
       "anime": "{count, plural, one {# completed anime} other {# completed anime}}.",
-      "skipped": "Left out: {watching} watching, {planned} planned, {onHold} on hold, {dropped} dropped."
+      "skipped": "Left out: {watching} watching, {planned} planned, {onHold} on hold, {dropped} dropped.",
+      "titles": "{count, plural, one {Found # title} other {Found # titles}}."
     },
     "options": {
       "reviews": "Import reviews too",
@@ -660,7 +668,27 @@
       "empty": "I found nothing to import here.",
       "anilistNotFound": "I can't find this user, or the profile is private.",
       "anilistDown": "AniList isn't responding. Try again shortly.",
-      "chunk": "The import stopped: check your connection and run it again. What was already imported isn't duplicated."
+      "chunk": "The import stopped: check your connection and run it again. What was already imported isn't duplicated.",
+      "malNotFound": "I cannot find this user, or the list is private.",
+      "malDown": "MyAnimeList (through Jikan) is not answering. Try again shortly."
+    },
+    "imdb": {
+      "title": "Films and series from IMDb",
+      "steps": {
+        "0": "On IMDb open \"Your ratings\" (imdb.com/user/me/ratings).",
+        "1": "From the ⋮ menu at the top right choose \"Export\".",
+        "2": "Upload the ratings.csv file here."
+      },
+      "pick": "Choose the ratings.csv file"
+    },
+    "trakt": {
+      "title": "Films and series from Trakt",
+      "steps": {
+        "0": "On Trakt go to Settings → Data (trakt.tv/settings/data).",
+        "1": "Press \"Export Data\": you get a ZIP of JSON files.",
+        "2": "Upload it here, whole or just the watched-… and ratings-… files."
+      },
+      "pick": "Choose the ZIP or the .json files"
     }
   },
   "manage": {

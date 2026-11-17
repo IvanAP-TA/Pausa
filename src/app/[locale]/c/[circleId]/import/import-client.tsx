@@ -5,15 +5,16 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { CHUNK_LIMIT } from "@/lib/core/import";
 import {
-  ANILIST_LIST_QUERY, anilistRows, letterboxdRows, malRows, type AniListResponse, type ImportRow, type LetterboxdFiles, type MalSkipped,
+  ANILIST_LIST_QUERY, anilistRows, imdbRows, jikanRows, letterboxdRows, malRows, traktRows,
+  type AniListResponse, type ImportRow, type JikanPage, type LetterboxdFiles, type MalSkipped, type TraktFiles,
 } from "@/lib/core/import-parsers";
 import { importChunk } from "@/lib/import/actions";
 
-type Source = "letterboxd" | "anilist" | "mal";
-type Parsed = { rows: ImportRow[]; undated: number; films?: number; skipped?: MalSkipped };
+type Source = "letterboxd" | "imdb" | "trakt" | "anilist" | "mal";
+type Parsed = { rows: ImportRow[]; undated: number; films?: number; skipped?: MalSkipped; titles?: boolean };
 type Totals = { imported: number; alreadyHad: number; newTitles: number; undatedSkipped: number; failed: number };
 
-const SOURCES: Source[] = ["letterboxd", "anilist", "mal"];
+const SOURCES: Source[] = ["letterboxd", "imdb", "trakt", "anilist", "mal"];
 const decoder = new TextDecoder("utf-8");
 
 /** Which Letterboxd export file is this? By name, or by its header line if the file was renamed. */
@@ -61,6 +62,46 @@ async function readMal(file: File): Promise<string> {
   return decoder.decode(bytes);
 }
 
+/** Trakt's export: watched-movies.json, watched-shows.json, ratings-movies.json, ratings-shows.json (loose files or one ZIP). */
+async function readTrakt(files: File[]): Promise<TraktFiles> {
+  const out: TraktFiles = {};
+  const put = (name: string, text: string) => {
+    const base = name.toLowerCase().split(/[\\/]/).pop() ?? "";
+    if (base === "watched-movies.json") out.watchedMovies = text;
+    else if (base === "watched-shows.json") out.watchedShows = text;
+    else if (base === "ratings-movies.json") out.ratingsMovies = text;
+    else if (base === "ratings-shows.json") out.ratingsShows = text;
+  };
+  for (const f of files) {
+    const bytes = new Uint8Array(await f.arrayBuffer());
+    if (bytes[0] === 0x50 && bytes[1] === 0x4b) {
+      const { unzipSync } = await import("fflate");
+      for (const [path, data] of Object.entries(unzipSync(bytes))) if (!path.includes("/")) put(path, decoder.decode(data));
+    } else put(f.name, decoder.decode(bytes));
+  }
+  return out;
+}
+
+/** Jikan (api.jikan.moe) serves MyAnimeList's public lists with CORS, so the list goes browser → Jikan → us as plain rows. It allows ~3 requests a second: go gently, and wait when it says so. */
+async function fetchJikan(userName: string): Promise<JikanPage[]> {
+  const pages: JikanPage[] = [];
+  for (let page = 1; page <= 40; page++) {
+    let res: Response | null = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      res = await fetch(`https://api.jikan.moe/v4/users/${encodeURIComponent(userName)}/animelist?status=completed&page=${page}`, { headers: { Accept: "application/json" } });
+      if (res.status !== 429) break;
+      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+    }
+    if (!res || res.status === 404 || res.status === 400) throw new Error("not_found");
+    if (!res.ok) throw new Error("down");
+    const json = (await res.json()) as JikanPage;
+    pages.push(json);
+    if (!json.pagination?.has_next_page) break;
+    await new Promise((r) => setTimeout(r, 400));
+  }
+  return pages;
+}
+
 /** AniList's public API allows requests straight from the browser, so the list never passes through our server. */
 async function fetchAniList(userName: string): Promise<AniListResponse[]> {
   const pages: AniListResponse[] = [];
@@ -91,6 +132,7 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [totals, setTotals] = useState<Totals | null>(null);
   const [username, setUsername] = useState("");
+  const [malMode, setMalMode] = useState<"user" | "file">("user");
   const stop = useRef(false);
 
   const reset = () => { setParsed(null); setError(null); setTotals(null); setProgress(null); };
@@ -102,13 +144,27 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
       const p = await task();
       if (p.rows.length === 0) setError("empty"); else setParsed(p);
     } catch (e) {
-      setError(e instanceof Error && ["not_found", "down"].includes(e.message) ? (e.message === "not_found" ? "anilistNotFound" : "anilistDown") : "read");
+      const known = e instanceof Error && ["not_found", "down"].includes(e.message) ? e.message : null;
+      const base = source === "mal" ? "mal" : "anilist";
+      setError(known ? (known === "not_found" ? `${base}NotFound` : `${base}Down`) : "read");
     } finally { setBusy(false); }
   }
 
   const onLetterboxd = (files: FileList | null) => files?.length && load(async () => {
     const { rows, films, undated } = letterboxdRows(await readLetterboxd([...files]));
     return { rows, films, undated };
+  });
+  const onImdb = (files: FileList | null) => files?.[0] && load(async () => {
+    const { rows, undated } = imdbRows(decoder.decode(new Uint8Array(await files[0].arrayBuffer())));
+    return { rows, undated, titles: true };
+  });
+  const onTrakt = (files: FileList | null) => files?.length && load(async () => {
+    const { rows, undated } = traktRows(await readTrakt([...files]));
+    return { rows, undated, titles: true };
+  });
+  const onJikan = () => username.trim() && load(async () => {
+    const { rows, undated } = jikanRows(await fetchJikan(username.trim()));
+    return { rows, undated };
   });
   const onMal = (files: FileList | null) => files?.[0] && load(async () => {
     const { rows, skipped, undated } = malRows(await readMal(files[0]));
@@ -123,7 +179,7 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
     if (!parsed) return;
     stop.current = false; setBusy(true); setError(null);
     const rows = parsed.rows;
-    const size = Math.min(CHUNK_LIMIT, rows[0]?.kind === "movie" ? 20 : 30); // films also trigger a TMDB lookup each
+    const size = Math.min(CHUNK_LIMIT, rows[0]?.kind === "anime" ? 30 : 20); // films and series also trigger a TMDB lookup each
     const sum: Totals = { imported: 0, alreadyHad: 0, newTitles: 0, undatedSkipped: 0, failed: 0 };
     setProgress({ done: 0, total: rows.length });
     let failures = 0;
@@ -132,6 +188,7 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
       const part = rows.slice(i, i + size).map((r) => ({
         source: r.source, kind: r.kind, title: r.title, year: r.year, rating: r.rating, watchedOn: r.watchedOn, rewatch: r.rewatch,
         review: reviews ? r.review : null, letterboxdUri: r.letterboxdUri ?? null, anilistId: r.anilistId ?? null, malId: r.malId ?? null,
+        imdbId: r.imdbId ?? null, tmdbId: r.tmdbId ?? null,
       }));
       let res = await importChunk({ rows: part, includeReviews: reviews, includeUndated: undated, locale }).catch(() => null);
       if (!res?.ok) res = await importChunk({ rows: part, includeReviews: reviews, includeUndated: undated, locale }).catch(() => null); // one retry
@@ -153,10 +210,10 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
 
   return (
     <div className="grid gap-6">
-      <div role="tablist" aria-label={t("title")} className="grid grid-cols-3 rounded-full border border-rule bg-paper-2 p-1 text-sm">
+      <div role="tablist" aria-label={t("title")} className="grid grid-cols-3 gap-1 rounded-2xl border border-rule bg-paper-2 p-1 text-sm sm:grid-cols-5">
         {SOURCES.map((s) => (
           <button key={s} type="button" role="tab" aria-selected={source === s} disabled={busy} onClick={() => choose(s)}
-            className={`min-h-10 rounded-full px-2 font-semibold transition-colors ${source === s ? "bg-accent text-on-accent" : "text-muted hover:text-ink"}`}>
+            className={`min-h-10 rounded-full px-2 text-[13px] font-semibold transition-colors ${source === s ? "bg-accent text-on-accent" : "text-muted hover:text-ink"}`}>
             {t(`tabs.${s}`)}
           </button>
         ))}
@@ -165,11 +222,18 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
       {!totals && (
         <section className="grid gap-4" aria-labelledby="how-to">
           <h2 id="how-to" className="font-display text-xl leading-tight">{t(`${source}.title`)}</h2>
-          {source !== "anilist" ? (
-            <ol className="grid list-decimal gap-1.5 pl-5 text-sm text-muted">{steps.map((s) => <li key={s}>{s}</li>)}</ol>
-          ) : (
+          {source === "anilist" ? (
             <p className="text-sm text-muted">{t("anilist.body")}</p>
-          )}
+          ) : source === "mal" ? (
+            <div role="radiogroup" aria-label={t("mal.mode")} className="grid grid-cols-2 gap-1 rounded-full border border-rule p-1 text-sm">
+              {(["user", "file"] as const).map((m) => (
+                <button key={m} type="button" role="radio" aria-checked={malMode === m} disabled={busy} onClick={() => { setMalMode(m); reset(); }}
+                  className={`min-h-10 rounded-full px-2 font-semibold ${malMode === m ? "bg-paper-3 text-ink" : "text-muted hover:text-ink"}`}>{t(`mal.mode_${m}`)}</button>
+              ))}
+            </div>
+          ) : null}
+          {source === "mal" && malMode === "user" ? <p className="text-sm text-muted">{t("mal.userBody")}</p>
+            : source !== "anilist" && <ol className="grid list-decimal gap-1.5 pl-5 text-sm text-muted">{steps.map((s) => <li key={s}>{s}</li>)}</ol>}
 
           {source === "letterboxd" && (
             <>
@@ -179,7 +243,25 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
               </label>
             </>
           )}
-          {source === "mal" && (
+          {source === "imdb" && (
+            <label className="grid gap-1.5 text-sm text-muted">{t("imdb.pick")}
+              <input type="file" accept=".csv,text/csv" disabled={busy} className={field} onChange={(e) => onImdb(e.target.files)} />
+            </label>
+          )}
+          {source === "trakt" && (
+            <label className="grid gap-1.5 text-sm text-muted">{t("trakt.pick")}
+              <input type="file" accept=".zip,.json,application/zip,application/json" multiple disabled={busy} className={field} onChange={(e) => onTrakt(e.target.files)} />
+            </label>
+          )}
+          {source === "mal" && malMode === "user" && (
+            <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); onJikan(); }}>
+              <label className="sr-only" htmlFor="mal-user">{t("mal.user")}</label>
+              <input id="mal-user" value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t("mal.user")} autoCapitalize="none" autoCorrect="off" spellCheck={false}
+                className="min-h-12 min-w-0 flex-1 rounded-sm border border-rule bg-paper-2 px-3" />
+              <button disabled={busy || !username.trim()} className="min-h-12 shrink-0 rounded-full border border-rule bg-paper-3 px-5 font-semibold hover:bg-rule disabled:opacity-50">{t("anilist.find")}</button>
+            </form>
+          )}
+          {source === "mal" && malMode === "file" && (
             <label className="grid gap-1.5 text-sm text-muted">{t("mal.pick")}
               <input type="file" accept=".xml,.gz,application/xml,application/gzip,text/xml" disabled={busy} className={field} onChange={(e) => onMal(e.target.files)} />
             </label>
@@ -204,7 +286,7 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
             <p className="font-semibold">
               {parsed.films !== undefined
                 ? t("found.films", { films: parsed.films, views: parsed.rows.length })
-                : t("found.anime", { count: parsed.rows.length })}
+                : parsed.titles ? t("found.titles", { count: parsed.rows.length }) : t("found.anime", { count: parsed.rows.length })}
             </p>
             {parsed.skipped && (parsed.skipped.watching + parsed.skipped.planned + parsed.skipped.onHold + parsed.skipped.dropped) > 0 && (
               <p className="text-sm text-muted">{t("found.skipped", parsed.skipped)}</p>

@@ -20,35 +20,56 @@ async function pool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>
   return out;
 }
 
-/* ───────────── Films → TMDB ───────────── */
+/* ───────────── Films and series → TMDB ───────────── */
 
-type TmdbHit = { id: number; title?: string; original_title?: string; release_date?: string; poster_path?: string | null };
+type TmdbHit = {
+  id: number; title?: string; name?: string; original_title?: string; original_name?: string;
+  release_date?: string; first_air_date?: string; poster_path?: string | null;
+};
+
+const headers = () => ({ Authorization: `Bearer ${process.env.TMDB_API_TOKEN}` });
+const safePoster = (p: string | null | undefined) => (p && /^\/[\w-]+\.(jpg|png)$/.test(p) ? p : null);
+const yearOf = (h: TmdbHit) => Number((h.release_date || h.first_air_date || "").slice(0, 4)) || null;
+
+async function tmdbJson<T>(path: string, params: Record<string, string>): Promise<T | null> {
+  const url = new URL(`https://api.themoviedb.org/3${path}`);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  const res = await fetch(url, { headers: headers(), signal: AbortSignal.timeout(6000) });
+  return res.ok ? ((await res.json()) as T) : null;
+}
 
 /**
- * Finds each film on TMDB by title and year. A match needs the release year within one year of the Letterboxd year
- * (when there is one): a wrong cover is worse than none. Without a TMDB token, rows pass through unchanged.
+ * Finds each film or series on TMDB, in this order of trust: its TMDB id (Trakt), its IMDb id (IMDb, Trakt), then title and
+ * year. A title match needs the year within one year of the source's (when there is one): a wrong cover is worse than none.
+ * Without a TMDB token, rows pass through unchanged. Names are TMDB's, never the browser's.
  */
 export async function enrichMovies(rows: ImportRow[], locale: string): Promise<ImportRow[]> {
   if (!tmdbEnabled()) return rows;
+  const language = LANG[locale] ?? "it-IT";
   return pool(rows, 5, async (r) => {
     try {
-      const url = new URL("https://api.themoviedb.org/3/search/movie");
-      url.searchParams.set("query", r.title);
-      if (r.year) url.searchParams.set("year", String(r.year));
-      url.searchParams.set("language", LANG[locale] ?? "it-IT");
-      url.searchParams.set("include_adult", "false");
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${process.env.TMDB_API_TOKEN}` }, signal: AbortSignal.timeout(6000) });
-      if (!res.ok) return r;
-      const { results } = (await res.json()) as { results?: TmdbHit[] };
-      const hit = (results ?? []).find((h) => !r.year || !h.release_date || Math.abs(Number(h.release_date.slice(0, 4)) - r.year) <= 1);
+      const type = r.kind === "tv" ? "tv" : "movie";
+      let hit: TmdbHit | null = null;
+      if (r.tmdbId) {
+        hit = await tmdbJson<TmdbHit>(`/${type}/${r.tmdbId}`, { language });
+      } else if (r.imdbId) {
+        const found = await tmdbJson<{ movie_results?: TmdbHit[]; tv_results?: TmdbHit[] }>(`/find/${r.imdbId}`, { external_source: "imdb_id", language });
+        hit = (type === "tv" ? found?.tv_results : found?.movie_results)?.[0] ?? null;
+      }
+      if (!hit) {
+        const results = (await tmdbJson<{ results?: TmdbHit[] }>(`/search/${type}`, {
+          query: r.title, language, include_adult: "false", ...(r.year ? { [type === "tv" ? "first_air_date_year" : "year"]: String(r.year) } : {}),
+        }))?.results;
+        hit = (results ?? []).find((h) => { const y = yearOf(h); return !r.year || !y || Math.abs(y - r.year) <= 1; }) ?? null;
+      }
       if (!hit) return r;
+      const localized = hit.title ?? hit.name;
       return {
-        ...r, tmdbId: hit.id, originalTitle: hit.original_title ?? r.title,
-        posterPath: hit.poster_path && /^\/[\w-]+\.(jpg|png)$/.test(hit.poster_path) ? hit.poster_path : null,
-        titles: hit.title ? { [locale]: hit.title } : undefined,
+        ...r, tmdbId: hit.id, originalTitle: hit.original_title ?? hit.original_name ?? r.title, year: r.year ?? yearOf(hit),
+        posterPath: safePoster(hit.poster_path), titles: localized ? { [locale]: localized } : undefined,
       };
     } catch {
-      return r; // a slow or failing lookup must not block the import: the film just gets no cover
+      return r; // a slow or failing lookup must not block the import: the title just gets no cover
     }
   });
 }

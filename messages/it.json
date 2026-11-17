@@ -605,7 +605,9 @@
     "tabs": {
       "letterboxd": "Letterboxd",
       "anilist": "AniList",
-      "mal": "MyAnimeList"
+      "mal": "MyAnimeList",
+      "imdb": "IMDb",
+      "trakt": "Trakt"
     },
     "letterboxd": {
       "title": "Film da Letterboxd",
@@ -630,13 +632,19 @@
         "Scegli «Export My Anime List»: scarichi un file .xml.gz.",
         "Caricalo qui senza decomprimerlo."
       ],
-      "pick": "Scegli il file .xml o .xml.gz"
+      "pick": "Scegli il file .xml o .xml.gz",
+      "mode": "Come importare",
+      "mode_user": "Con il nome utente",
+      "mode_file": "Con il file di esportazione",
+      "userBody": "Inserisci il tuo nome utente MyAnimeList (la lista deve essere pubblica). Leggiamo la lista tramite Jikan, l'API pubblica di MyAnimeList.",
+      "user": "Nome utente MyAnimeList"
     },
     "reading": "Leggo il file…",
     "found": {
       "films": "{films, plural, one {# film} other {# film}}, {views, plural, one {# visione} other {# visioni}}.",
       "anime": "{count, plural, one {# anime completato} other {# anime completati}}.",
-      "skipped": "Lasciati fuori: {watching} in corso, {planned} da vedere, {onHold} in pausa, {dropped} abbandonati."
+      "skipped": "Lasciati fuori: {watching} in corso, {planned} da vedere, {onHold} in pausa, {dropped} abbandonati.",
+      "titles": "{count, plural, one {Trovato # titolo} other {Trovati # titoli}}."
     },
     "options": {
       "reviews": "Importa anche le recensioni",
@@ -660,7 +668,27 @@
       "empty": "Non ho trovato niente da importare qui.",
       "anilistNotFound": "Non trovo questo utente, oppure il profilo è privato.",
       "anilistDown": "AniList non risponde. Riprova tra poco.",
-      "chunk": "L'importazione si è fermata: controlla la connessione e rilancia. Quello che è già stato importato non si duplica."
+      "chunk": "L'importazione si è fermata: controlla la connessione e rilancia. Quello che è già stato importato non si duplica.",
+      "malNotFound": "Non trovo questo utente, oppure la lista è privata.",
+      "malDown": "MyAnimeList (tramite Jikan) non risponde. Riprova tra poco."
+    },
+    "imdb": {
+      "title": "Film e serie da IMDb",
+      "steps": {
+        "0": "Su IMDb apri «Le tue valutazioni» (imdb.com/user/me/ratings).",
+        "1": "Dal menu ⋮ in alto a destra scegli «Esporta».",
+        "2": "Carica qui il file ratings.csv."
+      },
+      "pick": "Scegli il file ratings.csv"
+    },
+    "trakt": {
+      "title": "Film e serie da Trakt",
+      "steps": {
+        "0": "Su Trakt vai in Impostazioni → Dati (trakt.tv/settings/data).",
+        "1": "Premi «Export Data»: ricevi uno ZIP con i file JSON.",
+        "2": "Caricalo qui, intero o con i file watched-… e ratings-…"
+      },
+      "pick": "Scegli lo ZIP o i file .json"
     }
   },
   "manage": {

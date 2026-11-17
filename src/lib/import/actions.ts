@@ -16,8 +16,8 @@ import { allow } from "../limit-guard";
  * of their choosing or attach a title to the wrong database entry.
  */
 const row = z.object({
-  source: z.enum(["letterboxd", "anilist", "mal"]),
-  kind: z.enum(["movie", "anime"]),
+  source: z.enum(["letterboxd", "anilist", "mal", "imdb", "trakt"]),
+  kind: z.enum(["movie", "tv", "anime"]),
   title: z.string().trim().min(1).max(300),
   year: z.number().int().min(1870).max(2200).nullable(),
   rating: z.number().int().min(1).max(10).nullable(),
@@ -27,6 +27,9 @@ const row = z.object({
   letterboxdUri: z.string().regex(/^https:\/\/boxd\.it\/[A-Za-z0-9]+$/).max(60).nullish(),
   anilistId: z.number().int().positive().nullish(),
   malId: z.number().int().positive().nullish(),
+  imdbId: z.string().regex(/^tt\d{1,10}$/).nullish(),
+  // A Trakt id is only ever used to look the title up on TMDB, which then supplies everything shown.
+  tmdbId: z.number().int().positive().nullish(),
 });
 
 const payload = z.object({
@@ -47,12 +50,12 @@ export async function importChunk(input: unknown): Promise<ImportChunkResult> {
   const { rows, includeReviews, includeUndated, locale: rawLocale } = parsed.data;
   const locale = hasLocale(routing.locales, rawLocale) ? rawLocale : routing.defaultLocale;
 
-  const clean: ImportRow[] = rows.map((r) => ({ ...r, letterboxdUri: r.letterboxdUri ?? null, anilistId: r.anilistId ?? null, malId: r.malId ?? null }));
+  const clean: ImportRow[] = rows.map((r) => ({ ...r, letterboxdUri: r.letterboxdUri ?? null, anilistId: r.anilistId ?? null, malId: r.malId ?? null, imdbId: r.imdbId ?? null, tmdbId: r.tmdbId ?? null }));
   try {
     const result = await importRows(await getDb(), user.id, clean, {
       includeReviews, includeUndated, today: new Date().toISOString().slice(0, 10),
       enrich: async (unknown) => {
-        const movies = unknown.filter((r) => r.kind === "movie");
+        const movies = unknown.filter((r) => r.kind === "movie" || r.kind === "tv");
         const anime = unknown.filter((r) => r.kind === "anime");
         const [m, a] = await Promise.all([movies.length ? enrichMovies(movies, locale) : [], anime.length ? enrichAnime(anime) : []]);
         const done = new Map<ImportRow, ImportRow>([...movies.map((r, i) => [r, m[i]] as const), ...anime.map((r, i) => [r, a[i]] as const)]);

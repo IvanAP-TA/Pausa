@@ -48,7 +48,7 @@ const uniq = <T>(xs: T[]) => [...new Set(xs)];
 const nonNull = <T>(xs: (T | null | undefined)[]) => xs.filter((x): x is T => x !== null && x !== undefined);
 
 const identity = (r: ImportRow) =>
-  r.letterboxdUri ? `lb:${r.letterboxdUri}` : r.anilistId ? `al:${r.anilistId}` : r.malId ? `mal:${r.malId}` : r.tmdbId ? `tmdb:${r.tmdbId}` : `t:${r.kind}|${normTitle(r.title)}|${r.year ?? ""}`;
+  r.letterboxdUri ? `lb:${r.letterboxdUri}` : r.anilistId ? `al:${r.anilistId}` : r.malId ? `mal:${r.malId}` : r.tmdbId ? `tmdb:${r.kind}:${r.tmdbId}` : r.imdbId ? `imdb:${r.imdbId}` : `t:${r.kind}|${normTitle(r.title)}|${r.year ?? ""}`;
 
 async function inChunks<T>(items: T[], size: number, run: (part: T[]) => Promise<void>) {
   for (let i = 0; i < items.length; i += size) await run(items.slice(i, i + size));
@@ -62,7 +62,8 @@ async function findExisting(db: AnyDb, rows: ImportRow[]) {
   const byUri = new Map<string, Media>();
   const byAnilist = new Map<number, Media>();
   const byMal = new Map<number, Media>();
-  const byTmdb = new Map<number, Media>();
+  const byTmdb = new Map<string, Media>(); // "movie:123" / "tv:123": the same number can be a film and a series
+  const byImdb = new Map<string, Media>();
   const byTitle = new Map<string, Media[]>();
 
   const uris = uniq(nonNull(rows.map((r) => r.letterboxdUri)));
@@ -71,8 +72,12 @@ async function findExisting(db: AnyDb, rows: ImportRow[]) {
   if (aids.length) for (const m of await db.select().from(mediaEntity).where(inArray(mediaEntity.anilistId, aids))) byAnilist.set(m.anilistId!, m);
   const mids = uniq(nonNull(rows.map((r) => r.malId)));
   if (mids.length) for (const m of await db.select().from(mediaEntity).where(inArray(mediaEntity.malId, mids))) byMal.set(m.malId!, m);
-  const tids = uniq(nonNull(rows.filter((r) => r.kind === "movie").map((r) => r.tmdbId)));
-  if (tids.length) for (const m of await db.select().from(mediaEntity).where(and(eq(mediaEntity.kind, "movie"), inArray(mediaEntity.tmdbId, tids)))) byTmdb.set(m.tmdbId!, m);
+  for (const kind of ["movie", "tv"] as const) {
+    const tids = uniq(nonNull(rows.filter((r) => r.kind === kind).map((r) => r.tmdbId)));
+    if (tids.length) for (const m of await db.select().from(mediaEntity).where(and(eq(mediaEntity.kind, kind), inArray(mediaEntity.tmdbId, tids)))) byTmdb.set(kind + ":" + m.tmdbId, m);
+  }
+  const imdbs = uniq(nonNull(rows.map((r) => r.imdbId)));
+  if (imdbs.length) for (const m of await db.select().from(mediaEntity).where(inArray(mediaEntity.imdbId, imdbs))) byImdb.set(m.imdbId!, m);
 
   // By title: the original title or any localized one ("Spirited Away" finds the film stored as 千と千尋の神隠し).
   // The list is used twice in the query, so 40 titles keep it under D1's 100 bound variables.
@@ -94,7 +99,7 @@ async function findExisting(db: AnyDb, rows: ImportRow[]) {
   for (const r of rows) {
     const direct =
       (r.letterboxdUri && byUri.get(r.letterboxdUri)) || (r.anilistId && byAnilist.get(r.anilistId)) ||
-      (r.malId && byMal.get(r.malId)) || (r.tmdbId && r.kind === "movie" && byTmdb.get(r.tmdbId)) || null;
+      (r.malId && byMal.get(r.malId)) || (r.tmdbId && byTmdb.get(r.kind + ":" + r.tmdbId)) || (r.imdbId && byImdb.get(r.imdbId)) || null;
     if (direct) { found.set(r, direct); continue; }
     const candidates = namesOf(r).flatMap((t) => byTitle.get(normTitle(t)) ?? []);
     const match = candidates.find((m) => m.kind === r.kind && (r.year === null || m.year === null || Math.abs(m.year - r.year) <= 1));
@@ -134,7 +139,7 @@ export async function importRows(db: AnyDb, userId: string, input: ImportRow[], 
     const key = identity(r);
     if (created.has(key)) continue;
     created.set(key, {
-      id: crypto.randomUUID(), kind: r.kind, tmdbId: r.kind === "movie" ? r.tmdbId ?? null : null,
+      id: crypto.randomUUID(), kind: r.kind, tmdbId: r.kind === "anime" ? null : r.tmdbId ?? null, imdbId: r.imdbId ?? null,
       anilistId: r.anilistId ?? null, malId: r.malId ?? null, letterboxdUri: r.letterboxdUri ?? null,
       originalTitle: (r.originalTitle || r.title).slice(0, 300), year: r.year, runtimeMin: r.runtimeMin ?? null, posterPath: r.posterPath ?? null,
     });
@@ -168,7 +173,8 @@ export async function importRows(db: AnyDb, userId: string, input: ImportRow[], 
     if (m.letterboxdUri === null && r.letterboxdUri) p.letterboxdUri = r.letterboxdUri;
     if (m.anilistId === null && r.anilistId) p.anilistId = r.anilistId;
     if (m.malId === null && r.malId) p.malId = r.malId;
-    if (m.tmdbId === null && r.tmdbId && m.kind === "movie") p.tmdbId = r.tmdbId;
+    if (m.tmdbId === null && r.tmdbId && m.kind !== "anime") p.tmdbId = r.tmdbId;
+    if (m.imdbId === null && r.imdbId) p.imdbId = r.imdbId;
     if (m.posterPath === null && r.posterPath) p.posterPath = r.posterPath;
     if (m.year === null && r.year) p.year = r.year;
     if (m.runtimeMin === null && r.runtimeMin) p.runtimeMin = r.runtimeMin;

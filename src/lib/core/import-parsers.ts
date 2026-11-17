@@ -4,11 +4,11 @@
  *   - AniList: the response of its public GraphQL API for a username (see ANILIST_LIST_QUERY).
  * Ratings come out on the app's scale: half-stars 1..10 (10 = 5 stars). Dates are YYYY-MM-DD, or null when unknown. */
 
-export type ImportSource = "letterboxd" | "anilist" | "mal";
+export type ImportSource = "letterboxd" | "anilist" | "mal" | "imdb" | "trakt";
 
 export type ImportRow = {
   source: ImportSource;
-  kind: "movie" | "anime";
+  kind: "movie" | "tv" | "anime";
   title: string;
   year: number | null;
   rating: number | null; // 1..10
@@ -19,6 +19,7 @@ export type ImportRow = {
   letterboxdUri?: string | null;
   anilistId?: number | null;
   malId?: number | null;
+  imdbId?: string | null; // "tt1234567"
   // Filled in by enrichment (TMDB / AniList), all optional.
   tmdbId?: number | null;
   originalTitle?: string | null;
@@ -270,4 +271,110 @@ export function anilistRows(responses: AniListResponse[]) {
   }
   const clean = rows.filter((r) => r.title);
   return { rows: clean, undated: clean.filter((r) => r.watchedOn === null).length };
+}
+
+/* ───────────── IMDb ───────────── */
+
+export type ImdbSkipped = { episodes: number; other: number };
+
+/**
+ * IMDb's ratings export ("Your Ratings" → Export, ratings.csv). Films and TV movies become films, series and miniseries
+ * become series; episodes, shorts, games and the rest are counted and left out. IMDb only records when you RATED, not when
+ * you watched, so that date is used (the person can also choose to import without dates).
+ */
+export function imdbRows(csv: string) {
+  const rows: ImportRow[] = [];
+  const skipped: ImdbSkipped = { episodes: 0, other: 0 };
+  const seen = new Set<string>();
+  for (const r of parseCsv(csv)) {
+    const id = (r["Const"] ?? "").trim();
+    const title = (r["Title"] ?? r["Original Title"] ?? "").trim();
+    if (!/^tt\d+$/.test(id) || !title || seen.has(id)) continue;
+    const type = (r["Title Type"] ?? "").trim().toLowerCase();
+    const kind = type === "movie" || type === "tvmovie" || type === "tv movie" ? "movie" : type === "tvseries" || type === "tvminiseries" || type === "tv series" || type === "tv mini series" ? "tv" : null;
+    if (!kind) { if (type.includes("episode")) skipped.episodes++; else skipped.other++; continue; }
+    seen.add(id);
+    const score = Number.parseInt(r["Your Rating"] ?? "", 10);
+    const year = Number.parseInt(r["Year"] ?? "", 10);
+    rows.push({
+      source: "imdb", kind, title, year: Number.isFinite(year) ? year : null, imdbId: id,
+      rating: score >= 1 && score <= 10 ? score : null, // IMDb rates 1..10 → half-stars 1..10
+      watchedOn: isoDate(r["Date Rated"]), rewatch: false, review: null,
+    });
+  }
+  return { rows, skipped, undated: rows.filter((x) => x.watchedOn === null).length };
+}
+
+/* ───────────── Trakt ───────────── */
+
+type TraktIds = { imdb?: string | null; tmdb?: number | null };
+type TraktItem = { title?: string; year?: number | null; ids?: TraktIds };
+export type TraktFiles = { watchedMovies?: string; watchedShows?: string; ratingsMovies?: string; ratingsShows?: string };
+
+const jsonArray = (s: string | undefined): Record<string, unknown>[] => {
+  try { const v = JSON.parse(s ?? "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
+};
+const dayOf = (v: unknown) => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10) : null);
+
+/**
+ * Trakt's data export (Settings → Data → Export): watched-movies.json, watched-shows.json and the two ratings files.
+ * One row per film or show, dated by the last time it was watched; the rating comes from the ratings file when there is one
+ * (Trakt rates 1..10). A rated-but-not-watched title is imported too (it is a rating the person gave).
+ */
+export function traktRows(files: TraktFiles) {
+  const rows = new Map<string, ImportRow>();
+  const put = (kind: "movie" | "tv", item: TraktItem | undefined, patch: Partial<ImportRow>) => {
+    const title = item?.title?.trim();
+    if (!title) return;
+    const tmdbId = item?.ids?.tmdb ?? null;
+    const imdbId = item?.ids?.imdb && /^tt\d+$/.test(item.ids.imdb) ? item.ids.imdb : null;
+    const key = kind + ":" + (tmdbId ?? imdbId ?? title.toLowerCase() + "|" + (item?.year ?? ""));
+    const row = rows.get(key) ?? { source: "trakt" as const, kind, title, year: item?.year ?? null, rating: null, watchedOn: null, rewatch: false, review: null, tmdbId, imdbId };
+    rows.set(key, { ...row, ...patch });
+  };
+  for (const w of jsonArray(files.watchedMovies)) put("movie", w.movie as TraktItem, { watchedOn: dayOf(w.last_watched_at), rewatch: Number(w.plays) > 1 });
+  for (const w of jsonArray(files.watchedShows)) put("tv", w.show as TraktItem, { watchedOn: dayOf(w.last_watched_at) });
+  const rate = (kind: "movie" | "tv", list: Record<string, unknown>[], field: "movie" | "show") => {
+    for (const r of list) {
+      const score = Number(r.rating);
+      if (!(score >= 1 && score <= 10)) continue;
+      const item = r[field] as TraktItem | undefined;
+      const existing = [...rows.entries()].find(([k, v]) => k.startsWith(kind + ":") && v.title === item?.title?.trim() && v.year === (item?.year ?? null));
+      put(kind, item, { rating: Math.round(score), ...(existing ? {} : { watchedOn: dayOf(r.rated_at) }) });
+    }
+  };
+  rate("movie", jsonArray(files.ratingsMovies), "movie");
+  rate("tv", jsonArray(files.ratingsShows), "show");
+  const out = [...rows.values()];
+  return { rows: out, undated: out.filter((r) => r.watchedOn === null).length };
+}
+
+/* ───────────── MyAnimeList through Jikan (its public API) ───────────── */
+
+export type JikanPage = { data?: { score?: number; finish_date?: string | null; start_date?: string | null; watching_status?: number | string; anime?: { mal_id?: number; title?: string; year?: number | null } }[]; pagination?: { has_next_page?: boolean } };
+
+/**
+ * A MAL user's completed list as Jikan (api.jikan.moe, the community API over MAL's public data) returns it, page by page.
+ * The shape follows Jikan's v4 documentation: if a field is missing the row is simply left out or undated, never invented.
+ */
+export function jikanRows(pages: JikanPage[]) {
+  const rows: ImportRow[] = [];
+  const seen = new Set<number>();
+  for (const page of pages) {
+    for (const e of page.data ?? []) {
+      const id = e.anime?.mal_id;
+      const title = e.anime?.title?.trim();
+      if (!id || !title || seen.has(id)) continue;
+      const status = String(e.watching_status ?? "completed").toLowerCase();
+      if (!(status === "2" || status.includes("complet"))) continue;
+      seen.add(id);
+      const score = Number(e.score ?? 0);
+      rows.push({
+        source: "mal", kind: "anime", title, year: e.anime?.year ?? null, malId: id,
+        rating: score >= 1 && score <= 10 ? Math.round(score) : null,
+        watchedOn: dayOf(e.finish_date) ?? dayOf(e.start_date), rewatch: false, review: null,
+      });
+    }
+  }
+  return { rows, undated: rows.filter((r) => r.watchedOn === null).length };
 }
