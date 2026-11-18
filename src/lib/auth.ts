@@ -38,7 +38,12 @@ async function createAuth() {
       },
     },
     // Someone who signed in with an email link and later taps "Continue with Google" (same address) gets the same account.
-    account: { accountLinking: { enabled: true, trustedProviders: ["google"] } },
+    // The Google profile (name, picture) is copied onto the account when it is linked: an account born from an email link has neither.
+    account: { accountLinking: { enabled: true, trustedProviders: ["google"], updateUserInfoOnLink: true } },
+    // Nobody is ever nameless: an account created from an email link takes the part of the address before the @ until the person picks a name.
+    databaseHooks: {
+      user: { create: { before: async (user) => ({ data: { ...user, name: user.name?.trim() || user.email.split("@")[0] || "Pausa" } }) } },
+    },
     advanced: { ipAddress: { ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"] } },
     socialProviders: googleEnabled()
       ? { google: { clientId: process.env.GOOGLE_CLIENT_ID!, clientSecret: process.env.GOOGLE_CLIENT_SECRET! } }

@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
       "default-src 'self'",
       `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""} https://static.cloudflareinsights.com`,
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://image.tmdb.org",
+      "img-src 'self' data: blob: https://image.tmdb.org https://*.googleusercontent.com https://s4.anilist.co",
       "font-src 'self'",
       `connect-src 'self' https://cloudflareinsights.com${dev ? " ws: wss:" : ""}`,
       "manifest-src 'self'",

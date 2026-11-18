@@ -31,7 +31,7 @@ export default async function EditLog({ params }: PageProps<"/[locale]/c/[circle
         circleId={circleId}
         today={new Date().toISOString().slice(0, 10)}
         initial={{ season: log.season, episode: log.episode, watchedOn: log.watchedOn, rating: log.rating, review: log.review, platform: log.platform, containsSpoilers: log.containsSpoilers }}
-        members={members.filter((m) => m.id !== user.id).map((m) => ({ id: m.id, name: m.name }))}
+        members={members.filter((m) => m.id !== user.id).map((m) => ({ id: m.id, name: m.name, image: m.image }))}
         initialWith={log.watchedWith.map((w) => w.id)}
       />
     </main>

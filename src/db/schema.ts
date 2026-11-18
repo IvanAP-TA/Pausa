@@ -153,6 +153,20 @@ export const mediaTitle = sqliteTable("media_title", {
   title: text("title").notNull(),
 }, (t) => [primaryKey({ columns: [t.mediaId, t.locale] })]);
 
+/**
+ * What a title is about, per language: synopsis, genres and the leading cast. Looked up once (TMDB, AniList) and kept;
+ * `source` "user" marks a synopsis written by a member for a title no catalogue knows.
+ */
+export const mediaDetail = sqliteTable("media_detail", {
+  mediaId: text("media_id").notNull().references(() => mediaEntity.id, { onDelete: "cascade" }),
+  locale: text("locale").notNull(),
+  overview: text("overview"),
+  genres: text("genres", { mode: "json" }).$type<string[]>().notNull().default([]),
+  cast: text("cast", { mode: "json" }).$type<{ name: string; role: string | null }[]>().notNull().default([]),
+  source: text("source", { enum: ["tmdb", "anilist", "user", "none"] }).notNull().default("none"),
+  fetchedAt: integer("fetched_at", { mode: "timestamp_ms" }).notNull().default(now),
+}, (t) => [primaryKey({ columns: [t.mediaId, t.locale] })]);
+
 /* ───────────── Streaming availability (TMDB watch providers, via JustWatch) ───────────── */
 
 /** The services a person subscribes to. */
@@ -181,7 +195,12 @@ export const mediaAvailabilityCheck = sqliteTable("media_availability_check", {
 
 /* ───────────── Diario ───────────── */
 
-/** A log is visible to every Cerchia its author belongs to. */
+/**
+ * A log belongs to its author. `scope` says who else reads it:
+ * - "circles" (the default): every Cerchia the author belongs to;
+ * - "private": only the author, in their personal space, plus the Cerchie it was shared with one by one (log_share).
+ * Imported history is private, so years of viewings never land in a group unasked.
+ */
 export const log = sqliteTable("log", {
   id: id(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
@@ -194,8 +213,16 @@ export const log = sqliteTable("log", {
   season: integer("season"), // which season of a series/anime this log is about; null = the whole thing or a film
   episode: integer("episode"), // a single episode (with `season`): the episode-level diary; null = not an episode log
   isRewatch: integer("is_rewatch", { mode: "boolean" }).notNull().default(false),
+  scope: text("scope", { enum: ["circles", "private"] }).notNull().default("circles"),
   createdAt: createdAt(),
 }, (t) => [index("log_user_idx").on(t.userId, t.createdAt), index("log_media_idx").on(t.mediaId)]);
+
+/** A private log published in one Cerchia. `createdAt` is when it was shared: the feed of that Cerchia shows it at that moment. */
+export const logShare = sqliteTable("log_share", {
+  logId: text("log_id").notNull().references(() => log.id, { onDelete: "cascade" }),
+  circleId: text("circle_id").notNull().references(() => circle.id, { onDelete: "cascade" }),
+  createdAt: createdAt(),
+}, (t) => [primaryKey({ columns: [t.logId, t.circleId] }), index("log_share_circle_idx").on(t.circleId, t.createdAt)]);
 
 export const logWatchedWith = sqliteTable("log_watched_with", {
   logId: text("log_id").notNull().references(() => log.id, { onDelete: "cascade" }),

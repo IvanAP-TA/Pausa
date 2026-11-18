@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
 import { circleMember, log, mediaEntity, mediaTitle, serata, user } from "../../db/schema";
 import type { AnyDb } from "./db-types";
+import { visibleIn } from "./visibility";
 
 /* What brings a Cerchia back: "a year ago" memories and the first-steps checklist. */
 
@@ -35,7 +36,7 @@ export async function memoriesFor(db: AnyDb, circleId: string, today: Date, opts
     .innerJoin(circleMember, and(eq(circleMember.userId, log.userId), eq(circleMember.circleId, circleId)))
     .innerJoin(user, eq(user.id, log.userId))
     .innerJoin(mediaEntity, eq(mediaEntity.id, log.mediaId))
-    .where(and(inArray(sql<string>`substr(${log.watchedOn}, 6, 5)`, days), lt(sql<number>`cast(substr(${log.watchedOn}, 1, 4) as integer)`, thisYear)))
+    .where(and(visibleIn(circleId), inArray(sql<string>`substr(${log.watchedOn}, 6, 5)`, days), lt(sql<number>`cast(substr(${log.watchedOn}, 1, 4) as integer)`, thisYear)))
     .orderBy(desc(log.watchedOn))
     .limit(60);
 

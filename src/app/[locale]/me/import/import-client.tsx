@@ -132,7 +132,7 @@ async function fetchAniList(userName: string): Promise<AniListResponse[]> {
   return pages;
 }
 
-export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boolean }) {
+export function ImportClient({ circleId, tmdb }: { circleId: string | null; tmdb: boolean }) {
   const t = useTranslations("import");
   const locale = useLocale();
   const [source, setSource] = useState<Source>("letterboxd");
@@ -354,7 +354,7 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
                   </label>
                   {withLists && (
                     <div role="radiogroup" aria-label={t("lists.scope")} className="grid pb-3 pl-4">
-                      {(["personal", "group"] as const).map((v) => (
+                      {(["personal", "group"] as const).filter((v) => v === "personal" || circleId).map((v) => (
                         <label key={v} className="flex min-h-11 cursor-pointer items-center gap-3 text-ink-2">
                           <input type="radio" name="list-scope" checked={listScope === v} disabled={busy} onChange={() => setListScope(v)} className={check} />
                           {t(`lists.scope_${v}`)}
@@ -407,9 +407,8 @@ export function ImportClient({ circleId, tmdb }: { circleId: string; tmdb: boole
               </ul>
             )}
             <div className="flex flex-wrap gap-2">
-              <Link href={`/c/${circleId}`} className="btn btn-primary">{t("done.toDiary")}</Link>
-              {totals.lists > 0 && <Link href={`/c/${circleId}/lists`} className="btn">{t("done.toLists")}</Link>}
-              <Link href={`/c/${circleId}/insights`} className="btn">{t("done.toInsights")}</Link>
+              <Link href="/me?only=private" className="btn btn-primary">{t("done.toSpace")}</Link>
+              {totals.lists > 0 && circleId && <Link href={`/c/${circleId}/lists`} className="btn">{t("done.toLists")}</Link>}
               <button type="button" onClick={reset} className="btn btn-quiet">{t("done.again")}</button>
             </div>
           </section>

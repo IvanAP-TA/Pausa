@@ -69,6 +69,11 @@ export async function animeEpisodes(anilistId: number): Promise<number | null> {
   return parseAniListEpisodes(json);
 }
 
+/** Synopsis, genres and episode length of one anime, as AniList has them (in English). Null when AniList does not answer. */
+export async function animeDetails(anilistId: number): Promise<unknown | null> {
+  return query(`query($id: Int) { Media(id: $id, type: ANIME) { description(asHtml: false) genres duration } }`, { id: anilistId });
+}
+
 /** Names of the services AniList links to for watching this anime ("Crunchyroll", "Netflix"...). */
 export async function animeStreamingSites(anilistId: number): Promise<string[]> {
   const json = await query<{ data?: { Media?: { externalLinks?: { site: string; type: string }[] } } }>(

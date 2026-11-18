@@ -2,9 +2,10 @@
  * Everything here is computed from the Cerchia's own logs and ratings. No external catalogue, no invented data.
  * Ratings are half-stars: 1..10 (= 0.5..5 stars). Pure functions; `loadCircleFacts` reads the database. */
 
-import { asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { circleMember, log, logWatchedWith, mediaEntity, mediaTitle, nowWatching, user } from "../../db/schema";
 import { readAll, type AnyDb } from "./db-types";
+import { visibleIn } from "./visibility";
 
 /* ───────────── Types ───────────── */
 
@@ -273,11 +274,11 @@ export async function loadCircleFacts(db: AnyDb, circleId: string, locale: strin
     logId: log.id, userId: log.userId, mediaId: log.mediaId, rating: log.rating, watchedOn: log.watchedOn, platform: log.platform,
     title, kind: mediaEntity.kind, year: mediaEntity.year, posterPath: mediaEntity.posterPath, runtimeMin: mediaEntity.runtimeMin,
   }).from(log).innerJoin(mediaEntity, eq(mediaEntity.id, log.mediaId))
-    .where(inArray(log.userId, memberIds))
+    .where(and(inArray(log.userId, memberIds), visibleIn(circleId)))
     .orderBy(asc(log.watchedOn), asc(log.createdAt)),
     // Subquery instead of a bound id list: D1 limits a query to 100 bound variables.
     db.select({ logId: logWatchedWith.logId, userId: logWatchedWith.userId }).from(logWatchedWith)
-      .where(inArray(logWatchedWith.logId, db.select({ id: log.id }).from(log).where(inArray(log.userId, memberIds)))),
+      .where(inArray(logWatchedWith.logId, db.select({ id: log.id }).from(log).where(and(inArray(log.userId, memberIds), visibleIn(circleId))))),
     db.select({ userId: nowWatching.userId, mediaId: nowWatching.mediaId }).from(nowWatching)
       .where(inArray(nowWatching.userId, memberIds)),
   ]);

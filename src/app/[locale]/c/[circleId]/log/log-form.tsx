@@ -4,6 +4,8 @@ import { useEffect, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
 import { createLog, getEpisodeLimits, searchMedia, setNowWatching } from "@/lib/actions";
+import { getTitleDetail } from "@/lib/space-actions";
+import { PersonChip } from "@/components/person-chip";
 import type { EpisodeLimits } from "@/lib/core/episodes";
 import { EpisodeFields } from "@/components/episode-fields";
 import type { MediaSummary } from "@/lib/data";
@@ -11,11 +13,11 @@ import { Poster } from "@/components/poster";
 import { Minus, Star } from "lucide-react";
 
 type Props = {
-  circleId: string; today: string; tmdb: boolean; members: { id: string; name: string }[];
-  initialPicked?: MediaSummary | null; initialWith?: string[];
+  circleId: string; today: string; tmdb: boolean; members: { id: string; name: string; image?: string | null }[];
+  initialPicked?: MediaSummary | null; initialWith?: string[]; initialPrivate?: boolean;
 };
 
-export function LogForm({ circleId, today, tmdb, members, initialPicked = null, initialWith = [] }: Props) {
+export function LogForm({ circleId, today, tmdb, members, initialPicked = null, initialWith = [], initialPrivate = false }: Props) {
   const t = useTranslations("log");
   const tk = useTranslations("kind");
   const tf = useTranslations("feed");
@@ -33,6 +35,17 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
     getEpisodeLimits(picked.id).then((l) => { if (live) setFetched({ id: picked.id, limits: l }); }).catch(() => {});
     return () => { live = false; };
   }, [picked]);
+  // What the picked title is about: asked once it is chosen. `null` = still asking; no synopsis = the form offers a field to write one.
+  const [about, setAbout] = useState<{ id: string; overview: string | null; genres: string[] } | null>(null);
+  const detail = picked && about?.id === picked.id ? about : null;
+  useEffect(() => {
+    if (!picked) return;
+    let live = true;
+    getTitleDetail(picked.id, locale)
+      .then((d) => { if (live) setAbout({ id: picked.id, ...d }); })
+      .catch(() => { if (live) setAbout({ id: picked.id, overview: null, genres: [] }); });
+    return () => { live = false; };
+  }, [picked, locale]);
   const [rating, setRating] = useState(0);
   const [mode, setMode] = useState<"watched" | "watching">("watched");
   const [searching, startSearch] = useTransition();
@@ -82,10 +95,15 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
       <div className="grid min-w-0 content-start justify-items-start gap-2">
         <p className="title">{picked.title}</p>
         <p className="text-sm text-muted">{[picked.year, tk(picked.kind)].filter(Boolean).join(", ")}</p>
+        {detail && detail.genres.length > 0 && <p className="text-sm text-ink-2">{detail.genres.join(", ")}</p>}
         <button type="button" onClick={() => setPicked(null)} className="btn btn-quiet btn-sm mt-2">
           {tc("change")}
         </button>
       </div>
+      {/* The synopsis keeps its place while it loads, so the form below does not jump. */}
+      <p aria-live="polite" className={`col-span-full min-h-[3lh] text-ink-2 ${detail ? "" : "skeleton"}`}>
+        {detail ? detail.overview ?? <span className="text-muted">{t("noOverview")}</span> : <span className="sr-only">{t("loadingOverview")}</span>}
+      </p>
     </div>
   );
 
@@ -156,6 +174,13 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
         </fieldset>
       )}
 
+      {detail && !detail.overview && (
+        <label className="field-label">
+          {t("overview")}
+          <textarea name="overview" rows={3} maxLength={1200} placeholder={t("overviewPlaceholder")} className="field" />
+        </label>
+      )}
+
       <label className="field-label">
         {t("review")}
         <textarea name="review" rows={4} maxLength={4000} className="field" />
@@ -171,14 +196,16 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
           <legend className="mb-2 text-sm text-ink-2">{t("with")}</legend>
           <div className="flex flex-wrap gap-2">
             {members.map((m) => (
-              <label key={m.id} className="inline-flex min-h-11 cursor-pointer items-center gap-2 border border-rule px-3 text-ink-2 transition-colors duration-150 hover:border-muted has-[:checked]:border-ink has-[:checked]:text-ink">
-                <input type="checkbox" name="watchedWith" value={m.id} defaultChecked={initialWith.includes(m.id)} className="size-5 shrink-0 accent-accent" />
-                {m.name}
-              </label>
+              <PersonChip key={m.id} name="watchedWith" value={m.id} user={m} defaultChecked={initialWith.includes(m.id)} />
             ))}
           </div>
         </fieldset>
       )}
+
+      <label className="flex min-h-11 items-start gap-3 border-t border-rule pt-4">
+        <input type="checkbox" name="isPrivate" defaultChecked={initialPrivate} className="mt-0.5 size-5 shrink-0 accent-accent" />
+        <span className="grid gap-0.5">{t("privateOnly")}<span className="text-sm text-muted">{t("privateHelp")}</span></span>
+      </label>
 
       <Submit label={t("submit")} pending={t("saving")} />
     </form>
@@ -199,22 +226,34 @@ function Submit({ label, pending }: { label: string; pending: string }) {
  * The rating, the form's signature: five 44px stars drawn over the native range input (0..10 half stars), which stays the
  * mechanism for pointer, touch and keyboard. The input is 22px wider than the stars and its thumb 22px wide, so a press on
  * a half star sets that half; the 22px before the first star is the "no rating" stop.
+ * Under a mouse the stars preview the value the pointer is on (the left half of a star is a half star) and the number is
+ * written beside them, so it is plain before clicking that half votes exist.
  */
 export function RatingField({ rating, onChange, label, valueText, emptyText }: {
   rating: number; onChange: (rating: number) => void; label: string; valueText: string; emptyText: string;
 }) {
+  const locale = useLocale();
+  const [hover, setHover] = useState<number | null>(null);
+  const shown = hover ?? rating;
+  const number = (r: number) => new Intl.NumberFormat(locale, { minimumFractionDigits: r % 2 ? 1 : 0 }).format(r / 2);
+  const track = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "mouse") return;
+    const x = e.clientX - e.currentTarget.getBoundingClientRect().left;
+    setHover(Math.max(0, Math.min(10, Math.ceil((x - 22) / 22))));
+  };
   return (
     <fieldset className="grid gap-2">
       <legend className="mb-2 text-sm text-ink-2">{label}</legend>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <div className="group relative flex h-11 w-[242px] items-center has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
+        <div onPointerMove={track} onPointerLeave={() => setHover(null)} className="group relative flex h-11 w-[242px] items-center has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
           <span aria-hidden="true" className="grid h-11 w-[22px] shrink-0 place-items-center text-muted">
             <Minus size={14} strokeWidth={1.6} aria-hidden="true" />
           </span>
           {[1, 2, 3, 4, 5].map((i) => (
             <span key={i} aria-hidden="true" className="relative size-11 shrink-0">
-              <Star fill="currentColor" strokeWidth={0} aria-hidden="true" className="size-11 text-rule transition-colors duration-150 group-hover:text-muted" />
-              <span className="absolute inset-y-0 left-0 overflow-hidden text-accent" style={{ width: rating >= i * 2 ? "100%" : rating >= i * 2 - 1 ? "50%" : "0%" }}>
+              <Star fill="currentColor" strokeWidth={0} aria-hidden="true" className="size-11 text-rule" />
+              {/* While the pointer is over the stars they show the value it is on; the saved one comes back when it leaves. */}
+              <span className={`absolute inset-y-0 left-0 overflow-hidden ${hover !== null && hover !== rating ? "text-accent-hover" : "text-accent"}`} style={{ width: shown >= i * 2 ? "100%" : shown >= i * 2 - 1 ? "50%" : "0%" }}>
                 <Star fill="currentColor" strokeWidth={0} aria-hidden="true" className="size-11 max-w-none" />
               </span>
             </span>
@@ -223,7 +262,9 @@ export function RatingField({ rating, onChange, label, valueText, emptyText }: {
             aria-label={label} aria-valuetext={valueText}
             className="absolute inset-0 m-0 h-11 w-full cursor-pointer appearance-none opacity-0 [&::-moz-range-thumb]:size-[22px] [&::-moz-range-thumb]:border-0 [&::-webkit-slider-thumb]:size-[22px] [&::-webkit-slider-thumb]:appearance-none" />
         </div>
-        {!rating && <span className="text-sm text-muted">{emptyText}</span>}
+        <span aria-hidden="true" className={`tabular min-w-[6ch] text-sm ${shown ? "text-ink" : "text-muted"}`}>
+          {shown ? <><strong className="font-display text-2xl font-normal">{number(shown)}</strong> / 5</> : emptyText}
+        </span>
       </div>
     </fieldset>
   );

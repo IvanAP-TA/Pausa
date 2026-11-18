@@ -40,7 +40,7 @@ export default async function LogThread({ params }: PageProps<"/[locale]/c/[circ
       <Link href={`/c/${circleId}`} className="link inline-flex min-h-11 w-fit items-center text-sm">{tc("back")}</Link>
 
       <h1 className="sr-only">{log.media.title}</h1>
-      <LogCard log={log} now={now} />
+      <LogCard log={log} now={now} circleId={circleId} onThread />
 
       {log.author.id !== user.id && <ReportForm kind="log" targetId={logId} back={`/${locale}/c/${circleId}/l/${logId}`} />}
       {log.author.id === user.id && (
@@ -73,7 +73,7 @@ export default async function LogThread({ params }: PageProps<"/[locale]/c/[circ
         </form>
       )}
 
-      <section className="grid gap-4" aria-labelledby="comments-title">
+      <section id="comments" className="grid scroll-mt-4 gap-4" aria-labelledby="comments-title">
         <h2 id="comments-title" className="chapter">{t("title")}</h2>
         {comments.length === 0 && <p className="text-ink-2">{t("empty")}</p>}
         <ul className="rows grid">

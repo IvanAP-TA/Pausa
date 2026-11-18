@@ -18,6 +18,7 @@ import { getCircleForMember, logVisibleTo, searchLocalMedia, type MediaSummary }
 import { searchTmdb } from "./tmdb";
 import { MAX_EPISODE, MAX_SEASON, nextEpisode, nextSeason, setWatching, toPosition } from "./core/progress";
 import { REACTIONS } from "./reactions";
+import { saveUserOverview } from "./media-detail";
 import {
   EXPIRY_CHOICES, MAX_USES_CHOICES, createCircleWithInvite, createInvite, leaveCircle, redeemInvite, removeMember,
   revokeInvite, setMemberRole,
@@ -136,6 +137,10 @@ const logInput = z.object({
   containsSpoilers: z.boolean(),
   isRewatch: z.boolean(),
   watchedWith: z.array(z.string()).max(20),
+  /** Only in my personal space: no Cerchia sees it until I share it. */
+  isPrivate: z.boolean(),
+  /** A synopsis written by hand, for a title no catalogue described. */
+  overview: z.string().trim().max(1200),
 });
 
 export async function createLog(formData: FormData) {
@@ -153,6 +158,8 @@ export async function createLog(formData: FormData) {
     containsSpoilers: formData.get("containsSpoilers") === "on",
     isRewatch: formData.get("isRewatch") === "on",
     watchedWith: formData.getAll("watchedWith").map(String),
+    isPrivate: formData.get("isPrivate") === "on",
+    overview: formData.get("overview") ?? "",
   });
 
   const circle = await getCircleForMember(input.circleId, user.id);
@@ -168,11 +175,13 @@ export async function createLog(formData: FormData) {
   const logId = crypto.randomUUID();
   // An episode log cannot name an episode that does not exist (when the counts are known).
   const pos = clampPosition(await getEpisodeInfo(db, input.mediaId), { season: input.season, episode: input.episode });
-  const notify = await filterRecipients(db, [...memberIds].filter((id) => id !== user.id), { type: "log", circleId: input.circleId });
+  // A private log tells nobody.
+  const notify = input.isPrivate ? [] : await filterRecipients(db, [...memberIds].filter((id) => id !== user.id), { type: "log", circleId: input.circleId });
   await atomically([
     db.insert(s.log).values({
       id: logId, userId: user.id, mediaId: input.mediaId, watchedOn: input.watchedOn, rating: input.rating,
       review: input.review, platform: input.platform, season: pos.season, episode: pos.episode, containsSpoilers: input.containsSpoilers, isRewatch: input.isRewatch,
+      scope: input.isPrivate ? "private" : "circles",
     }),
     watchedWith.length > 0 && db.insert(s.logWatchedWith).values(watchedWith.map((userId) => ({ logId, userId }))),
     notify.length > 0 && db.insert(s.notification).values(notify.map((userId) => ({ userId, type: "log" as const, actorId: user.id, circleId: input.circleId, logId }))),
@@ -180,8 +189,10 @@ export async function createLog(formData: FormData) {
     db.delete(s.nowWatching).where(and(eq(s.nowWatching.userId, user.id), eq(s.nowWatching.mediaId, input.mediaId))),
   ]);
   pushNotifications(notify.map((userId) => ({ userId, type: "log" as const, actorId: user.id, circleId: input.circleId, logId })));
+  if (input.overview) await saveUserOverview(input.mediaId, localeFrom(formData.get("locale")), input.overview);
 
-  redirect(`/${localeFrom(formData.get("locale"))}/c/${input.circleId}`);
+  const locale = localeFrom(formData.get("locale"));
+  redirect(input.isPrivate ? `/${locale}/me?ok=logged#l-${logId}` : `/${locale}/c/${input.circleId}`);
 }
 
 export async function toggleReaction(logId: string, emoji: string) {

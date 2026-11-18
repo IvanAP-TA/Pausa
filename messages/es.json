@@ -80,8 +80,14 @@
       "atLeast": "{stars} estrellas o más",
       "apply": "Buscar",
       "clear": "Quitar filtros",
-      "none": "Ningún registro coincide."
-    }
+      "none": "Ningún registro coincide.",
+      "with": "Visto con",
+      "anyone": "Cualquiera"
+    },
+    "openTitle": "Abrir la ficha de {title}",
+    "commentCta": "Comentar",
+    "commentSpoiler": "Comentario con spoilers: ábrelo para leerlo",
+    "commentsMore": "{count, plural, one {y otro comentario} other {y otros # comentarios}}"
   },
   "log": {
     "title": "¿Qué viste?",
@@ -110,7 +116,13 @@
     "seasonLogged": "Temporada (opcional)",
     "wholeShow": "Toda",
     "episodeLogged": "Temporada y episodio (opcional)",
-    "seasonOf": "Temporada {n} ({count} ep.)"
+    "seasonOf": "Temporada {n} ({count} ep.)",
+    "overview": "De qué trata (opcional)",
+    "overviewPlaceholder": "Un par de líneas de trama, sin spoilers",
+    "noOverview": "No hay sinopsis disponible para este título.",
+    "loadingOverview": "Buscando la sinopsis…",
+    "privateOnly": "Solo en mi espacio",
+    "privateHelp": "Ninguna Cerchia lo ve hasta que lo añadas tú."
   },
   "lists": {
     "title": "Listas",
@@ -616,7 +628,7 @@
   "import": {
     "title": "Importa tu historial",
     "lede": "Trae lo que ya has visto. Puedes repetirlo cuando quieras: lo que ya está no se duplica.",
-    "visibility": "Lo que importes aparece en el diario de todos tus Círculos, con la fecha en que lo viste (no como novedad de hoy). Nadie recibe notificaciones. Las reseñas solo se incluyen si dejas la casilla marcada.",
+    "visibility": "Lo que importas se queda en tu espacio personal, privado, con la fecha en que lo viste. Ninguna Cerchia lo ve y nadie recibe notificaciones: después eliges tú, título por título, qué añadir a un grupo. Las reseñas se incluyen solo si dejas la casilla marcada.",
     "tabs": {
       "letterboxd": "Letterboxd",
       "anilist": "AniList",
@@ -680,7 +692,8 @@
       "again": "Importar más",
       "lists": "{count, plural, one {# lista} other {# listas}} con {items} películas añadidas",
       "listsOnly": "Listas importadas",
-      "toLists": "Ver las listas"
+      "toLists": "Ver las listas",
+      "toSpace": "Ir a mi espacio"
     },
     "errors": {
       "read": "No puedo leer este archivo. Comprueba que sea la exportación correcta.",
@@ -941,5 +954,50 @@
     "next": "Siguiente",
     "empty": "Ningún título coincide con estos filtros.",
     "emptyAll": "Aún no hay nada que clasificar: registra una visión con nota."
+  },
+  "space": {
+    "switch": "Espacios",
+    "personal": "Mi espacio",
+    "circles": "Cerchie",
+    "title": "Mi espacio",
+    "lede": "Todo lo que has visto, en un lugar solo tuyo. Lo que importas llega aquí y es privado: una Cerchia lo ve solo cuando lo añades.",
+    "add": "Registrar en privado",
+    "import": "Importar",
+    "account": "Cuenta",
+    "show": "Qué mostrar",
+    "all": "Todo ({count})",
+    "onlyPrivate": "Solo privados ({count})",
+    "emptyTitle": "Aquí todavía no hay nada.",
+    "emptyPrivateTitle": "Ningún visionado privado.",
+    "emptyBody": "Importa tu historial de Letterboxd, AniList o MyAnimeList, o registra un visionado.",
+    "inAllCircles": "Visible en todas tus Cerchie",
+    "makePrivate": "Hacer privado",
+    "onlyYou": "Privado: solo lo ves tú",
+    "sharedWith": "Privado, añadido a:",
+    "removeFrom": "Quitar de {circle}",
+    "addTo": "Añadir a {circle}",
+    "addToGroup": "Añadir a un grupo",
+    "addShort": "Añadir",
+    "openToAll": "Mostrar en todas mis Cerchie",
+    "saving": "Guardando…",
+    "notice": {
+      "shared": "Añadido al grupo: ahora aparece en su diario.",
+      "unshared": "Quitado del grupo.",
+      "private": "Ahora es privado: ya no aparece en ninguna Cerchia.",
+      "open": "Ahora es visible en todas tus Cerchie.",
+      "logged": "Registrado en tu espacio, en privado."
+    }
+  },
+  "media": {
+    "runtime": "{m} min",
+    "runtimeLong": "{h} h {m} min",
+    "circleAverage": "{count, plural, one {media de la Cerchia, # voto} other {media de la Cerchia, # votos}}",
+    "logIt": "Registrar un visionado",
+    "about": "De qué trata",
+    "noOverview": "No hay sinopsis disponible para este título.",
+    "byMember": "Sinopsis escrita por un miembro.",
+    "cast": "Reparto principal",
+    "inCircle": "En la Cerchia",
+    "nobodyYet": "Nadie en la Cerchia lo ha registrado todavía."
   }
 }

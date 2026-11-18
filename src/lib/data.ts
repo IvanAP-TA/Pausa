@@ -1,8 +1,9 @@
 import "server-only";
 import { cache } from "react";
-import { and, asc, desc, eq, inArray, like, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { getDb, schema as s } from "@/db";
 import { isCover, type CircleSettings } from "@/lib/core/settings";
+import { arrivedIn, visibleIn } from "@/lib/core/visibility";
 
 /* Localized title: media_title for the locale, else the original title. */
 const titleFor = (locale: string) =>
@@ -76,26 +77,30 @@ export async function getCircleStats(circleId: string, year: number) {
     .select({ logs: sql<number>`count(*)` })
     .from(s.log)
     .innerJoin(s.circleMember, and(eq(s.circleMember.userId, s.log.userId), eq(s.circleMember.circleId, circleId)))
-    .where(like(s.log.watchedOn, `${year}-%`));
+    .where(and(like(s.log.watchedOn, `${year}-%`), visibleIn(circleId)));
   return { logsThisYear: row?.logs ?? 0 };
 }
 
 /* ───────────── Feed ───────────── */
 
 /** What the feed can be narrowed by (all optional, all combinable). */
-export type FeedFilters = { q?: string; kind?: "movie" | "tv" | "anime"; by?: string; year?: number; minRating?: number };
+export type FeedFilters = { q?: string; kind?: "movie" | "tv" | "anime"; by?: string; with?: string; year?: number; minRating?: number; mediaId?: string };
 
 export async function getCircleFeed(circleId: string, viewerId: string, locale: string, limit = 30, logId?: string, before?: Date, filters: FeedFilters = {}) {
   const db = await getDb();
   const q = filters.q?.trim().toLowerCase().replace(/[%_\\]/g, (c) => "\\" + c);
   const narrow = and(
     filters.by ? eq(s.log.userId, filters.by) : undefined,
+    filters.mediaId ? eq(s.log.mediaId, filters.mediaId) : undefined,
+    filters.with ? sql`exists (select 1 from ${s.logWatchedWith} where ${s.logWatchedWith.logId} = ${s.log.id} and ${s.logWatchedWith.userId} = ${filters.with})` : undefined,
     filters.kind ? eq(s.mediaEntity.kind, filters.kind) : undefined,
     filters.year ? like(s.log.watchedOn, `${filters.year}-%`) : undefined,
     filters.minRating ? sql`${s.log.rating} >= ${filters.minRating}` : undefined,
     // Title: the localized one or the original, any part of it, any case.
     q ? sql`(lower(${titleFor(locale)}) like ${"%" + q + "%"} escape '\\' or lower(${s.mediaEntity.originalTitle}) like ${"%" + q + "%"} escape '\\')` : undefined,
   );
+  // A private log shared with this Cerchia arrives when it is shared, not when it was watched years ago.
+  const at = arrivedIn(circleId);
   const logs = await db
     .select({
       id: s.log.id,
@@ -107,7 +112,7 @@ export async function getCircleFeed(circleId: string, viewerId: string, locale: 
       season: s.log.season,
       episode: s.log.episode,
       isRewatch: s.log.isRewatch,
-      createdAt: s.log.createdAt,
+      createdAt: at.mapWith(s.log.createdAt),
       author: { id: s.user.id, name: s.user.name, image: s.user.image },
       media: mediaFields(locale),
     })
@@ -115,8 +120,8 @@ export async function getCircleFeed(circleId: string, viewerId: string, locale: 
     .innerJoin(s.circleMember, and(eq(s.circleMember.userId, s.log.userId), eq(s.circleMember.circleId, circleId)))
     .innerJoin(s.user, eq(s.user.id, s.log.userId))
     .innerJoin(s.mediaEntity, eq(s.mediaEntity.id, s.log.mediaId))
-    .where(and(logId ? eq(s.log.id, logId) : undefined, before ? lt(s.log.createdAt, before) : undefined, narrow))
-    .orderBy(desc(s.log.createdAt))
+    .where(and(visibleIn(circleId), logId ? eq(s.log.id, logId) : undefined, before ? sql`${at} < ${before.getTime()}` : undefined, narrow))
+    .orderBy(desc(at))
     .limit(limit);
 
   const ids = logs.map((l) => l.id);
@@ -129,8 +134,10 @@ export async function getCircleFeed(circleId: string, viewerId: string, locale: 
       .where(inArray(s.logWatchedWith.logId, ids)),
     db.select({ logId: s.reaction.logId, emoji: s.reaction.emoji, userId: s.reaction.userId })
       .from(s.reaction).where(inArray(s.reaction.logId, ids)),
-    db.select({ logId: s.comment.logId, n: sql<number>`count(*)` })
-      .from(s.comment).where(inArray(s.comment.logId, ids)).groupBy(s.comment.logId),
+    // Every comment of these logs, oldest first: the count and the latest one (shown under the log) come from the same read.
+    db.select({ logId: s.comment.logId, body: s.comment.body, isSpoiler: s.comment.isSpoiler, author: { id: s.user.id, name: s.user.name, image: s.user.image } })
+      .from(s.comment).innerJoin(s.user, eq(s.user.id, s.comment.userId))
+      .where(inArray(s.comment.logId, ids)).orderBy(asc(s.comment.createdAt)),
   ]);
 
   return logs.map((l) => {
@@ -142,11 +149,14 @@ export async function getCircleFeed(circleId: string, viewerId: string, locale: 
       if (r.userId === viewerId) c.mine = true;
       counts.set(r.emoji, c);
     }
+    const thread = commentRows.filter((c) => c.logId === l.id);
+    const last = thread.at(-1);
     return {
       ...l,
       watchedWith: withRows.filter((w) => w.logId === l.id).map(({ id, name }) => ({ id, name })),
       reactions: [...counts.values()],
-      commentCount: commentRows.find((c) => c.logId === l.id)?.n ?? 0,
+      commentCount: thread.length,
+      lastComment: last ? { body: last.body, isSpoiler: last.isSpoiler, author: last.author } : null,
     };
   });
 }
@@ -169,15 +179,19 @@ export async function getComments(logId: string) {
     .orderBy(asc(s.comment.createdAt));
 }
 
-/** Author id if the viewer shares at least one Cerchia with the log's author, else null. */
+/** Author id if the log shows in at least one Cerchia the viewer belongs to (or is the viewer's own), else null. */
 export async function logVisibleTo(logId: string, viewerId: string) {
   const db = await getDb();
-  const [row] = await db.select({ authorId: s.log.userId, mediaId: s.log.mediaId }).from(s.log).where(eq(s.log.id, logId));
-  if (!row) return null;
+  const [found] = await db.select({ authorId: s.log.userId, mediaId: s.log.mediaId, scope: s.log.scope }).from(s.log).where(eq(s.log.id, logId));
+  if (!found) return null;
+  const row = { authorId: found.authorId, mediaId: found.mediaId };
   if (row.authorId === viewerId) return row;
   const viewerCircles = db.select({ id: s.circleMember.circleId }).from(s.circleMember).where(eq(s.circleMember.userId, viewerId));
   const [shared] = await db.select({ c: s.circleMember.circleId }).from(s.circleMember)
-    .where(and(eq(s.circleMember.userId, row.authorId), inArray(s.circleMember.circleId, viewerCircles))).limit(1);
+    .where(and(
+      eq(s.circleMember.userId, row.authorId), inArray(s.circleMember.circleId, viewerCircles),
+      found.scope === "circles" ? undefined : inArray(s.circleMember.circleId, db.select({ id: s.logShare.circleId }).from(s.logShare).where(eq(s.logShare.logId, logId))),
+    )).limit(1);
   return shared ? row : null;
 }
 
@@ -285,8 +299,47 @@ export async function searchLocalMedia(q: string, locale: string, limit = 12): P
     .limit(limit);
 }
 
+/** A title with what its page needs beyond the summary: the original name and how long it runs. */
+export async function getMediaPage(id: string, locale: string) {
+  const db = await getDb();
+  const [row] = await db.select({ ...mediaFields(locale), originalTitle: s.mediaEntity.originalTitle, runtimeMin: s.mediaEntity.runtimeMin })
+    .from(s.mediaEntity).where(eq(s.mediaEntity.id, id));
+  return row ?? null;
+}
+
 export async function getMedia(id: string, locale: string): Promise<MediaSummary | null> {
   const db = await getDb();
   const [row] = await db.select(mediaFields(locale)).from(s.mediaEntity).where(eq(s.mediaEntity.id, id));
   return row ?? null;
+}
+
+/* ───────────── Spazio personale ───────────── */
+
+/** Everything the person logged, newest viewing first, with who can read each one. Only its author ever calls this. */
+export async function getMyDiary(userId: string, locale: string, limit = 40, before?: string, only?: "private" | "circles") {
+  const db = await getDb();
+  const logs = await db
+    .select({
+      id: s.log.id, watchedOn: s.log.watchedOn, rating: s.log.rating, review: s.log.review, scope: s.log.scope,
+      season: s.log.season, episode: s.log.episode, isRewatch: s.log.isRewatch, media: mediaFields(locale),
+    })
+    .from(s.log)
+    .innerJoin(s.mediaEntity, eq(s.mediaEntity.id, s.log.mediaId))
+    .where(and(eq(s.log.userId, userId), before ? sql`(${s.log.watchedOn} || ${s.log.id}) < ${before}` : undefined, only ? eq(s.log.scope, only) : undefined))
+    .orderBy(desc(s.log.watchedOn), desc(s.log.id))
+    .limit(limit);
+  if (logs.length === 0) return [];
+  const shares = await db.select({ logId: s.logShare.logId, circleId: s.logShare.circleId }).from(s.logShare)
+    .where(inArray(s.logShare.logId, logs.map((l) => l.id)));
+  return logs.map((l) => ({ ...l, sharedWith: shares.filter((x) => x.logId === l.id).map((x) => x.circleId) }));
+}
+
+export type MyLog = Awaited<ReturnType<typeof getMyDiary>>[number];
+
+export async function getMyDiaryCounts(userId: string) {
+  const db = await getDb();
+  const [row] = await db
+    .select({ all: sql<number>`count(*)`, priv: sql<number>`coalesce(sum(case when ${s.log.scope} = 'private' then 1 else 0 end), 0)` })
+    .from(s.log).where(eq(s.log.userId, userId));
+  return { all: row?.all ?? 0, private: row?.priv ?? 0 };
 }

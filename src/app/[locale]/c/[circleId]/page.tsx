@@ -40,9 +40,9 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
   const kind = (["movie", "tv", "anime"] as const).find((k) => k === one("kind"));
   const year = Number(one("year")) || undefined;
   const minRating = Number(one("min")) || undefined;
-  const filters: FeedFilters = { q: one("q")?.slice(0, 80) || undefined, kind, by: one("by"), year: year && year > 1900 && year < 2200 ? year : undefined, minRating: minRating && minRating >= 1 && minRating <= 10 ? minRating : undefined };
+  const filters: FeedFilters = { q: one("q")?.slice(0, 80) || undefined, kind, by: one("by") || undefined, with: one("with") || undefined, year: year && year > 1900 && year < 2200 ? year : undefined, minRating: minRating && minRating >= 1 && minRating <= 10 ? minRating : undefined };
   const filtered = Object.values(filters).some(Boolean);
-  const qs = new URLSearchParams(Object.entries({ q: filters.q, kind: filters.kind, by: filters.by, year: filters.year, min: filters.minRating }).flatMap(([k, v]) => (v ? [[k, String(v)]] : []))).toString();
+  const qs = new URLSearchParams(Object.entries({ q: filters.q, kind: filters.kind, by: filters.by, with: filters.with, year: filters.year, min: filters.minRating }).flatMap(([k, v]) => (v ? [[k, String(v)]] : []))).toString();
 
   const [circle, members, stats, watching, feed, unread, t, ta, about, tt, format] = await Promise.all([
     getCircleForMember(circleId, user.id),

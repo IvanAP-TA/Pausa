@@ -4,8 +4,8 @@
  *   or two overlapping exports, adds nothing the second time.
  * - Titles are matched to what the app already knows by source id (Letterboxd URI, AniList, MAL, TMDB) and, failing
  *   that, by title + kind + year, so an imported film joins the same title other people have logged.
- * - Imported logs are dated by when they were watched (not "now") and create no notifications: importing years of
- *   history must not flood anyone's feed.
+ * - Imported logs are private (scope "private"), dated by when they were watched (not "now") and create no
+ *   notifications: importing years of history must not flood anyone's feed.
  * - Work happens in small chunks (CHUNK_LIMIT rows): D1 allows ~100 bound variables and a limited number of queries
  *   per request, so the caller sends the file piece by piece.
  */
@@ -222,7 +222,8 @@ export async function importRows(db: AnyDb, userId: string, input: ImportRow[], 
     toInsert.push({
       id: crypto.randomUUID(), userId, mediaId, watchedOn: r.watchedOn!, rating: r.rating,
       review: opts.includeReviews ? (r.review ?? null)?.slice(0, 4000) ?? null : null,
-      isRewatch: r.rewatch, createdAt: new Date(`${r.watchedOn}T12:00:00Z`),
+      // Imported history stays in the person's own space: they share single titles with a Cerchia when they want to.
+      isRewatch: r.rewatch, scope: "private", createdAt: new Date(`${r.watchedOn}T12:00:00Z`),
     });
   }
   await inChunks(toInsert, 8, async (part) => { await db.insert(log).values(part); });

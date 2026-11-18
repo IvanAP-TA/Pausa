@@ -6,13 +6,14 @@ import { updateLogAction } from "@/lib/manage-actions";
 import { EpisodeFields } from "@/components/episode-fields";
 import type { EpisodeLimits } from "@/lib/core/episodes";
 import { RatingField } from "@/app/[locale]/c/[circleId]/log/log-form";
+import { PersonChip } from "@/components/person-chip";
 
 type Props = {
   logId: string; circleId: string; today: string;
   showSeason: boolean;
   limits: EpisodeLimits | null;
   initial: { season: number | null; episode: number | null; watchedOn: string; rating: number | null; review: string | null; platform: string | null; containsSpoilers: boolean };
-  members: { id: string; name: string }[];
+  members: { id: string; name: string; image?: string | null }[];
   initialWith: string[];
 };
 
@@ -64,10 +65,7 @@ export function EditLogForm({ limits, showSeason, logId, circleId, today, initia
           <legend className="mb-2 text-sm text-ink-2">{t("with")}</legend>
           <div className="flex flex-wrap gap-2">
             {members.map((m) => (
-              <label key={m.id} className="inline-flex min-h-11 cursor-pointer items-center gap-2 border border-rule px-3 text-ink-2 transition-colors duration-150 hover:border-muted has-[:checked]:border-ink has-[:checked]:text-ink">
-                <input type="checkbox" name="watchedWith" value={m.id} defaultChecked={initialWith.includes(m.id)} className="size-5 shrink-0 accent-accent" />
-                {m.name}
-              </label>
+              <PersonChip key={m.id} name="watchedWith" value={m.id} user={m} defaultChecked={initialWith.includes(m.id)} />
             ))}
           </div>
         </fieldset>

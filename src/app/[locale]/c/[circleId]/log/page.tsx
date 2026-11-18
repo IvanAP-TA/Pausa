@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function NewLog({ params, searchParams }: PageProps<"/[locale]/c/[circleId]/log">) {
   const { locale, circleId } = await params;
   // Coming from a Serata: ?media=<winner>&with=<participant ids> prefill the form.
-  const { media, with: withParam } = await searchParams;
+  const { media, with: withParam, private: privateParam } = await searchParams;
   setRequestLocale(locale);
   const user = await requireUser();
   const [members, t, ti, picked] = await Promise.all([
@@ -36,11 +36,12 @@ export default async function NewLog({ params, searchParams }: PageProps<"/[loca
         tmdb={tmdbEnabled()}
         initialPicked={picked}
         initialWith={initialWith}
-        members={members.filter((m) => m.id !== user.id).map((m) => ({ id: m.id, name: m.name }))}
+        initialPrivate={privateParam === "1"}
+        members={members.filter((m) => m.id !== user.id).map((m) => ({ id: m.id, name: m.name, image: m.image }))}
       />
       {/* The other way in: bring a whole history from another service. */}
       <div className="rows grid">
-        <Link href={`/c/${circleId}/import`} className="row-link grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 py-4 transition-colors duration-150 hover:bg-paper-2">
+        <Link href="/me/import" className="row-link grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 py-4 transition-colors duration-150 hover:bg-paper-2">
           <Download size={20} strokeWidth={1.6} aria-hidden="true" className="row-span-2 text-accent" />
           <span className="title text-xl">{ti("importTitle")}</span>
           <span className="text-sm text-muted">{ti("importBody")}</span>

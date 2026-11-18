@@ -19,6 +19,7 @@ export const LIMITS = {
   search: { max: 120, windowMs: 3_600_000 }, // each one may call TMDB
   importRows: { max: 30, windowMs: 3_600_000 },
   report: { max: 20, windowMs: 3_600_000 },
+  shareLog: { max: 300, windowMs: 3_600_000 }, // adding imported titles to a group, one by one
 } as const satisfies Record<string, Limit>;
 
 export type LimitName = keyof typeof LIMITS;

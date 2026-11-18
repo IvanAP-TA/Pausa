@@ -80,8 +80,14 @@
       "atLeast": "{stars} stars or more",
       "apply": "Search",
       "clear": "Clear filters",
-      "none": "No log matches."
-    }
+      "none": "No log matches.",
+      "with": "Watched with",
+      "anyone": "Anyone"
+    },
+    "openTitle": "Open the page of {title}",
+    "commentCta": "Comment",
+    "commentSpoiler": "Comment with spoilers: open to read it",
+    "commentsMore": "{count, plural, one {and one more comment} other {and # more comments}}"
   },
   "log": {
     "title": "What did you watch?",
@@ -110,7 +116,13 @@
     "seasonLogged": "Season (optional)",
     "wholeShow": "Whole show",
     "episodeLogged": "Season and episode (optional)",
-    "seasonOf": "Season {n} ({count} ep.)"
+    "seasonOf": "Season {n} ({count} ep.)",
+    "overview": "What it is about (optional)",
+    "overviewPlaceholder": "A couple of lines of plot, no spoilers",
+    "noOverview": "No synopsis available for this title.",
+    "loadingOverview": "Looking for the synopsis…",
+    "privateOnly": "Only in my space",
+    "privateHelp": "No Cerchia sees it until you add it yourself."
   },
   "lists": {
     "title": "Lists",
@@ -616,7 +628,7 @@
   "import": {
     "title": "Import your history",
     "lede": "Bring over what you've already watched. You can run it again any time: what's already here isn't duplicated.",
-    "visibility": "What you import shows up in the diary of every Circle you're in, dated when you watched it (not as news from today). Nobody gets a notification. Reviews are only included if you leave the box ticked.",
+    "visibility": "What you import stays in your personal space, private, dated when you watched it. No Cerchia sees it and nobody is notified: afterwards you choose, title by title, what to add to a group. Reviews are included only if you leave the box ticked.",
     "tabs": {
       "letterboxd": "Letterboxd",
       "anilist": "AniList",
@@ -680,7 +692,8 @@
       "again": "Import more",
       "lists": "{count, plural, one {# list} other {# lists}} with {items} films added",
       "listsOnly": "Lists imported",
-      "toLists": "See the lists"
+      "toLists": "See the lists",
+      "toSpace": "Go to my space"
     },
     "errors": {
       "read": "I can't read this file. Check it's the right export.",
@@ -941,5 +954,50 @@
     "next": "Next",
     "empty": "No titles match these filters.",
     "emptyAll": "Nothing to rank yet: log a viewing with a rating."
+  },
+  "space": {
+    "switch": "Spaces",
+    "personal": "My space",
+    "circles": "Cerchie",
+    "title": "My space",
+    "lede": "Everything you watched, in a place that is only yours. What you import lands here and is private: a Cerchia sees it only when you add it.",
+    "add": "Log privately",
+    "import": "Import",
+    "account": "Account",
+    "show": "What to show",
+    "all": "Everything ({count})",
+    "onlyPrivate": "Private only ({count})",
+    "emptyTitle": "Nothing here yet.",
+    "emptyPrivateTitle": "No private viewings.",
+    "emptyBody": "Import your history from Letterboxd, AniList or MyAnimeList, or log a viewing.",
+    "inAllCircles": "Visible in all your Cerchie",
+    "makePrivate": "Make private",
+    "onlyYou": "Private: only you see it",
+    "sharedWith": "Private, added to:",
+    "removeFrom": "Remove from {circle}",
+    "addTo": "Add to {circle}",
+    "addToGroup": "Add to a group",
+    "addShort": "Add",
+    "openToAll": "Show in all my Cerchie",
+    "saving": "Saving…",
+    "notice": {
+      "shared": "Added to the group: it now shows in its diary.",
+      "unshared": "Removed from the group.",
+      "private": "Now private: it no longer shows in any Cerchia.",
+      "open": "Now visible in all your Cerchie.",
+      "logged": "Logged in your space, privately."
+    }
+  },
+  "media": {
+    "runtime": "{m} min",
+    "runtimeLong": "{h} h {m} min",
+    "circleAverage": "{count, plural, one {Cerchia average, # rating} other {Cerchia average, # ratings}}",
+    "logIt": "Log a viewing",
+    "about": "What it is about",
+    "noOverview": "No synopsis available for this title.",
+    "byMember": "Synopsis written by a member.",
+    "cast": "Leading cast",
+    "inCircle": "In the Cerchia",
+    "nobodyYet": "Nobody in the Cerchia has logged it yet."
   }
 }

@@ -35,6 +35,9 @@ Older token names (`on-accent`, `second`, `second-deep`, `on-second`, `on-second
 - The safelight: one soft amber light falling on the top of every app screen (`.projector::before`, a radial gradient of the accent at `--safelight`, 14% dark and 7% light, behind everything). It is the darkroom's lamp; nothing else glows. The rail is transparent from 64rem so the light is not cut.
 - The house curtain: in that same top area, vertical folds (`--curtain`, 30% dark, 5% light) fade out before the content; the light falls on the house curtain.
 - A frame of film: `.reel`, two rows of sprocket holes, only on the "watching now" strip of the diary. Not on cards elsewhere.
+- The two spaces: `SpaceSwitch`, two cells on a hairline at the very top of every signed-in screen (my space, the Cerchia), the current one lit by a 2px accent stretch. It is navigation, not a tab bar: it never scrolls away content of its own.
+- A person to pick: `PersonChip`, a 44px chip with portrait and name; chosen is a filled chip (`paper-3`, ink border) with a tick. Used wherever people are selected (watched with, filters). Never a bare checkbox with a name.
+- The rating input previews under a mouse: the stars show the value the pointer is on (left half of a star is a half star) and the number is written beside them.
 - Error and destruction: `--color-error`, a cold pink (`oklch(70% 0.18 2)` dark, `oklch(47% 0.19 2)` light), kept far from the amber so a destructive control never reads as the primary one.
 - People and titles with no artwork take one of eight deep dyes (`--color-tint-1` to `8`, 36% lightness, chroma about 0.07), so two people are told apart by colour; they stay darker and duller than any poster.
 - Radius 0 everywhere. The one round thing is an avatar.

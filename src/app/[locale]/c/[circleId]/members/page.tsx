@@ -237,7 +237,7 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
           <span className="title text-xl">{t("insightsTitle")}</span>
           <span className="text-sm text-muted">{t("insightsBody")}</span>
         </Link>
-        <Link href={`/c/${circleId}/import`} className={pageRow}>
+        <Link href="/me/import" className={pageRow}>
           <span className="title text-xl">{t("importTitle")}</span>
           <span className="text-sm text-muted">{t("importBody")}</span>
         </Link>
