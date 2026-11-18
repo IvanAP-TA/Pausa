@@ -124,22 +124,22 @@
 @media (max-width: 60rem) { :root { --gutter: 24px; --section-gap-s: 80px; --section-gap: 96px; --section-gap-l: 120px; } }
 @media (max-width: 40rem) { :root { --gutter: 16px; --section-gap-s: 56px; --section-gap: 72px; --section-gap-l: 96px; --gap-columns: 16px; } }
 
-/* Light mode: cream white paper (warmer and lighter than Darkroom's "fibre paper"), warm ink, the same amber signal burnt down to an orange that reads on cream (red is left to errors). Pinned with data-theme="light", or followed from the phone with data-theme="system". */
+/* Light mode: cream white paper (warmer and lighter than Darkroom's "fibre paper"), petrol ink and rules, the same coral signal deepened to read on cream (a cold pink red is left to errors): the film colourway printed on paper. Pinned with data-theme="light", or followed from the phone with data-theme="system". */
 :root[data-theme="light"] {
   color-scheme: light;
   --color-paper: oklch(97.5% 0.022 92);
   --color-paper-2: oklch(94.5% 0.026 90);
   --color-paper-3: oklch(91% 0.03 88);
-  --color-ink: oklch(17% 0.012 60);
-  --color-ink-2: oklch(32% 0.014 62);
-  --color-muted: oklch(44% 0.018 68);
-  --color-rule: oklch(83% 0.03 86);
-  --color-accent: oklch(54% 0.155 45);
-  --color-accent-hover: oklch(48% 0.14 45);
-  --color-accent-deep: oklch(44% 0.125 45);
+  --color-ink: oklch(21% 0.035 205);
+  --color-ink-2: oklch(34% 0.04 205);
+  --color-muted: oklch(46% 0.04 205);
+  --color-rule: oklch(83% 0.03 185);
+  --color-accent: oklch(54% 0.165 40);
+  --color-accent-hover: oklch(48% 0.15 40);
+  --color-accent-deep: oklch(44% 0.135 40);
   --color-accent-ink: oklch(98% 0.02 92);
-  --color-focus: oklch(54% 0.155 45);
-  --color-error: oklch(46% 0.17 8);
+  --color-focus: oklch(54% 0.165 40);
+  --color-error: oklch(47% 0.19 2);
   --color-success: oklch(42% 0.11 150);
   --color-scrim: oklch(97.5% 0.022 92 / 0.7);
   --grain: 0.12;
@@ -153,16 +153,16 @@
     --color-paper: oklch(97.5% 0.022 92);
     --color-paper-2: oklch(94.5% 0.026 90);
     --color-paper-3: oklch(91% 0.03 88);
-    --color-ink: oklch(17% 0.012 60);
-    --color-ink-2: oklch(32% 0.014 62);
-    --color-muted: oklch(44% 0.018 68);
-    --color-rule: oklch(83% 0.03 86);
-    --color-accent: oklch(54% 0.155 45);
-    --color-accent-hover: oklch(48% 0.14 45);
-    --color-accent-deep: oklch(44% 0.125 45);
+    --color-ink: oklch(21% 0.035 205);
+    --color-ink-2: oklch(34% 0.04 205);
+    --color-muted: oklch(46% 0.04 205);
+    --color-rule: oklch(83% 0.03 185);
+    --color-accent: oklch(54% 0.165 40);
+    --color-accent-hover: oklch(48% 0.15 40);
+    --color-accent-deep: oklch(44% 0.135 40);
     --color-accent-ink: oklch(98% 0.02 92);
-    --color-focus: oklch(54% 0.155 45);
-    --color-error: oklch(46% 0.17 8);
+    --color-focus: oklch(54% 0.165 40);
+    --color-error: oklch(47% 0.19 2);
     --color-success: oklch(42% 0.11 150);
     --color-scrim: oklch(97.5% 0.022 92 / 0.7);
     --grain: 0.12;
