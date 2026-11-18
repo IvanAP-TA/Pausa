@@ -1,15 +1,17 @@
 "use server";
 
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { hasLocale } from "next-intl";
 import { getDb } from "@/db";
 import { routing } from "@/i18n/routing";
 import { CHUNK_LIMIT, importList, importRows, type ImportResult, type ListImportResult } from "@/lib/core/import";
-import { getCircleForMember } from "@/lib/data";
+import { createImportBatch, getImportBatch, removeImportFromCircle } from "@/lib/core/import-batches";
 import type { ImportRow } from "@/lib/core/import-parsers";
 import { requireUser } from "@/lib/session";
 import { enrichAnime, enrichMovies } from "./enrich";
-import { allow } from "../limit-guard";
+import { allow, enforce } from "../limit-guard";
 
 /**
  * What the browser may send for each row: the person's own data and the source's id. Anything else (cover, TMDB id,
@@ -33,7 +35,11 @@ const row = z.object({
   tmdbId: z.number().int().positive().nullish(),
 });
 
+const source = z.enum(["letterboxd", "anilist", "mal", "imdb", "trakt"]);
+const batchId = z.string().min(1).max(64);
+
 const payload = z.object({
+  batchId,
   rows: z.array(row).min(1).max(CHUNK_LIMIT),
   includeReviews: z.boolean(),
   includeUndated: z.boolean(),
@@ -44,27 +50,52 @@ const listPayload = z.object({
   name: z.string().trim().min(1).max(80),
   description: z.string().max(500).nullable(),
   kind: z.enum(["watchlist", "list"]),
-  circleId: z.string().min(1).max(64).nullable(),
+  batchId,
   offset: z.number().int().min(0).max(5000),
   rows: z.array(row).min(1).max(CHUNK_LIMIT),
   locale: z.string(),
 });
 
-export type ImportChunkResult = ({ ok: true } & ImportResult) | { ok: false; error: "invalid" | "failed" };
+/** "limit": too many chunks in an hour, try later. "invalid": the browser sent something this code does not accept. */
+type ChunkError = "invalid" | "failed" | "limit";
+
+export type StartImportResult = { ok: true; batchId: string } | { ok: false; error: ChunkError };
+
+/**
+ * Opens one run of the import: where it goes (null = the personal space, or a Cerchia the person belongs to) is fixed
+ * here, once, and every chunk that follows names the run instead of a destination.
+ */
+export async function startImport(input: unknown): Promise<StartImportResult> {
+  const user = await requireUser();
+  const parsed = z.object({ source, circleId: z.string().min(1).max(64).nullable() }).safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  if (!(await allow("importRows", user.id))) return { ok: false, error: "limit" };
+  try {
+    const batch = await createImportBatch(await getDb(), { userId: user.id, source: parsed.data.source, circleId: parsed.data.circleId });
+    return "error" in batch ? { ok: false, error: "invalid" } : { ok: true, batchId: batch.id };
+  } catch (e) {
+    console.error("[import] start failed", e);
+    return { ok: false, error: "failed" };
+  }
+}
+
+export type ImportChunkResult = ({ ok: true } & ImportResult) | { ok: false; error: ChunkError };
 
 /** Imports one chunk (≤ CHUNK_LIMIT rows) of the signed-in person's history. The browser calls this repeatedly. */
 export async function importChunk(input: unknown): Promise<ImportChunkResult> {
   const user = await requireUser();
-  if (!(await allow("importRows", user.id))) return { ok: false, error: "invalid" };
   const parsed = payload.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalid" };
+  if (!(await allow("importRows", user.id))) return { ok: false, error: "limit" };
   const { rows, includeReviews, includeUndated, locale: rawLocale } = parsed.data;
   const locale = hasLocale(routing.locales, rawLocale) ? rawLocale : routing.defaultLocale;
+  const batch = await getImportBatch(await getDb(), user.id, parsed.data.batchId);
+  if (!batch || batch.left) return { ok: false, error: "invalid" };
 
   const clean: ImportRow[] = rows.map((r) => ({ ...r, letterboxdUri: r.letterboxdUri ?? null, anilistId: r.anilistId ?? null, malId: r.malId ?? null, imdbId: r.imdbId ?? null, tmdbId: r.tmdbId ?? null }));
   try {
     const result = await importRows(await getDb(), user.id, clean, {
-      includeReviews, includeUndated, today: new Date().toISOString().slice(0, 10),
+      includeReviews, includeUndated, today: new Date().toISOString().slice(0, 10), batchId: batch.id, circleId: batch.circleId,
       enrich: async (unknown) => {
         const movies = unknown.filter((r) => r.kind === "movie" || r.kind === "tv");
         const anime = unknown.filter((r) => r.kind === "anime");
@@ -80,20 +111,22 @@ export async function importChunk(input: unknown): Promise<ImportChunkResult> {
   }
 }
 
-export type ListChunkResult = ({ ok: true } & ListImportResult) | { ok: false; error: "invalid" | "failed" };
+export type ListChunkResult = ({ ok: true } & ListImportResult) | { ok: false; error: ChunkError };
 
-/** Adds one chunk of one list to the person's own lists (circleId null) or to a group list of a Cerchia they belong to. */
+/** Adds one chunk of one list where the run goes: the person's own lists, or the group lists of its Cerchia. */
 export async function importListChunk(input: unknown): Promise<ListChunkResult> {
   const user = await requireUser();
-  if (!(await allow("importRows", user.id))) return { ok: false, error: "invalid" };
   const parsed = listPayload.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalid" };
-  const { rows, name, description, kind, circleId, offset, locale: rawLocale } = parsed.data;
-  if (circleId && !(await getCircleForMember(circleId, user.id))) return { ok: false, error: "invalid" };
+  if (!(await allow("importRows", user.id))) return { ok: false, error: "limit" };
+  const { rows, name, description, kind, offset, locale: rawLocale } = parsed.data;
+  const batch = await getImportBatch(await getDb(), user.id, parsed.data.batchId);
+  if (!batch || batch.left) return { ok: false, error: "invalid" };
+  const circleId = batch.circleId;
   const locale = hasLocale(routing.locales, rawLocale) ? rawLocale : routing.defaultLocale;
   const clean: ImportRow[] = rows.map((r) => ({ ...r, letterboxdUri: r.letterboxdUri ?? null, anilistId: null, malId: null, imdbId: null, tmdbId: null }));
   try {
-    const result = await importList(await getDb(), user.id, { name, description, kind, circleId, rows: clean, offset }, {
+    const result = await importList(await getDb(), user.id, { name, description, kind, circleId, rows: clean, offset, batchId: batch.id }, {
       enrich: async (unknown) => (unknown.length ? enrichMovies(unknown, locale) : []),
     });
     return { ok: true, ...result };
@@ -101,4 +134,18 @@ export async function importListChunk(input: unknown): Promise<ListChunkResult> 
     console.error("[import] list chunk failed", e);
     return { ok: false, error: "failed" };
   }
+}
+
+/** "Manage imports": takes one run out of the Cerchia it went to. The viewings stay in the person's own space. */
+export async function removeImportFromCircleAction(formData: FormData) {
+  const user = await requireUser();
+  await enforce("shareLog", user.id);
+  const rawLocale = formData.get("locale");
+  const locale = typeof rawLocale === "string" && hasLocale(routing.locales, rawLocale) ? rawLocale : routing.defaultLocale;
+  const id = batchId.parse(formData.get("batchId"));
+  const res = await removeImportFromCircle(await getDb(), { userId: user.id, batchId: id });
+  if ("error" in res) throw new Error(res.error);
+  revalidatePath("/[locale]/me", "layout");
+  revalidatePath("/[locale]/c/[circleId]", "layout");
+  redirect(`/${locale}/me/imports?removed=${res.removed}&lists=${res.lists}`);
 }

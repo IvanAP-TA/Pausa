@@ -193,6 +193,20 @@ export const mediaAvailabilityCheck = sqliteTable("media_availability_check", {
   fetchedAt: integer("fetched_at", { mode: "timestamp_ms" }).notNull(),
 }, (t) => [primaryKey({ columns: [t.mediaId, t.country] })]);
 
+/* ───────────── Importazioni ───────────── */
+
+/**
+ * One run of the import screen. Logs it created, shares it made and lists it created carry its id, so a whole import
+ * that landed in a Cerchia by mistake can be taken out of it in one go. `circleId` null = it went to the personal space.
+ */
+export const importBatch = sqliteTable("import_batch", {
+  id: id(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  source: text("source", { enum: ["letterboxd", "anilist", "mal", "imdb", "trakt"] }).notNull(),
+  circleId: text("circle_id").references(() => circle.id, { onDelete: "set null" }),
+  createdAt: createdAt(),
+}, (t) => [index("import_batch_user_idx").on(t.userId, t.createdAt)]);
+
 /* ───────────── Diario ───────────── */
 
 /**
@@ -214,15 +228,19 @@ export const log = sqliteTable("log", {
   episode: integer("episode"), // a single episode (with `season`): the episode-level diary; null = not an episode log
   isRewatch: integer("is_rewatch", { mode: "boolean" }).notNull().default(false),
   scope: text("scope", { enum: ["circles", "private"] }).notNull().default("circles"),
+  /** The import that created this log; null = written by hand. */
+  importBatchId: text("import_batch_id").references(() => importBatch.id, { onDelete: "set null" }),
   createdAt: createdAt(),
-}, (t) => [index("log_user_idx").on(t.userId, t.createdAt), index("log_media_idx").on(t.mediaId)]);
+}, (t) => [index("log_user_idx").on(t.userId, t.createdAt), index("log_media_idx").on(t.mediaId), index("log_batch_idx").on(t.importBatchId)]);
 
 /** A private log published in one Cerchia. `createdAt` is when it was shared: the feed of that Cerchia shows it at that moment. */
 export const logShare = sqliteTable("log_share", {
   logId: text("log_id").notNull().references(() => log.id, { onDelete: "cascade" }),
   circleId: text("circle_id").notNull().references(() => circle.id, { onDelete: "cascade" }),
+  /** The import that put this log in the Cerchia; null = shared by hand. */
+  importBatchId: text("import_batch_id").references(() => importBatch.id, { onDelete: "set null" }),
   createdAt: createdAt(),
-}, (t) => [primaryKey({ columns: [t.logId, t.circleId] }), index("log_share_circle_idx").on(t.circleId, t.createdAt)]);
+}, (t) => [primaryKey({ columns: [t.logId, t.circleId] }), index("log_share_circle_idx").on(t.circleId, t.createdAt), index("log_share_batch_idx").on(t.importBatchId)]);
 
 export const logWatchedWith = sqliteTable("log_watched_with", {
   logId: text("log_id").notNull().references(() => log.id, { onDelete: "cascade" }),
@@ -265,6 +283,8 @@ export const list = sqliteTable("list", {
   kind: text("kind", { enum: ["watchlist", "list", "ranking"] }).notNull().default("list"),
   name: text("name").notNull(),
   description: text("description"),
+  /** The import that created this list; null = made by hand. */
+  importBatchId: text("import_batch_id").references(() => importBatch.id, { onDelete: "set null" }),
   createdAt: createdAt(),
 }, (t) => [index("list_circle_idx").on(t.circleId), index("list_owner_idx").on(t.ownerId)]);
 

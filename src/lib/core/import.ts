@@ -6,13 +6,17 @@
  *   that, by title + kind + year, so an imported film joins the same title other people have logged.
  * - Imported logs are private (scope "private"), dated by when they were watched (not "now") and create no
  *   notifications: importing years of history must not flood anyone's feed.
+ * - The person may pick one Cerchia as the destination: the logs are still private, and each is shared with that
+ *   Cerchia (log_share), dated like the log, so the group's diary files them where they belong in time.
+ * - Every log, share and list an import makes carries its batch id (import_batch), so the whole run can be taken out
+ *   of a Cerchia again (see import-batches.ts).
  * - Work happens in small chunks (CHUNK_LIMIT rows): D1 allows ~100 bound variables and a limited number of queries
  *   per request, so the caller sends the file piece by piece.
  */
 
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
-import { list, listItem, log, mediaEntity, mediaTitle } from "../../db/schema";
+import { list, listItem, log, logShare, mediaEntity, mediaTitle } from "../../db/schema";
 import type { AnyDb } from "./db-types";
 import type { ImportRow } from "./import-parsers";
 
@@ -28,11 +32,16 @@ export type ImportOptions = {
   today: string; // YYYY-MM-DD
   /** Looks up the rows whose title the app doesn't know yet (TMDB for films, AniList for MAL anime). Same order, same length. */
   enrich?: (rows: ImportRow[]) => Promise<ImportRow[]>;
+  /** The run this chunk belongs to (import_batch); null/absent = untracked. */
+  batchId?: string | null;
+  /** Destination: null/absent = the personal space only; a Cerchia id = also shown there (the caller checked membership). */
+  circleId?: string | null;
 };
 
 export type ImportResult = {
   imported: number; // viewings added
   alreadyHad: number; // viewings that were already there
+  addedToCircle: number; // viewings this chunk put in the destination Cerchia (new ones, and private ones already there)
   newTitles: number; // titles the app didn't know before
   undatedSkipped: number;
   invalid: number;
@@ -187,7 +196,7 @@ export async function resolveMedia(db: AnyDb, input: ImportRow[], enrich?: Impor
 }
 
 export async function importRows(db: AnyDb, userId: string, input: ImportRow[], opts: ImportOptions): Promise<ImportResult> {
-  const result: ImportResult = { imported: 0, alreadyHad: 0, newTitles: 0, undatedSkipped: 0, invalid: 0 };
+  const result: ImportResult = { imported: 0, alreadyHad: 0, addedToCircle: 0, newTitles: 0, undatedSkipped: 0, invalid: 0 };
 
   // 1. Validate and settle dates.
   let rows: ImportRow[] = [];
@@ -207,27 +216,53 @@ export async function importRows(db: AnyDb, userId: string, input: ImportRow[], 
 
   // 4. The viewings themselves.
   const targets = uniq([...mediaIdOf.values()]);
-  const have = new Set<string>();
+  const batchId = opts.batchId ?? null;
+  const circleId = opts.circleId ?? null;
+  const have = new Map<string, { id: string; scope: "circles" | "private"; createdAt: Date } | null>();
   await inChunks(targets, 90, async (part) => {
-    for (const l of await db.select({ mediaId: log.mediaId, watchedOn: log.watchedOn }).from(log).where(and(eq(log.userId, userId), inArray(log.mediaId, part)))) have.add(`${l.mediaId}|${l.watchedOn}`);
+    for (const l of await db.select({ id: log.id, mediaId: log.mediaId, watchedOn: log.watchedOn, scope: log.scope, createdAt: log.createdAt }).from(log).where(and(eq(log.userId, userId), inArray(log.mediaId, part)))) {
+      have.set(`${l.mediaId}|${l.watchedOn}`, { id: l.id, scope: l.scope, createdAt: l.createdAt });
+    }
   });
 
   const toInsert: (typeof log.$inferInsert)[] = [];
+  const toShare: (typeof logShare.$inferInsert)[] = [];
+  const alreadyPrivate: { id: string; createdAt: Date }[] = []; // viewings that were there, private: the Cerchia may not have them yet
   for (const r of rows) {
     const mediaId = mediaIdOf.get(r);
     if (!mediaId) { result.invalid++; continue; }
     const key = `${mediaId}|${r.watchedOn}`;
-    if (have.has(key)) { result.alreadyHad++; continue; }
-    have.add(key);
+    if (have.has(key)) {
+      result.alreadyHad++;
+      const old = have.get(key);
+      if (circleId && old && old.scope === "private") alreadyPrivate.push(old);
+      have.set(key, null); // a second row for the same viewing in this chunk adds nothing more
+      continue;
+    }
+    have.set(key, null);
+    const id = crypto.randomUUID();
+    const createdAt = new Date(`${r.watchedOn}T12:00:00Z`);
     toInsert.push({
-      id: crypto.randomUUID(), userId, mediaId, watchedOn: r.watchedOn!, rating: r.rating,
+      id, userId, mediaId, watchedOn: r.watchedOn!, rating: r.rating,
       review: opts.includeReviews ? (r.review ?? null)?.slice(0, 4000) ?? null : null,
-      // Imported history stays in the person's own space: they share single titles with a Cerchia when they want to.
-      isRewatch: r.rewatch, scope: "private", createdAt: new Date(`${r.watchedOn}T12:00:00Z`),
+      // Imported history stays private: it shows in a Cerchia only through a share (the destination, or one by one later).
+      isRewatch: r.rewatch, scope: "private", importBatchId: batchId, createdAt,
     });
+    if (circleId) toShare.push({ logId: id, circleId, importBatchId: batchId, createdAt });
   }
   await inChunks(toInsert, 8, async (part) => { await db.insert(log).values(part); });
   result.imported = toInsert.length;
+
+  if (circleId) {
+    // Private viewings that were already here join the Cerchia too, unless a share is already there (it keeps its origin).
+    const shared = new Set<string>();
+    await inChunks(alreadyPrivate.map((l) => l.id), 90, async (part) => {
+      for (const x of await db.select({ logId: logShare.logId }).from(logShare).where(and(eq(logShare.circleId, circleId), inArray(logShare.logId, part)))) shared.add(x.logId);
+    });
+    for (const l of alreadyPrivate) if (!shared.has(l.id)) toShare.push({ logId: l.id, circleId, importBatchId: batchId, createdAt: l.createdAt });
+    await inChunks(toShare, 20, async (part) => { await db.insert(logShare).values(part).onConflictDoNothing(); });
+    result.addedToCircle = toShare.length;
+  }
   return result;
 }
 
@@ -242,6 +277,8 @@ export type ListImportInput = {
   rows: ImportRow[];
   /** Position of the first row in the whole list: a long list arrives in several chunks. */
   offset: number;
+  /** The run this list belongs to (import_batch): kept on the list when this import creates it. */
+  batchId?: string | null;
 };
 
 export type ListImportResult = { added: number; alreadyHad: number; newTitles: number; invalid: number; listId: string };
@@ -256,7 +293,7 @@ export async function importList(db: AnyDb, userId: string, input: ListImportInp
   let [found] = await db.select({ id: list.id }).from(list).where(where);
   if (!found) {
     const id = crypto.randomUUID();
-    await db.insert(list).values({ id, circleId: input.circleId, ownerId: userId, kind: input.kind, name, description: input.description?.slice(0, 500) ?? null });
+    await db.insert(list).values({ id, circleId: input.circleId, ownerId: userId, kind: input.kind, name, description: input.description?.slice(0, 500) ?? null, importBatchId: input.batchId ?? null });
     found = { id };
   }
   const result: ListImportResult = { added: 0, alreadyHad: 0, newTitles: 0, invalid: 0, listId: found.id };

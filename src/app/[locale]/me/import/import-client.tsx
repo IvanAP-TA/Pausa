@@ -5,14 +5,18 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { CHUNK_LIMIT } from "@/lib/core/import";
 import {
-  ANILIST_LIST_QUERY, anilistRows, imdbRows, jikanRows, letterboxdList, letterboxdRows, letterboxdWatchlist, malRows, traktRows,
-  type AniListResponse, type ImportList, type ImportRow, type JikanPage, type LetterboxdFiles, type MalSkipped, type TraktFiles,
+  ANILIST_LIST_QUERY, anilistRows, imdbRows, jikanRows, letterboxdList, letterboxdRows, letterboxdWatchlist, malRows, traktJsonRows,
+  type AniListResponse, type ImdbSkipped, type ImportList, type ImportRow, type JikanPage, type LetterboxdFiles, type MalSkipped,
 } from "@/lib/core/import-parsers";
-import { importChunk, importListChunk } from "@/lib/import/actions";
+import { importChunk, importListChunk, startImport } from "@/lib/import/actions";
 
 type Source = "letterboxd" | "imdb" | "trakt" | "anilist" | "mal";
-type Parsed = { rows: ImportRow[]; lists?: ImportList[]; undated: number; films?: number; skipped?: MalSkipped; titles?: boolean };
-type Totals = { imported: number; alreadyHad: number; newTitles: number; undatedSkipped: number; failed: number; lists: number; listItems: number };
+type Parsed = { rows: ImportRow[]; lists?: ImportList[]; undated: number; films?: number; skipped?: MalSkipped; imdbSkipped?: ImdbSkipped; titles?: boolean };
+type Totals = { imported: number; alreadyHad: number; addedToCircle: number; newTitles: number; undatedSkipped: number; failed: number; lists: number; listItems: number };
+/** Where an import goes: the person's own space, or one of their Cerchie (its id). */
+const PRIVATE = "private";
+/** Problems the screen can name. Anything else thrown while reading a file is "read". */
+const KNOWN_ERRORS = ["not_found", "down", "imdbFormat", "imdbZip", "traktFormat", "traktJson", "letterboxdFormat"];
 
 const SOURCES: Source[] = ["letterboxd", "imdb", "trakt", "anilist", "mal"];
 const decoder = new TextDecoder("utf-8");
@@ -74,22 +78,21 @@ async function readMal(file: File): Promise<string> {
   return decoder.decode(bytes);
 }
 
-/** Trakt's export: watched-movies.json, watched-shows.json, ratings-movies.json, ratings-shows.json (loose files or one ZIP). */
-async function readTrakt(files: File[]): Promise<TraktFiles> {
-  const out: TraktFiles = {};
-  const put = (name: string, text: string) => {
-    const base = name.toLowerCase().split(/[\\/]/).pop() ?? "";
-    if (base === "watched-movies.json") out.watchedMovies = text;
-    else if (base === "watched-shows.json") out.watchedShows = text;
-    else if (base === "ratings-movies.json") out.ratingsMovies = text;
-    else if (base === "ratings-shows.json") out.ratingsShows = text;
-  };
+/**
+ * Trakt's export: a ZIP whose JSON files sit in folders (watched/watched-movies.json, ratings/ratings-shows.json,
+ * history/…), or those files picked loose. Every .json is handed over, wherever it is and whatever it is called: the
+ * parser tells viewings and ratings from the rest by what the entries contain.
+ */
+async function readTrakt(files: File[]): Promise<string[]> {
+  const out: string[] = [];
   for (const f of files) {
     const bytes = new Uint8Array(await f.arrayBuffer());
     if (bytes[0] === 0x50 && bytes[1] === 0x4b) {
       const { unzipSync } = await import("fflate");
-      for (const [path, data] of Object.entries(unzipSync(bytes))) if (!path.includes("/")) put(path, decoder.decode(data));
-    } else put(f.name, decoder.decode(bytes));
+      for (const [path, data] of Object.entries(unzipSync(bytes, { filter: (file) => file.name.toLowerCase().endsWith(".json") }))) {
+        if (!path.split("/").pop()?.startsWith(".")) out.push(decoder.decode(data)); // not macOS "._file" leftovers
+      }
+    } else out.push(decoder.decode(bytes));
   }
   return out;
 }
@@ -132,7 +135,7 @@ async function fetchAniList(userName: string): Promise<AniListResponse[]> {
   return pages;
 }
 
-export function ImportClient({ circleId, tmdb }: { circleId: string | null; tmdb: boolean }) {
+export function ImportClient({ circles, tmdb }: { circles: { id: string; name: string }[]; tmdb: boolean }) {
   const t = useTranslations("import");
   const locale = useLocale();
   const [source, setSource] = useState<Source>("letterboxd");
@@ -142,7 +145,7 @@ export function ImportClient({ circleId, tmdb }: { circleId: string | null; tmdb
   const [reviews, setReviews] = useState(true);
   const [undated, setUndated] = useState(false);
   const [withLists, setWithLists] = useState(true);
-  const [listScope, setListScope] = useState<"personal" | "group">("personal");
+  const [dest, setDest] = useState<string>(PRIVATE); // the personal space unless the person picks a Cerchia
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [totals, setTotals] = useState<Totals | null>(null);
   const [username, setUsername] = useState("");
@@ -158,23 +161,29 @@ export function ImportClient({ circleId, tmdb }: { circleId: string | null; tmdb
       const p = await task();
       if (p.rows.length === 0 && !p.lists?.length) setError("empty"); else setParsed(p);
     } catch (e) {
-      const known = e instanceof Error && ["not_found", "down"].includes(e.message) ? e.message : null;
+      const known = e instanceof Error && KNOWN_ERRORS.includes(e.message) ? e.message : null;
       const base = source === "mal" ? "mal" : "anilist";
-      setError(known ? (known === "not_found" ? `${base}NotFound` : `${base}Down`) : "read");
+      setError(known === "not_found" ? `${base}NotFound` : known === "down" ? `${base}Down` : known ?? "read");
     } finally { setBusy(false); }
   }
 
   const onLetterboxd = (files: FileList | null) => files?.length && load(async () => {
     const read = await readLetterboxd([...files]);
+    // Files were picked, and none is a Letterboxd export (no diary, ratings, reviews, watched, watchlist or list).
+    if (Object.keys(read.files).length === 0 && read.lists.length === 0) throw new Error("letterboxdFormat");
     const { rows, films, undated } = letterboxdRows(read.files);
     return { rows, films, undated, lists: read.lists };
   });
   const onImdb = (files: FileList | null) => files?.[0] && load(async () => {
-    const { rows, undated } = imdbRows(decoder.decode(new Uint8Array(await files[0].arrayBuffer())));
-    return { rows, undated, titles: true };
+    const bytes = new Uint8Array(await files[0].arrayBuffer());
+    if (bytes[0] === 0x50 && bytes[1] === 0x4b) throw new Error("imdbZip"); // IMDb gives a plain .csv
+    const { rows, undated, skipped, recognized } = imdbRows(decoder.decode(bytes));
+    if (!recognized) throw new Error("imdbFormat");
+    return { rows, undated, imdbSkipped: skipped, titles: true };
   });
   const onTrakt = (files: FileList | null) => files?.length && load(async () => {
-    const { rows, undated } = traktRows(await readTrakt([...files]));
+    const { rows, undated, recognized, broken } = traktJsonRows(await readTrakt([...files]));
+    if (!recognized) throw new Error(broken > 0 ? "traktJson" : "traktFormat");
     return { rows, undated, titles: true };
   });
   const onJikan = () => username.trim() && load(async () => {
@@ -195,11 +204,17 @@ export function ImportClient({ circleId, tmdb }: { circleId: string | null; tmdb
     stop.current = false; setBusy(true); setError(null);
     const rows = parsed.rows;
     const size = Math.min(CHUNK_LIMIT, rows[0]?.kind === "anime" ? 30 : 20); // films and series also trigger a TMDB lookup each
-    const sum: Totals = { imported: 0, alreadyHad: 0, newTitles: 0, undatedSkipped: 0, failed: 0, lists: 0, listItems: 0 };
+    const sum: Totals = { imported: 0, alreadyHad: 0, addedToCircle: 0, newTitles: 0, undatedSkipped: 0, failed: 0, lists: 0, listItems: 0 };
     const lists = withLists ? parsed.lists ?? [] : [];
     const total = rows.length + lists.reduce((n, l) => n + l.rows.length, 0);
-    setProgress({ done: 0, total });
     let failures = 0;
+
+    // The run is opened first: the server fixes where it goes, and every chunk below only names the run.
+    const started = await startImport({ source, circleId: dest === PRIVATE ? null : dest }).catch(() => null);
+    if (!started?.ok) { setError(started?.error === "limit" ? "limit" : "chunk"); setBusy(false); return; }
+    const batchId = started.batchId;
+    setProgress({ done: 0, total });
+    let limited = false;
 
     for (let i = 0; i < rows.length && !stop.current; i += size) {
       const part = rows.slice(i, i + size).map((r) => ({
@@ -207,13 +222,15 @@ export function ImportClient({ circleId, tmdb }: { circleId: string | null; tmdb
         review: reviews ? r.review : null, letterboxdUri: r.letterboxdUri ?? null, anilistId: r.anilistId ?? null, malId: r.malId ?? null,
         imdbId: r.imdbId ?? null, tmdbId: r.tmdbId ?? null,
       }));
-      let res = await importChunk({ rows: part, includeReviews: reviews, includeUndated: undated, locale }).catch(() => null);
-      if (!res?.ok) res = await importChunk({ rows: part, includeReviews: reviews, includeUndated: undated, locale }).catch(() => null); // one retry
+      const chunk = { batchId, rows: part, includeReviews: reviews, includeUndated: undated, locale };
+      let res = await importChunk(chunk).catch(() => null);
+      if (!res?.ok && res?.error !== "limit") res = await importChunk(chunk).catch(() => null); // one retry
       if (res?.ok) {
         failures = 0;
-        sum.imported += res.imported; sum.alreadyHad += res.alreadyHad; sum.newTitles += res.newTitles; sum.undatedSkipped += res.undatedSkipped; sum.failed += res.invalid;
+        sum.imported += res.imported; sum.alreadyHad += res.alreadyHad; sum.addedToCircle += res.addedToCircle; sum.newTitles += res.newTitles; sum.undatedSkipped += res.undatedSkipped; sum.failed += res.invalid;
       } else {
         sum.failed += part.length;
+        if (res?.error === "limit") { limited = true; setError("limit"); break; } // the hourly ceiling: the rest waits
         if (++failures >= 3) { setError("chunk"); break; } // signed out, offline, server down: stop instead of failing every row
       }
       setProgress({ done: Math.min(i + size, rows.length), total });
@@ -223,17 +240,21 @@ export function ImportClient({ circleId, tmdb }: { circleId: string | null; tmdb
     let doneLists = 0;
     let before = rows.length;
     for (const l of lists) {
-      if (stop.current || failures >= 3) break;
+      if (stop.current || failures >= 3 || limited) break;
       let ok = true;
       for (let i = 0; i < l.rows.length && !stop.current; i += 20) {
         const part = l.rows.slice(i, i + 20).map((r) => ({
           source: r.source, kind: r.kind, title: r.title, year: r.year, rating: null, watchedOn: null, rewatch: false, review: null, letterboxdUri: r.letterboxdUri ?? null,
         }));
-        const payload = { name: l.name, description: l.description, kind: l.kind, circleId: listScope === "group" ? circleId : null, offset: i, rows: part, locale };
+        const payload = { name: l.name, description: l.description, kind: l.kind, batchId, offset: i, rows: part, locale };
         let res = await importListChunk(payload).catch(() => null);
-        if (!res?.ok) res = await importListChunk(payload).catch(() => null); // one retry
+        if (!res?.ok && res?.error !== "limit") res = await importListChunk(payload).catch(() => null); // one retry
         if (res?.ok) { failures = 0; sum.listItems += res.added; sum.newTitles += res.newTitles; sum.failed += res.invalid; }
-        else { ok = false; sum.failed += part.length; if (++failures >= 3) { setError("chunk"); break; } }
+        else {
+          ok = false; sum.failed += part.length;
+          if (res?.error === "limit") { limited = true; setError("limit"); break; }
+          if (++failures >= 3) { setError("chunk"); break; }
+        }
         setProgress({ done: Math.min(before + i + 20, total), total });
       }
       before += l.rows.length;
@@ -250,12 +271,17 @@ export function ImportClient({ circleId, tmdb }: { circleId: string | null; tmdb
   const file = "w-full min-w-0 text-base text-ink disabled:cursor-not-allowed disabled:opacity-50 file:mr-3 file:min-h-11 file:cursor-pointer file:border file:border-solid file:border-ink file:bg-transparent file:px-4 file:font-display file:text-lg file:uppercase file:text-ink";
   const row = "flex min-h-11 cursor-pointer items-center justify-between gap-4 py-3";
   const check = "size-5 shrink-0 accent-[var(--color-accent)]";
-  const steps = t.raw(`${source}.steps`) as string[];
+  // A list in the messages; read defensively, so a malformed translation can never take the whole screen down.
+  const rawSteps: unknown = source === "anilist" ? [] : t.raw(`${source}.steps`);
+  const steps = (Array.isArray(rawSteps) ? rawSteps : rawSteps && typeof rawSteps === "object" ? Object.values(rawSteps) : []).filter((x): x is string => typeof x === "string");
+  const destCircle = circles.find((c) => c.id === dest) ?? null;
+  const listCount = (parsed?.lists ?? []).reduce((n, l) => n + l.rows.length, 0);
   const percent = progress ? Math.round((progress.done / Math.max(1, progress.total)) * 100) : 0;
   // Each result line opens with its count: the count is set as a figure, the rest of the line is its label.
   const label = (line: string) => line.replace(/^[\d.,'\s  ]+/, "");
   const results: { key: string; n: number; text: string; strong?: boolean }[] = [];
   if (totals) {
+    if (totals.addedToCircle > 0 && destCircle) results.push({ key: "inCircle", n: totals.addedToCircle, text: t("done.inCircle", { count: totals.addedToCircle, circle: destCircle.name }) });
     if (totals.lists > 0) results.push({ key: "lists", n: totals.lists, text: t("done.lists", { count: totals.lists, items: totals.listItems }) });
     if (totals.newTitles > 0) results.push({ key: "newTitles", n: totals.newTitles, text: t("done.newTitles", { count: totals.newTitles }) });
     if (totals.alreadyHad > 0) results.push({ key: "alreadyHad", n: totals.alreadyHad, text: t("done.alreadyHad", { count: totals.alreadyHad }) });
@@ -344,6 +370,28 @@ export function ImportClient({ circleId, tmdb }: { circleId: string | null; tmdb
             {parsed.skipped && (parsed.skipped.watching + parsed.skipped.planned + parsed.skipped.onHold + parsed.skipped.dropped) > 0 && (
               <p className="text-sm text-muted">{t("found.skipped", parsed.skipped)}</p>
             )}
+            {parsed.imdbSkipped && parsed.imdbSkipped.episodes + parsed.imdbSkipped.other > 0 && (
+              <p className="text-sm text-muted">{t("found.imdbSkipped", parsed.imdbSkipped)}</p>
+            )}
+
+            {/* Where it goes: asked every time, before anything is written. The personal space is the safe default. */}
+            <fieldset className="grid gap-1" disabled={busy}>
+              <legend className="mb-1 font-semibold">{t("dest.legend")}</legend>
+              <div className="rows grid">
+                <label className="flex min-h-11 cursor-pointer items-center gap-3 py-3">
+                  <input type="radio" name="import-dest" value={PRIVATE} checked={dest === PRIVATE} onChange={() => setDest(PRIVATE)} className={check} />
+                  <span className="min-w-0">{t("dest.private")}<span className="mt-0.5 block text-sm text-muted">{t("dest.privateHint")}</span></span>
+                </label>
+                {circles.map((c) => (
+                  <label key={c.id} className="flex min-h-11 cursor-pointer items-center gap-3 py-3">
+                    <input type="radio" name="import-dest" value={c.id} checked={dest === c.id} onChange={() => setDest(c.id)} className={check} />
+                    <span className="min-w-0 [overflow-wrap:anywhere]">{t("dest.circle", { circle: c.name })}<span className="mt-0.5 block text-sm text-muted">{t("dest.circleHint")}</span></span>
+                  </label>
+                ))}
+              </div>
+              {destCircle && <p role="status" className="well mt-2 p-3 text-sm text-ink-2">{t("dest.warning", { count: parsed.rows.length + (withLists ? listCount : 0), circle: destCircle.name })}</p>}
+            </fieldset>
+
             <div className="rows grid">
               {parsed.lists && parsed.lists.length > 0 && (
                 <div className="grid">
@@ -352,16 +400,7 @@ export function ImportClient({ circleId, tmdb }: { circleId: string | null; tmdb
                       <span className="mt-0.5 block text-sm text-muted [overflow-wrap:anywhere]">{parsed.lists.map((l) => l.name).join(", ")}</span></span>
                     <input type="checkbox" checked={withLists} disabled={busy} onChange={(e) => setWithLists(e.target.checked)} className={check} />
                   </label>
-                  {withLists && (
-                    <div role="radiogroup" aria-label={t("lists.scope")} className="grid pb-3 pl-4">
-                      {(["personal", "group"] as const).filter((v) => v === "personal" || circleId).map((v) => (
-                        <label key={v} className="flex min-h-11 cursor-pointer items-center gap-3 text-ink-2">
-                          <input type="radio" name="list-scope" checked={listScope === v} disabled={busy} onChange={() => setListScope(v)} className={check} />
-                          {t(`lists.scope_${v}`)}
-                        </label>
-                      ))}
-                    </div>
-                  )}
+                  {withLists && <p className="pb-3 text-sm text-muted">{destCircle ? t("lists.scope_group") : t("lists.scope_personal")}</p>}
                 </div>
               )}
               {parsed.rows.length > 0 && <label className={row}>
@@ -387,7 +426,7 @@ export function ImportClient({ circleId, tmdb }: { circleId: string | null; tmdb
               </div>
             ) : (
               <button type="button" onClick={run} disabled={busy || (parsed.rows.length === 0 && !withLists)} className="btn btn-primary w-full">
-                {parsed.rows.length === 0 ? t("lists.run", { count: (parsed.lists ?? []).reduce((n, l) => n + l.rows.length, 0) }) : t("run", { count: parsed.rows.length + (withLists ? (parsed.lists ?? []).reduce((n, l) => n + l.rows.length, 0) : 0) })}
+                {parsed.rows.length === 0 ? t("lists.run", { count: listCount }) : t("run", { count: parsed.rows.length + (withLists ? listCount : 0) })}
               </button>
             )}
           </section>
@@ -407,10 +446,13 @@ export function ImportClient({ circleId, tmdb }: { circleId: string | null; tmdb
               </ul>
             )}
             <div className="flex flex-wrap gap-2">
-              <Link href="/me?only=private" className="btn btn-primary">{t("done.toSpace")}</Link>
-              {totals.lists > 0 && circleId && <Link href={`/c/${circleId}/lists`} className="btn">{t("done.toLists")}</Link>}
+              {destCircle
+                ? <Link href={`/c/${destCircle.id}`} className="btn btn-primary">{t("done.toCircle", { circle: destCircle.name })}</Link>
+                : <Link href="/me?only=private" className="btn btn-primary">{t("done.toSpace")}</Link>}
+              {totals.lists > 0 && destCircle && <Link href={`/c/${destCircle.id}/lists`} className="btn">{t("done.toLists")}</Link>}
               <button type="button" onClick={reset} className="btn btn-quiet">{t("done.again")}</button>
             </div>
+            {destCircle && <p className="text-sm text-muted">{t.rich("done.undo", { link: (chunks) => <Link href="/me/imports" className="link">{chunks}</Link> })}</p>}
           </section>
         )}
       </div>

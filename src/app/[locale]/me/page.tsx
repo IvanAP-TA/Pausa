@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
-import { Download, Lock, Plus, Settings, Users, X } from "lucide-react";
+import { Download, ListChecks, Lock, Plus, Settings, Users, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
 import { getMyCircles, getMyDiary, getMyDiaryCounts } from "@/lib/data";
@@ -70,6 +70,9 @@ export default async function MySpace({ params, searchParams }: PageProps<"/[loc
           )}
           <Link href="/me/import" className="btn">
             <Download size={18} strokeWidth={1.6} aria-hidden="true" />{t("import")}
+          </Link>
+          <Link href="/me/imports" className="btn btn-quiet">
+            <ListChecks size={18} strokeWidth={1.6} aria-hidden="true" />{t("manageImports")}
           </Link>
           <Link href="/account" className="btn btn-quiet">
             <Settings size={18} strokeWidth={1.6} aria-hidden="true" />{t("account")}

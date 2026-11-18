@@ -63,6 +63,13 @@ export function parseCsv(input: string): Record<string, string>[] {
   return body.map((r) => Object.fromEntries(names.map((n, i) => [n, (r[i] ?? "").trim()])));
 }
 
+/** The column names of a CSV (its first line), or null when the text is empty. */
+export function parseCsvHeader(input: string): string[] | null {
+  const line = input.replace(/^\uFEFF/, "").split(/\r?\n/, 1)[0] ?? "";
+  const first = parseCsv(line + "\n-");
+  return line.trim() ? Object.keys(first[0] ?? {}) : null;
+}
+
 /* ───────────── helpers ───────────── */
 
 const toYear = (v: string | undefined) => {
@@ -277,32 +284,42 @@ export function anilistRows(responses: AniListResponse[]) {
 
 export type ImdbSkipped = { episodes: number; other: number };
 
+/** IMDb writes "Movie" / "TV Series" today and wrote "movie" / "tvSeries" before: compare letters only. */
+const IMDB_FILMS = new Set(["movie", "tvmovie", "video", "tvspecial", "short", "tvshort"]);
+const IMDB_SERIES = new Set(["tvseries", "tvminiseries"]);
+
 /**
- * IMDb's ratings export ("Your Ratings" → Export, ratings.csv). Films and TV movies become films, series and miniseries
- * become series; episodes, shorts, games and the rest are counted and left out. IMDb only records when you RATED, not when
- * you watched, so that date is used (the person can also choose to import without dates).
+ * IMDb's exports: "Your Ratings" → Export (ratings.csv), and also a watchlist or a list export, which carry the same
+ * columns. Films (cinema, TV, video, shorts) become films, series and miniseries become series; episodes, games and the
+ * rest are counted and left out. IMDb only records when you RATED, not when you watched, so that date is used (the
+ * person can also choose to import without dates).
+ * `recognized` is false when the file is not an IMDb export at all (no "Const" and title columns): the caller says so.
  */
 export function imdbRows(csv: string) {
   const rows: ImportRow[] = [];
   const skipped: ImdbSkipped = { episodes: 0, other: 0 };
   const seen = new Set<string>();
-  for (const r of parseCsv(csv)) {
+  const text = csv.replace(/^﻿/, "");
+  const columns = (parseCsvHeader(text) ?? []);
+  const recognized = columns.includes("Const") && (columns.includes("Title") || columns.includes("Original Title"));
+  for (const r of parseCsv(text)) {
     const id = (r["Const"] ?? "").trim();
-    const title = (r["Title"] ?? r["Original Title"] ?? "").trim();
-    if (!/^tt\d+$/.test(id) || !title || seen.has(id)) continue;
-    const type = (r["Title Type"] ?? "").trim().toLowerCase();
-    const kind = type === "movie" || type === "tvmovie" || type === "tv movie" ? "movie" : type === "tvseries" || type === "tvminiseries" || type === "tv series" || type === "tv mini series" ? "tv" : null;
+    const title = (r["Title"] || r["Original Title"] || "").trim();
+    if (!/^tt\d{1,10}$/.test(id) || !title || seen.has(id)) continue;
+    const type = (r["Title Type"] ?? "").toLowerCase().replace(/[^a-z]/g, "");
+    // A file without the "Title Type" column (a trimmed export) is taken as films.
+    const kind = IMDB_SERIES.has(type) ? "tv" : IMDB_FILMS.has(type) || type === "" ? "movie" : null;
     if (!kind) { if (type.includes("episode")) skipped.episodes++; else skipped.other++; continue; }
     seen.add(id);
     const score = Number.parseInt(r["Your Rating"] ?? "", 10);
-    const year = Number.parseInt(r["Year"] ?? "", 10);
+    const year = toYear(r["Year"]);
     rows.push({
-      source: "imdb", kind, title, year: Number.isFinite(year) ? year : null, imdbId: id,
+      source: "imdb", kind, title: title.slice(0, 300), year: year && year >= 1870 ? year : null, imdbId: id,
       rating: score >= 1 && score <= 10 ? score : null, // IMDb rates 1..10 → half-stars 1..10
-      watchedOn: isoDate(r["Date Rated"]), rewatch: false, review: null,
+      watchedOn: isoDate((r["Date Rated"] ?? "").slice(0, 10)), rewatch: false, review: null,
     });
   }
-  return { rows, skipped, undated: rows.filter((x) => x.watchedOn === null).length };
+  return { rows, skipped, undated: rows.filter((x) => x.watchedOn === null).length, recognized };
 }
 
 /* ───────────── Trakt ───────────── */
@@ -311,42 +328,96 @@ type TraktIds = { imdb?: string | null; tmdb?: number | null };
 type TraktItem = { title?: string; year?: number | null; ids?: TraktIds };
 export type TraktFiles = { watchedMovies?: string; watchedShows?: string; ratingsMovies?: string; ratingsShows?: string };
 
-const jsonArray = (s: string | undefined): Record<string, unknown>[] => {
-  try { const v = JSON.parse(s ?? "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
+const jsonArray = (s: string): Record<string, unknown>[] | null => {
+  try {
+    const v = JSON.parse(s.replace(/^﻿/, ""));
+    return Array.isArray(v) ? v.filter((x) => x && typeof x === "object") : []; // valid JSON that is not a list: nothing to read
+  } catch { return null; }
 };
 const dayOf = (v: unknown) => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10) : null);
+const positiveInt = (v: unknown) => (typeof v === "number" && Number.isInteger(v) && v > 0 ? v : null);
 
 /**
- * Trakt's data export (Settings → Data → Export): watched-movies.json, watched-shows.json and the two ratings files.
- * One row per film or show, dated by the last time it was watched; the rating comes from the ratings file when there is one
- * (Trakt rates 1..10). A rated-but-not-watched title is imported too (it is a rating the person gave).
+ * Trakt's data export (Settings → Data → Export): a ZIP of JSON files in folders (watched/watched-movies.json,
+ * ratings/ratings-shows.json, history/…, plus watchlist, collection, comments…). Every entry is read for what it IS, not
+ * for the name of its file, so renamed files, sub-folders and history pages all work:
+ *  - an entry with a `rating` and a film or a show is a rating (season and episode ratings are left out);
+ *  - an entry with `last_watched_at`, `watched_at` or `plays` is a viewing (an episode counts as its show);
+ *  - anything else (watchlist, collection, comments, lists) is not something the person watched, and is ignored.
+ * One row per film or show, dated by the last time it was watched (or, never watched, by when it was rated).
+ * `recognized` is false when no file held Trakt entries at all; `broken` counts files that were not JSON.
  */
-export function traktRows(files: TraktFiles) {
+export function traktJsonRows(texts: string[]) {
   const rows = new Map<string, ImportRow>();
-  const put = (kind: "movie" | "tv", item: TraktItem | undefined, patch: Partial<ImportRow>) => {
-    const title = item?.title?.trim();
-    if (!title) return;
-    const tmdbId = item?.ids?.tmdb ?? null;
-    const imdbId = item?.ids?.imdb && /^tt\d+$/.test(item.ids.imdb) ? item.ids.imdb : null;
-    const key = kind + ":" + (tmdbId ?? imdbId ?? title.toLowerCase() + "|" + (item?.year ?? ""));
-    const row = rows.get(key) ?? { source: "trakt" as const, kind, title, year: item?.year ?? null, rating: null, watchedOn: null, rewatch: false, review: null, tmdbId, imdbId };
-    rows.set(key, { ...row, ...patch });
-  };
-  for (const w of jsonArray(files.watchedMovies)) put("movie", w.movie as TraktItem, { watchedOn: dayOf(w.last_watched_at), rewatch: Number(w.plays) > 1 });
-  for (const w of jsonArray(files.watchedShows)) put("tv", w.show as TraktItem, { watchedOn: dayOf(w.last_watched_at) });
-  const rate = (kind: "movie" | "tv", list: Record<string, unknown>[], field: "movie" | "show") => {
-    for (const r of list) {
-      const score = Number(r.rating);
-      if (!(score >= 1 && score <= 10)) continue;
-      const item = r[field] as TraktItem | undefined;
-      const existing = [...rows.entries()].find(([k, v]) => k.startsWith(kind + ":") && v.title === item?.title?.trim() && v.year === (item?.year ?? null));
-      put(kind, item, { rating: Math.round(score), ...(existing ? {} : { watchedOn: dayOf(r.rated_at) }) });
+  const alias = new Map<string, string>(); // any id, or title + year, of a title → its key in `rows`
+  const watched = new Set<ImportRow>(); // titles dated by a viewing (not only by a rating)
+  const ratings: { row: ImportRow; score: number; day: string | null }[] = [];
+  let recognized = false;
+  let broken = 0;
+
+  const rowFor = (kind: "movie" | "tv", item: TraktItem | undefined): ImportRow | null => {
+    const title = typeof item?.title === "string" ? item.title.trim() : "";
+    if (!item || !title) return null;
+    const tmdbId = positiveInt(item.ids?.tmdb);
+    const imdbId = typeof item.ids?.imdb === "string" && /^tt\d{1,10}$/.test(item.ids.imdb) ? item.ids.imdb : null;
+    const year = positiveInt(item.year);
+    const keys = [tmdbId ? `${kind}:tmdb:${tmdbId}` : null, imdbId ? `${kind}:imdb:${imdbId}` : null, `${kind}:t:${title.toLowerCase()}|${year ?? ""}`]
+      .filter((k): k is string => k !== null);
+    const key = keys.map((k) => alias.get(k)).find((k) => k !== undefined) ?? keys[0];
+    let row = rows.get(key);
+    if (!row) {
+      row = { source: "trakt", kind, title: title.slice(0, 300), year: year && year >= 1870 && year <= 2200 ? year : null, rating: null, watchedOn: null, rewatch: false, review: null, tmdbId, imdbId };
+      rows.set(key, row);
+    } else {
+      row.tmdbId ??= tmdbId;
+      row.imdbId ??= imdbId;
     }
+    for (const k of keys) if (!alias.has(k)) alias.set(k, key);
+    return row;
   };
-  rate("movie", jsonArray(files.ratingsMovies), "movie");
-  rate("tv", jsonArray(files.ratingsShows), "show");
+
+  for (const text of texts) {
+    const list = jsonArray(text);
+    if (list === null) { broken++; continue; }
+    for (const e of list) {
+      const kind = e.movie ? "movie" : e.show ? "tv" : null;
+      if (!kind) continue;
+      const item = (kind === "movie" ? e.movie : e.show) as TraktItem;
+
+      if ("rating" in e) {
+        recognized = true;
+        const score = Number(e.rating);
+        if (e.episode || e.season || !(score >= 1 && score <= 10)) continue; // a vote on one episode is not a vote on the show
+        const row = rowFor(kind, item);
+        if (row) ratings.push({ row, score: Math.round(score), day: dayOf(e.rated_at) });
+        continue;
+      }
+
+      const when = e.last_watched_at ?? e.watched_at;
+      if (when === undefined && e.plays === undefined) continue; // watchlist, collection, comments…
+      recognized = true;
+      const row = rowFor(kind, item);
+      if (!row) continue;
+      // A film seen twice: `plays` says so in watched-movies.json, two entries say so in the history.
+      if (kind === "movie" && (Number(e.plays) > 1 || watched.has(row))) row.rewatch = true;
+      const day = dayOf(when);
+      if (day && (row.watchedOn === null || day > row.watchedOn)) row.watchedOn = day;
+      watched.add(row);
+    }
+  }
+  for (const { row, score, day } of ratings) {
+    row.rating = score;
+    if (!watched.has(row) && day && (row.watchedOn === null || day > row.watchedOn)) row.watchedOn = day;
+  }
+
   const out = [...rows.values()];
-  return { rows: out, undated: out.filter((r) => r.watchedOn === null).length };
+  return { rows: out, undated: out.filter((r) => r.watchedOn === null).length, recognized, broken };
+}
+
+/** The four classic files, already told apart by name. */
+export function traktRows(files: TraktFiles) {
+  const { rows, undated } = traktJsonRows([files.watchedMovies, files.watchedShows, files.ratingsMovies, files.ratingsShows].filter((x): x is string => x !== undefined));
+  return { rows, undated };
 }
 
 /* ───────────── MyAnimeList through Jikan (its public API) ───────────── */

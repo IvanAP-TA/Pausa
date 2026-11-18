@@ -18,7 +18,7 @@ export default async function MeLayout({ children, params }: LayoutProps<"/[loca
 
   return (
     <div className="projector mx-auto min-h-dvh max-w-md lg:max-w-[40rem]">
-      <SpaceSwitch current="personal" circle={circle} />
+      <SpaceSwitch current="personal" circle={circle} circles={circles} />
       <div className="flex h-14 items-center px-4">
         <Link href="/me" aria-label="Pausa" className="inline-flex min-h-11 items-center"><Wordmark /></Link>
       </div>

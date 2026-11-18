@@ -628,7 +628,7 @@
   "import": {
     "title": "Importa tu historial",
     "lede": "Trae lo que ya has visto. Puedes repetirlo cuando quieras: lo que ya está no se duplica.",
-    "visibility": "Lo que importas se queda en tu espacio personal, privado, con la fecha en que lo viste. Ninguna Cerchia lo ve y nadie recibe notificaciones: después eliges tú, título por título, qué añadir a un grupo. Las reseñas se incluyen solo si dejas la casilla marcada.",
+    "visibility": "Tú eliges adónde va lo que importas: por defecto se queda en tu espacio personal, privado, con la fecha en que lo viste, y nadie recibe notificaciones. Las reseñas se incluyen solo si dejas la casilla marcada.",
     "tabs": {
       "letterboxd": "Letterboxd",
       "anilist": "AniList",
@@ -672,7 +672,8 @@
       "films": "{films, plural, one {# película} other {# películas}}, {views, plural, one {# visionado} other {# visionados}}.",
       "anime": "{count, plural, one {# anime completado} other {# anime completados}}.",
       "skipped": "Dejados fuera: {watching} viendo, {planned} pendientes, {onHold} en pausa, {dropped} abandonados.",
-      "titles": "{count, plural, one {Encontrado # título} other {Encontrados # títulos}}."
+      "titles": "{count, plural, one {Encontrado # título} other {Encontrados # títulos}}.",
+      "imdbSkipped": "Fuera: {episodes, plural, one {# episodio suelto} other {# episodios sueltos}} y {other, plural, one {# otro elemento} other {# otros elementos}} (videojuegos, pódcast…)."
     },
     "options": {
       "reviews": "Importar también las reseñas",
@@ -693,7 +694,10 @@
       "lists": "{count, plural, one {# lista} other {# listas}} con {items} películas añadidas",
       "listsOnly": "Listas importadas",
       "toLists": "Ver las listas",
-      "toSpace": "Ir a mi espacio"
+      "toSpace": "Ir a mi espacio",
+      "inCircle": "{count, plural, one {# visionado añadido} other {# visionados añadidos}} a la Cerchia «{circle}»",
+      "toCircle": "Ir a «{circle}»",
+      "undo": "¿Importado en el grupo equivocado? Quítalo de golpe desde <link>Gestionar importaciones</link>."
     },
     "errors": {
       "read": "No puedo leer este archivo. Comprueba que sea la exportación correcta.",
@@ -702,32 +706,46 @@
       "anilistDown": "AniList no responde. Inténtalo de nuevo en un momento.",
       "chunk": "La importación se detuvo: revisa la conexión y vuelve a lanzarla. Lo que ya se importó no se duplica.",
       "malNotFound": "No encuentro a este usuario, o la lista es privada.",
-      "malDown": "MyAnimeList (a través de Jikan) no responde. Inténtalo de nuevo en un momento."
+      "malDown": "MyAnimeList (a través de Jikan) no responde. Inténtalo de nuevo en un momento.",
+      "limit": "Has importado muchísimo en poco tiempo: me paro aquí durante una hora. Vuelve a lanzar el mismo archivo más tarde, lo que ya está no se duplica.",
+      "imdbFormat": "Este archivo no es una exportación de IMDb: falta la columna «Const» con los códigos de los títulos (tt…). Descarga el .csv desde «Tus valoraciones» → Exportar y súbelo sin modificarlo (abrirlo y guardarlo con Excel puede estropearlo).",
+      "imdbZip": "Esto es un archivo ZIP. IMDb te da un archivo .csv: sube ese.",
+      "traktFormat": "En estos archivos no encuentro ni visionados ni votos de Trakt. Sube el ZIP de «Export Data» tal cual, o los archivos watched-movies.json, watched-shows.json y ratings-….json.",
+      "traktJson": "No consigo leer estos archivos: no son JSON válidos. Vuelve a descargar el ZIP de Trakt y súbelo sin abrirlo.",
+      "letterboxdFormat": "Aquí no encuentro ningún archivo de Letterboxd (diary.csv, ratings.csv, reviews.csv, watched.csv o una lista). Sube el ZIP de «Export your data» tal cual."
     },
     "imdb": {
       "title": "Películas y series de IMDb",
-      "steps": {
-        "0": "En IMDb abre «Tus valoraciones» (imdb.com/user/me/ratings).",
-        "1": "En el menú ⋮ de arriba a la derecha elige «Exportar».",
-        "2": "Sube aquí el archivo ratings.csv."
-      },
-      "pick": "Elige el archivo ratings.csv"
+      "steps": [
+        "En IMDb abre «Tus valoraciones» (imdb.com/user/me/ratings).",
+        "En el menú ⋮ de arriba a la derecha elige «Exportar»: al poco encuentras el archivo en «Tus exportaciones».",
+        "Descarga el archivo .csv y súbelo aquí tal cual. También sirven las exportaciones de una lista o de la watchlist."
+      ],
+      "pick": "Elige el archivo .csv de IMDb"
     },
     "trakt": {
       "title": "Películas y series de Trakt",
-      "steps": {
-        "0": "En Trakt ve a Ajustes → Datos (trakt.tv/settings/data).",
-        "1": "Pulsa «Export Data»: recibes un ZIP con archivos JSON.",
-        "2": "Súbelo aquí, entero o solo los archivos watched-… y ratings-…"
-      },
+      "steps": [
+        "En Trakt ve a Ajustes → Datos (trakt.tv/settings/data).",
+        "Pulsa «Export Data»: recibes un ZIP con archivos JSON.",
+        "Sube aquí el ZIP entero, sin abrirlo. O elige los archivos .json de las carpetas watched y ratings."
+      ],
       "pick": "Elige el ZIP o los archivos .json"
     },
     "lists": {
       "include": "{count, plural, one {Importar también # lista} other {Importar también # listas}} ({items} películas)",
       "scope": "Dónde ponerlas",
-      "scope_personal": "Listas personales: solo tú las ves",
-      "scope_group": "Listas del grupo: las ve toda la Cerchia",
+      "scope_personal": "Van a tus listas personales: solo las ves tú.",
+      "scope_group": "Pasan a ser listas del grupo: las ve toda la Cerchia.",
       "run": "{count, plural, one {Importar # película en las listas} other {Importar # películas en las listas}}"
+    },
+    "dest": {
+      "legend": "¿Dónde guardo lo que importas?",
+      "private": "En mi espacio privado (recomendado)",
+      "privateHint": "Solo lo ves tú. Después añades a un grupo los títulos que quieras, uno a uno.",
+      "circle": "En la Cerchia «{circle}»",
+      "circleHint": "Todo el grupo lo ve en el diario. Sin notificaciones.",
+      "warning": "{count, plural, one {# elemento aparecerá} other {Los # elementos aparecerán}} en la Cerchia «{circle}», cada uno en la fecha en que lo viste. Si cambias de idea los quitas de golpe desde «Gestionar importaciones», en tu espacio."
     }
   },
   "manage": {
@@ -960,7 +978,7 @@
     "personal": "Mi espacio",
     "circles": "Cerchie",
     "title": "Mi espacio",
-    "lede": "Todo lo que has visto, en un lugar solo tuyo. Lo que importas llega aquí y es privado: una Cerchia lo ve solo cuando lo añades.",
+    "lede": "Todo lo que has visto, en un lugar solo tuyo. Lo que importas llega aquí: es privado, salvo que elijas una Cerchia como destino.",
     "add": "Registrar en privado",
     "import": "Importar",
     "account": "Cuenta",
@@ -969,7 +987,7 @@
     "onlyPrivate": "Solo privados ({count})",
     "emptyTitle": "Aquí todavía no hay nada.",
     "emptyPrivateTitle": "Ningún visionado privado.",
-    "emptyBody": "Importa tu historial de Letterboxd, AniList o MyAnimeList, o registra un visionado.",
+    "emptyBody": "Importa tu historial de Letterboxd, IMDb, Trakt, AniList o MyAnimeList, o registra un visionado.",
     "inAllCircles": "Visible en todas tus Cerchie",
     "makePrivate": "Hacer privado",
     "onlyYou": "Privado: solo lo ves tú",
@@ -986,7 +1004,11 @@
       "private": "Ahora es privado: ya no aparece en ninguna Cerchia.",
       "open": "Ahora es visible en todas tus Cerchie.",
       "logged": "Registrado en tu espacio, en privado."
-    }
+    },
+    "manageImports": "Gestionar importaciones",
+    "switchOpen": "Cambiar de espacio: todas tus Cerchie",
+    "switchTitle": "Espacio actual",
+    "here": "Estás aquí"
   },
   "media": {
     "runtime": "{m} min",
@@ -999,5 +1021,25 @@
     "cast": "Reparto principal",
     "inCircle": "En la Cerchia",
     "nobodyYet": "Nadie en la Cerchia lo ha registrado todavía."
+  },
+  "imports": {
+    "title": "Gestionar importaciones",
+    "lede": "Cada importación que has hecho y dónde acabó. Si mandaste una a una Cerchia por error, desde aquí la quitas entera.",
+    "emptyTitle": "No hay importaciones que gestionar.",
+    "emptyBody": "Aquí aparecen las importaciones que hagas a partir de ahora.",
+    "toImport": "Importa tu historial",
+    "added": "{count, plural, =0 {ningún visionado nuevo} one {# visionado añadido} other {# visionados añadidos}}",
+    "inCircle": "En la Cerchia «{circle}»: {count, plural, one {# visionado} other {# visionados}}{lists, plural, =0 {} one {, # lista} other {, # listas}}",
+    "privateOnly": "Solo en tu espacio privado",
+    "takenOut": "Quitada de la Cerchia «{circle}»: sigue en tu espacio privado",
+    "remove": "Quitar de «{circle}»",
+    "confirmTitle": "¿Quitar esta importación de «{circle}»?",
+    "confirmBody": "{count, plural, one {# visionado desaparece} other {# visionados desaparecen}} del diario de la Cerchia «{circle}»{lists, plural, =0 {} one {, y # lista del grupo vuelve a ser personal} other {, y # listas del grupo vuelven a ser personales}}. Los comentarios y reacciones que el grupo dejó ya no se verán.",
+    "confirmKeep": "No se borra nada: todo sigue en tu espacio privado. Los visionados registrados a mano y los de otras importaciones no se tocan.",
+    "confirmCta": "Quitar del grupo",
+    "cancel": "Cancelar",
+    "removing": "Quitando…",
+    "removed": "{count, plural, =0 {Ningún visionado que quitar} one {# visionado quitado del grupo} other {# visionados quitados del grupo}}{lists, plural, =0 {} one {, # lista vuelve a ser personal} other {, # listas vuelven a ser personales}}. Todo sigue en tu espacio privado.",
+    "note": "Las importaciones hechas antes de esta función no aparecen aquí: son todas privadas, en tu espacio."
   }
 }
