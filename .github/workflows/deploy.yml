@@ -1,9 +1,14 @@
 name: Deploy
 
-# Manual by default: run it from the Actions tab once the secrets below exist. To deploy on every push to main,
-# add `push: { branches: [main] }` under `on:` after the first successful manual run.
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
+
+concurrency:
+  group: pausa-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
