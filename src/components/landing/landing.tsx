@@ -1,3 +1,4 @@
+import { PauseMark } from "@/components/brand";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
@@ -27,14 +28,7 @@ const head = "font-display font-extralight text-poster leading-[1.02] text-balan
 const lead = "text-lead font-light leading-[1.4] text-ink-2";
 const navLink = "inline-flex min-h-11 items-center whitespace-nowrap transition-colors duration-150 hover:text-ink";
 
-function pauseMark(className = "h-6") {
-  return (
-    <svg viewBox="0 0 20 28" className={className} aria-hidden="true">
-      <rect x="1" y="1" width="6.5" height="26" fill="var(--color-accent)" />
-      <rect x="12.5" y="1" width="6.5" height="26" fill="var(--color-accent)" />
-    </svg>
-  );
-}
+const pauseMark = (className = "h-6") => <PauseMark className={className} />;
 
 export function Landing() {
   const t = useTranslations("landing");

@@ -17,6 +17,7 @@ import { COUNTRIES, getUserProviders, isCountry } from "@/lib/core/streaming";
 import { regionProviders, tmdbEnabled } from "@/lib/tmdb";
 import { FOUNDER_AT, peopleBrought } from "@/lib/core/circles";
 import { Check } from "lucide-react";
+import { Wordmark } from "@/components/brand";
 
 // A settings row: the label and its help on the left, the control on the right.
 const row = "flex min-h-11 cursor-pointer items-center justify-between gap-4 py-3";
@@ -51,6 +52,7 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
   return (
     <main className="projector mx-auto grid max-w-[40rem] gap-10 px-4 py-10">
       <header className="grid gap-2">
+        <p className="mb-4"><Wordmark size="text-3xl" /></p>
         <Link href={circles[0] ? `/c/${circles[0].id}/members` : "/"} className="link inline-flex min-h-11 w-fit items-center text-sm">{t("back")}</Link>
         <h1 className="display">{t("title")}</h1>
         <p className="text-sm text-muted [overflow-wrap:anywhere]">{user.email}</p>
@@ -76,7 +78,7 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
 
       {circles.length > 1 && (
         <section className="grid gap-3">
-          <h2 className="title">{t("circles")}</h2>
+          <h2 className="chapter">{t("circles")}</h2>
           <ul className="rows grid">
             {circles.map((c) => (
               <li key={c.id}><Link href={`/c/${c.id}`} className="title flex min-h-12 items-center text-xl transition-colors duration-150 hover:text-accent">{c.name}</Link></li>
@@ -92,7 +94,7 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
       <form action={saveNotificationPrefsAction} className="grid gap-4">
         <input type="hidden" name="locale" value={locale} />
         <div className="grid gap-2">
-          <h2 className="title">{tn("title")}</h2>
+          <h2 className="chapter">{tn("title")}</h2>
           <p className="text-ink-2">{tn("body")}</p>
         </div>
         <ul className="rows grid">
@@ -111,7 +113,7 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
 
       <section className="grid gap-4">
         <div className="grid gap-2">
-          <h2 className="title">{td("title")}</h2>
+          <h2 className="chapter">{td("title")}</h2>
           <p className="text-ink-2">{td("body")}</p>
         </div>
         {!tmdbEnabled() ? (
@@ -150,7 +152,7 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
       </section>
 
       <section className="grid gap-3">
-        <h2 className="title">{t("dataTitle")}</h2>
+        <h2 className="chapter">{t("dataTitle")}</h2>
         <p className="text-ink-2">{t("dataBody")}</p>
         <a href="/api/account/export" download className="btn w-full sm:w-fit">{t("export")}</a>
       </section>
@@ -160,8 +162,8 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
         <LogoutButton className="btn btn-quiet w-full sm:w-fit" />
       </div>
 
-      <section className="plate grid gap-3 pt-6">
-        <h2 className="title">{t("deleteTitle")}</h2>
+      <section className="grid gap-3">
+        <h2 className="chapter">{t("deleteTitle")}</h2>
         <p className="text-ink-2">{t("deleteBody")}</p>
         {e === "confirm" && <p role="alert" className="text-sm text-error">{t("deleteMismatch")}</p>}
         <details>

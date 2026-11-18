@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getSession, googleEnabled } from "@/lib/auth";
+import { Wordmark } from "@/components/brand";
 import { TmdbAttribution } from "@/components/tmdb-attribution";
 import { SignInForm } from "./sign-in-form";
 
@@ -17,7 +18,7 @@ export default async function SignIn({ params, searchParams }: PageProps<"/[loca
   const t = await getTranslations("auth");
   return (
     <main className="projector mx-auto grid min-h-dvh w-full max-w-[72rem] grid-rows-[auto_1fr_auto] gap-6 px-4 py-6 lg:px-8">
-      <p className="font-display text-2xl text-ink">Pausa</p>
+      <p><Wordmark size="text-3xl" /></p>
       {/* The sheet: the head on the left, the form on a well on the right; one column on a phone. */}
       <div className="grid content-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-center lg:gap-16">
         <header className="min-w-0">

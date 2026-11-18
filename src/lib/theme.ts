@@ -9,4 +9,4 @@ export function parseTheme(value: string | undefined | null): Theme {
 }
 
 /** Browser-bar colours (sRGB copies of --color-paper in tokens.css: a meta tag cannot read a CSS variable). */
-export const THEME_COLOR = { dark: "#090604", light: "#fbf5e6" } as const;
+export const THEME_COLOR = { dark: "#001113", light: "#fbf5e6" } as const;

@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { Wordmark } from "@/components/brand";
 import { LAST_CIRCLE_COOKIE } from "@/components/circle-memory";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getSession } from "@/lib/auth";
@@ -47,7 +48,7 @@ export default async function Home({ params }: PageProps<"/[locale]">) {
     <main className="projector mx-auto grid min-h-dvh max-w-md content-center gap-10 px-4 py-12">
       <header>
         {/* The wordmark, at a size where display capitals are legal. */}
-        <p className="font-display text-2xl leading-none text-ink-2">Pausa</p>
+        <p><Wordmark size="text-3xl" /></p>
         <h1 className="display mt-6">{t("noCircleTitle")}</h1>
         <p className="mt-4 text-ink-2">{t("noCircleBody")}</p>
       </header>

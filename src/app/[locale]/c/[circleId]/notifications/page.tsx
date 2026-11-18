@@ -31,9 +31,9 @@ export default async function Notifications({ params }: PageProps<"/[locale]/c/[
       <h1 className="display">{t("title")}</h1>
 
       {items.length === 0 ? (
-        <p className="well grained p-6 text-ink-2">{t("empty")}</p>
+        <p className="empty well grained p-6 text-ink-2">{t("empty")}</p>
       ) : (
-        <ul className="rows grid">
+        <ul className="stagger rows grid">
           {items.map((n) => {
             const text = t.rich(n.type, {
               name: n.actor?.name ?? "",

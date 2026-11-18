@@ -20,7 +20,7 @@ type Props = {
 /** A poster is a print: square corners, no frame, no shadow. It sits on the ground as an object. */
 export function Poster({ media, size = "md", priority = false, className = "" }: Props) {
   // A span is inline by default and aspect-ratio ignores inline boxes: the image variant must be block, the fallback flex.
-  const base = `relative aspect-[2/3] overflow-hidden bg-paper-3 ${className}`;
+  const base = `poster relative aspect-[2/3] overflow-hidden bg-paper-3 ${className}`;
   if (media.posterPath) {
     return (
       <span className={`block ${base}`}>

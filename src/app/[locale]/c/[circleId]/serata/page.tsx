@@ -43,8 +43,8 @@ export default async function Serata({ params }: PageProps<"/[locale]/c/[circleI
 
       {recent.length > 0 && (
         <section className="grid gap-3">
-          <h2 className="title">{t("recent")}</h2>
-          <ul className="rows grid">
+          <h2 className="chapter">{t("recent")}</h2>
+          <ul className="stagger rows grid">
             {recent.map((r) => (
               <li key={r.code}>
                 <Link href={`/s/${r.code}`} className="grid min-h-14 content-center gap-0.5 py-3 transition-colors duration-150 hover:bg-paper-2">

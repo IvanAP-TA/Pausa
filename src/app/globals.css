@@ -51,7 +51,7 @@
     transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
   }
   .btn:hover { background: var(--color-paper-3); }
-  .btn:active { transform: translateY(1px); }
+  .btn:active { transform: scale(0.97); }
   .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; transform: none; }
   .btn-primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-ink); }
   .btn-primary:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
@@ -97,19 +97,52 @@
   :root[data-theme="light"] .grained::after { filter: invert(1); }
   @media (prefers-color-scheme: light) { :root[data-theme="system"] .grained::after { filter: invert(1); } }
 
+  /* A day of the diary: the date as a figure on an ink rule, the weekday and the month beside it in the body face. */
+  .day { display: flex; align-items: flex-end; gap: var(--space-sm); max-width: none; padding: var(--space-sm) 0 var(--space-md); border-top: var(--rule-hair) solid transparent; }
+  .day-figure { font-size: 4.5rem; line-height: 0.82; color: var(--color-ink); }
+  .day-label { display: grid; font-family: var(--font-body); font-size: var(--text-sm); font-weight: 400; line-height: 1.35; letter-spacing: 0; text-transform: none; color: var(--color-muted); }
+  .day-name { font-size: var(--text-md); font-weight: 600; color: var(--color-ink); }
+  .day-name::first-letter { text-transform: uppercase; }
+  /* Today is the current day: its figure takes the signal. */
+  .day-today .day-figure { color: var(--color-accent); }
+
+  /* A chapter of a page (members, settings, a year, comments): thin capitals under the same ink rule that opens a day. */
+  .chapter { max-width: none; padding-top: var(--space-sm); border-top: var(--rule-hair) solid transparent; font-family: var(--font-display); font-weight: 200; font-size: var(--text-chapter); line-height: 1; text-transform: uppercase; letter-spacing: var(--tracking-display); font-synthesis: none; color: var(--color-ink); }
+
+  /* The ink rule of a day and of a chapter is drawn from the left once, when the page arrives. */
+  .day, .chapter { position: relative; }
+  .day::before, .chapter::before { content: ""; position: absolute; left: 0; right: 0; top: calc(var(--rule-hair) * -1); height: var(--rule-hair); background: var(--color-ink); transform-origin: left; animation: draw var(--dur-long) var(--ease-out) 120ms backwards; }
+
+  /* Nothing here yet: the pause mark sits above the line that says so. */
+  .empty { display: grid; gap: var(--space-sm); }
+  .empty::before { content: ""; width: 20px; height: 28px; background: linear-gradient(to right, var(--color-accent) 0 35%, transparent 35% 65%, var(--color-accent) 65% 100%); transform-origin: bottom; animation: stand var(--dur-long) var(--ease-out) 120ms backwards; }
+
   /* A small tag: who watched with whom, a kind, a rewatch. A 1px rule cell, never a filled pill. */
   .tag { display: inline-flex; align-items: center; min-height: 24px; padding: 0 var(--space-xs); border: var(--rule-hair) solid var(--color-rule); font-size: var(--text-sm); color: var(--color-ink-2); }
 
   /* A review: the reader's own words, set at lead size in the light cut. The old class name stays so every page keeps its hook. */
   .subtitle { font-size: var(--text-lead); font-weight: 300; line-height: 1.4; color: var(--color-ink); text-wrap: pretty; }
 
-  /* Page tops inside a Cerchia. Kept as a hook; no glow in this theme. */
+  /* The safelight: the one light of the darkroom, amber, falling on the top of an app screen from above. It is the only
+     gradient of the system and it lies on the ground, behind everything; nothing else glows. */
   .projector { position: relative; }
+  .projector::before { content: ""; position: absolute; z-index: -1; top: 0; left: 50%; width: min(100vw, 72rem); height: 30rem; transform: translateX(-50%); pointer-events: none;
+    background: radial-gradient(ellipse 62% 100% at 50% 0%, color-mix(in oklab, var(--color-accent) var(--safelight), transparent), transparent 72%),
+      repeating-linear-gradient(to right, transparent 0 14px, color-mix(in oklab, black var(--curtain), transparent) 30px, transparent 46px);
+    -webkit-mask-image: linear-gradient(to bottom, black 0 35%, transparent 92%); mask-image: linear-gradient(to bottom, black 0 35%, transparent 92%); }
+
+  /* The house curtain: the folds drawn in that same top area are the velvet the light falls on. They fade before the content. */
+
+  /* A frame of film: what someone is watching now sits between two rows of sprocket holes, so the strip of them reads as a reel. */
+  .reel { position: relative; }
+  .reel::before, .reel::after { content: ""; position: absolute; left: 0; right: 0; height: 8px; pointer-events: none;
+    background: repeating-linear-gradient(to right, transparent 0 8px, var(--color-paper) 8px 18px, transparent 18px 22px); }
+  .reel::before { top: 7px; } .reel::after { bottom: 7px; }
   .ticket { border-top: var(--rule-hair) solid var(--color-rule); }
 
   /* A meter: a 2px track, the fill in amber. Scale on X so nothing lays out again. */
   .meter { height: 2px; background: var(--color-rule); overflow: hidden; }
-  .meter > span { display: block; height: 100%; background: var(--color-accent); transform-origin: left; }
+  .meter > span { display: block; height: 100%; background: var(--color-accent); transform-origin: left; animation: draw var(--dur-long) var(--ease-out) 160ms backwards; }
 
   /* Skeletons take the shape of what is coming. */
   .skeleton { background: var(--color-paper-3); animation: pulse 1.4s var(--ease-in-out) infinite; }
@@ -119,11 +152,28 @@
   .js .reveal-ready [data-reveal] { opacity: 0; transform: translateY(16px); transition: opacity var(--dur-long) var(--ease-out), transform var(--dur-long) var(--ease-out); transition-delay: var(--d, 0ms); }
   .js .reveal-ready [data-reveal].is-in { opacity: 1; transform: none; }
 
+  /* App screens. A page arrives in one short fade; the first rows of a list rise one after the other; a poster inside a link
+     leans in under the pointer; a panel that opens (filters, manage a list) drops in from its summary. */
+  .projector > main, main.projector { animation: arrive var(--dur-short) var(--ease-out) backwards; }
+  .stagger > * { animation: rise var(--dur-long) var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 45ms); }
+  .stagger > :nth-child(2) { --i: 1; } .stagger > :nth-child(3) { --i: 2; } .stagger > :nth-child(4) { --i: 3; } .stagger > :nth-child(5) { --i: 4; }
+  .stagger > :nth-child(6) { --i: 5; } .stagger > :nth-child(7) { --i: 6; } .stagger > :nth-child(8) { --i: 7; }
+  .stagger > :nth-child(n+9) { animation: none; }
+  .poster > img { transition: transform var(--dur-long) var(--ease-out); }
+  @media (hover: hover) and (pointer: fine) { a:hover .poster > img { transform: scale(1.03); } }
+  .projector details[open] > :not(summary) { animation: unfold var(--dur-short) var(--ease-out) backwards; }
+
   /* A reaction toggled: one short press, no overshoot. */
   .pop { animation: pop var(--dur-short) var(--ease-out); }
 }
 
 @keyframes rise { from { opacity: 0.4; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes arrive { from { opacity: 0.4; } }
+@keyframes draw { from { transform: scaleX(0); } }
+@keyframes stand { from { opacity: 0.4; transform: scaleY(0.5); } }
+@keyframes unfold { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes mark-x { from { transform: scaleX(0); } }
+@keyframes mark-y { from { transform: scaleY(0); } }
 @keyframes pop { from { transform: scale(0.9); } to { transform: none; } }
 @keyframes pulse { 50% { opacity: 0.55; } }
 

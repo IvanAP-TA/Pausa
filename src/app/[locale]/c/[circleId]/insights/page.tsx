@@ -86,9 +86,9 @@ export default async function Insights({ params, searchParams }: PageProps<"/[lo
 
       {/* Year in Review */}
       <section className="grid gap-6" aria-labelledby="yir">
-        <h2 id="yir">{t("yearTitle", { year })}</h2>
+        <h2 id="yir" className="chapter">{t("yearTitle", { year })}</h2>
         {review.logs === 0 ? (
-          <p className="well grained p-6 text-ink-2">{t("yearEmpty", { year })}</p>
+          <p className="empty well grained p-6 text-ink-2">{t("yearEmpty", { year })}</p>
         ) : (
           <>
             <div className="well grained grid grid-cols-2 gap-x-5 gap-y-8 p-5 sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none sm:p-6">
@@ -136,10 +136,10 @@ export default async function Insights({ params, searchParams }: PageProps<"/[lo
       {people.length > 1 && (
         <section className="grid gap-4" aria-labelledby="taste">
           <div className="grid gap-2">
-            <h2 id="taste">{t("taste.title")}</h2>
+            <h2 id="taste" className="chapter">{t("taste.title")}</h2>
             <p className="max-w-prose text-ink-2">{t("taste.body", { min: MIN_COMMON })}</p>
           </div>
-          <ul className="rows grid">
+          <ul className="stagger rows grid">
             {pairs.map((p) => (
               <li key={`${p.a.id}-${p.b.id}`} className="grid gap-3 py-4">
                 <div className="flex items-end justify-between gap-4">
@@ -181,7 +181,7 @@ export default async function Insights({ params, searchParams }: PageProps<"/[lo
       {/* For you: what to watch next, from what this person loved (TMDB) */}
       <section className="grid gap-4" aria-labelledby="foryou">
         <div className="grid gap-2">
-          <h2 id="foryou">{tf("title")}</h2>
+          <h2 id="foryou" className="chapter">{tf("title")}</h2>
           <p className="max-w-prose text-ink-2">{tf("body")}</p>
         </div>
         <Suspense fallback={<p role="status" className="plate pt-4 text-sm text-muted">{tf("loading")}</p>}>
@@ -193,7 +193,7 @@ export default async function Insights({ params, searchParams }: PageProps<"/[lo
       {/* Recommendations */}
       <section className="grid gap-4" aria-labelledby="recs">
         <div className="grid gap-2">
-          <h2 id="recs">{t("recs.title")}</h2>
+          <h2 id="recs" className="chapter">{t("recs.title")}</h2>
           <p className="max-w-prose text-ink-2">{t("recs.body")}</p>
         </div>
         {recs.length === 0 ? (

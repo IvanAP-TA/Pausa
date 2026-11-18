@@ -119,15 +119,15 @@ export default async function Ranking({ params, searchParams }: PageProps<"/[loc
       </details>
 
       {shown.length === 0 ? (
-        <p className="well grained p-6 text-ink-2">{facts.length === 0 ? t("emptyAll") : t("empty")}</p>
+        <p className="empty well grained p-6 text-ink-2">{facts.length === 0 ? t("emptyAll") : t("empty")}</p>
       ) : (
         // The league table: one title a row under a full-width hairline, the rank as the leading numeral.
-        <ol className="rows grid" start={(page - 1) * PAGE_SIZE + 1}>
+        <ol className="stagger rows grid" start={(page - 1) * PAGE_SIZE + 1}>
           {shown.map((r, i) => {
             const n = (page - 1) * PAGE_SIZE + i + 1;
             return (
-              <li key={r.mediaId} className="grid grid-cols-[2.75rem_56px_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-3 py-4 sm:grid-cols-[3.5rem_56px_minmax(0,1fr)_auto] sm:gap-x-4">
-                <span className={`figure min-w-10 ${n > 99 ? "text-[2rem]" : "text-[3rem]"} ${n === 1 ? "text-accent" : "text-ink"}`} aria-label={t("position", { n })}>{n}</span>
+              <li key={r.mediaId} className="grid grid-cols-[3.25rem_56px_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-3 py-4 sm:grid-cols-[4rem_56px_minmax(0,1fr)_auto] sm:gap-x-4">
+                <span className={`figure min-w-10 leading-[0.86] ${n > 99 ? "text-[2.75rem]" : "text-[4.5rem]"} ${n === 1 ? "text-accent" : "text-ink"}`} aria-label={t("position", { n })}>{n}</span>
                 <Poster media={{ id: r.mediaId, title: r.title, posterPath: r.posterPath }} size="sm" />
                 <div className="grid min-w-0 gap-1">
                   <h2 className="title text-xl [overflow-wrap:anywhere] sm:text-2xl">{r.title}</h2>
@@ -152,7 +152,7 @@ export default async function Ranking({ params, searchParams }: PageProps<"/[loc
                         <span>{first(p.name)}</span>
                         {rating === undefined
                           ? <span className="sr-only">{t("noRating")}</span>
-                          : <span className="tabular font-semibold text-ink"><span className="sr-only">{t("rated", { stars: rating / 2 })}</span><span aria-hidden="true">{num(rating)}<span className="text-accent">★</span></span></span>}
+                          : <span className="tabular font-semibold text-ink"><span className="sr-only">{t("rated", { stars: rating / 2 })}</span><span aria-hidden="true">{num(rating)}<span className="text-muted">★</span></span></span>}
                       </li>
                     );
                   })}

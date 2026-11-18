@@ -90,8 +90,8 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
       {error && <p role="alert" className="border border-error p-3 text-sm text-error">{t(`errors.${error}`)}</p>}
 
       <section className="grid gap-3">
-        <h2 className="title flex items-baseline gap-3">{t("members")} <span className="figure text-muted">{members.length}</span></h2>
-        <ul className="rows grid">
+        <h2 className="chapter flex items-baseline gap-3">{t("members")} <span className="figure text-muted">{members.length}</span></h2>
+        <ul className="stagger rows grid">
           {members.map((m) => (
             <li key={m.id} className="grid gap-2 py-3">
               <div className="flex min-h-11 items-center gap-3">
@@ -183,7 +183,7 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
 
       <section id="settings" aria-labelledby="settings-title" className="grid gap-6">
         <div className="grid gap-2">
-          <h2 id="settings-title" className="title">{ts("title")}</h2>
+          <h2 id="settings-title" className="chapter">{ts("title")}</h2>
           {saved && <p role="status" className="text-sm text-success">{ts("saved")}</p>}
         </div>
 

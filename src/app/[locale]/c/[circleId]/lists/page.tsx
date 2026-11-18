@@ -129,13 +129,13 @@ export default async function Lists({ params }: PageProps<"/[locale]/c/[circleId
       <h1 className="display">{t("title")}</h1>
 
       <div className="grid gap-4">
-        <h2 className="text-ink-2">{t("group")}</h2>
-        {groupLists.length === 0 ? <p className="well grained p-5 text-ink-2">{t("empty")}</p> : <div className="grid">{groupLists.map((l) => card(l, false))}</div>}
+        <h2 className="chapter">{t("group")}</h2>
+        {groupLists.length === 0 ? <p className="empty well grained p-5 text-ink-2">{t("empty")}</p> : <div className="grid">{groupLists.map((l) => card(l, false))}</div>}
       </div>
 
       <div className="grid gap-4">
-        <h2 className="text-ink-2">{t("mine")}</h2>
-        {myLists.length === 0 ? <p className="well grained p-5 text-ink-2">{t("emptyPersonal")}</p> : <div className="grid">{myLists.map((l) => card(l, true))}</div>}
+        <h2 className="chapter">{t("mine")}</h2>
+        {myLists.length === 0 ? <p className="empty well grained p-5 text-ink-2">{t("emptyPersonal")}</p> : <div className="grid">{myLists.map((l) => card(l, true))}</div>}
       </div>
 
       <form action={createList} className="well grid gap-4 p-5">

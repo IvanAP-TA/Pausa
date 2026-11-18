@@ -1,4 +1,4 @@
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
 import { FilterBar } from "./filter-bar";
@@ -10,10 +10,12 @@ import { getDb } from "@/db";
 import { memoriesFor, onboardingFor } from "@/lib/core/retention";
 import { COVER_GLYPH } from "@/lib/core/settings";
 import { Avatar } from "@/components/avatar";
+import { PauseMark } from "@/components/brand";
 import { LogCard } from "@/components/log-card";
 import { Poster } from "@/components/poster";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Bell, Check } from "lucide-react";
+import { Bell, Check, Trophy } from "lucide-react";
+import { Fragment } from "react";
 
 const PAGE = 20;
 
@@ -42,7 +44,7 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
   const filtered = Object.values(filters).some(Boolean);
   const qs = new URLSearchParams(Object.entries({ q: filters.q, kind: filters.kind, by: filters.by, year: filters.year, min: filters.minRating }).flatMap(([k, v]) => (v ? [[k, String(v)]] : []))).toString();
 
-  const [circle, members, stats, watching, feed, unread, t, ta, about] = await Promise.all([
+  const [circle, members, stats, watching, feed, unread, t, ta, about, tt, format] = await Promise.all([
     getCircleForMember(circleId, user.id),
     getMembers(circleId),
     getCircleStats(circleId, now.getFullYear()),
@@ -53,20 +55,26 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
     getTranslations("feed"),
     getTranslations("account"),
     getMyCircleSettings(circleId, user.id),
+    getTranslations("tabs"),
+    getFormatter(),
   ]);
   const coverGlyph = about?.cover ? COVER_GLYPH[about.cover] : null;
 
+  // The diary is cut into days: each day opens with its date, set as a figure. Days are told apart in the app's time zone.
+  const dayKey = (d: Date) => format.dateTime(d, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const yesterday = new Date(now.getTime() - 86_400_000);
+  const nearDay = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const dayName = (d: Date) =>
+    dayKey(d) === dayKey(now) ? nearDay.format(0, "day")
+    : dayKey(d) === dayKey(yesterday) ? nearDay.format(-1, "day")
+    : format.dateTime(d, { weekday: "long" });
+
   return (
-    <main className="grid gap-6 px-4 pb-8">
-      <header className="flex items-end justify-between gap-3 pt-8">
-        <div className="min-w-0">
-          <h1 className="display">{coverGlyph && <span aria-hidden="true" className="mr-2">{coverGlyph}</span>}{circle!.name}</h1>
-          {about?.description && <p className="mt-2 max-w-prose text-ink-2 [overflow-wrap:anywhere]">{about.description}</p>}
-          <p className="mt-2 text-sm text-muted">
-            {t("members", { count: members.length })}, {t("logsThisYear", { count: stats.logsThisYear })}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
+    <main className="grid gap-6 px-4 pb-8 max-lg:!pt-0">
+      <header className="-mt-14 grid gap-3 lg:mt-0 lg:gap-5 lg:pt-6">
+        {/* The tools sit at the far end of the mast (on a phone the layout draws the wordmark on the same line). */}
+        <div className="pointer-events-none flex h-14 items-center justify-end lg:h-auto">
+        <div className="pointer-events-auto -mr-2 flex shrink-0 items-center gap-1">
           <div className="mr-2 hidden -space-x-1.5 sm:flex">
             {members.slice(0, 5).map((m) => <Avatar key={m.id} user={m} className="ring-2 ring-paper" />)}
           </div>
@@ -87,13 +95,22 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
             )}
           </Link>
         </div>
+        </div>
+        {/* The name of the Cerchia has the full width of the sheet. */}
+        <div className="min-w-0">
+          <h1 className="display max-w-none">{coverGlyph && <span aria-hidden="true" className="mr-2">{coverGlyph}</span>}{circle!.name}</h1>
+          {about?.description && <p className="mt-2 max-w-prose text-ink-2 [overflow-wrap:anywhere]">{about.description}</p>}
+          <p className="mt-2 text-sm text-muted">
+            {t("members", { count: members.length })}, {t("logsThisYear", { count: stats.logsThisYear })}
+          </p>
+        </div>
       </header>
 
       {/* On air: who is watching what right now. A strip that scrolls sideways on a phone, each entry a small plate. */}
       {watching.length > 0 && (
-        <ul className="-mx-4 flex snap-x scroll-pl-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:scroll-pl-0 lg:px-0">
+        <ul className="-mx-4 flex snap-x scroll-pl-4 gap-0.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:scroll-pl-0 lg:px-0">
           {watching.map((w) => (
-            <li key={w.user.id} className="well grid w-[min(82vw,20rem)] shrink-0 snap-start grid-cols-[56px_minmax(0,1fr)] gap-3 p-3">
+            <li key={w.user.id} className="well reel grid w-[min(82vw,20rem)] shrink-0 snap-start grid-cols-[56px_minmax(0,1fr)] gap-3 px-3 py-[26px]">
               <Poster media={w.media} size="sm" />
               <div className="grid min-w-0 content-between gap-2">
                 <p className="text-sm">
@@ -127,7 +144,14 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
         </ul>
       )}
 
-      <FilterBar circleId={circleId} members={members} filters={filters} qs={qs} year={now.getFullYear()} resultCount={filtered ? Math.min(feed.length, PAGE) : null} hasMore={feed.length > PAGE} />
+      {/* Two rows under shared hairlines: the ranking (on a phone; the rail has it from 64rem), then search. */}
+      <div className="grid">
+        <Link href={`/c/${circleId}/ranking`} className="row-link flex min-h-12 items-center gap-3 border-t border-rule text-base font-semibold transition-colors duration-150 hover:bg-paper-2 lg:hidden">
+          <Trophy size={20} strokeWidth={1.6} aria-hidden="true" />
+          {tt("ranking")}
+        </Link>
+        <FilterBar circleId={circleId} members={members} filters={filters} qs={qs} year={now.getFullYear()} resultCount={filtered ? Math.min(feed.length, PAGE) : null} hasMore={feed.length > PAGE} />
+      </div>
 
       {!before && !filtered && (
         <Suspense fallback={null}>
@@ -141,6 +165,7 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
         <p className="plate pt-5 text-ink-2">{t("endOfFeed")}</p>
       ) : feed.length === 0 ? (
         <section className="well grained grid gap-3 p-6">
+          <PauseMark className="mb-2 h-10" />
           <h2 className="title">{t("emptyTitle")}</h2>
           <p className="text-ink-2">{t("emptyBody")}</p>
           <Link href={`/c/${circleId}/log`} className="btn btn-primary mt-2 w-fit">
@@ -148,8 +173,23 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
           </Link>
         </section>
       ) : (
-        <div className="grid">
-          {feed.slice(0, PAGE).map((log, i) => <LogCard key={log.id} log={log} now={now} circleId={circleId} priority={i === 0} />)}
+        <div className="stagger grid">
+          {feed.slice(0, PAGE).map((log, i, shown) => (
+            <Fragment key={log.id}>
+              {(i === 0 || dayKey(shown[i - 1].createdAt) !== dayKey(log.createdAt)) && (
+                <h2 className={`day ${i === 0 ? "" : "mt-8"} ${dayKey(log.createdAt) === dayKey(now) ? "day-today" : ""}`}>
+                  <time dateTime={log.createdAt.toISOString().slice(0, 10)} className="contents">
+                    <span className="figure day-figure">{format.dateTime(log.createdAt, { day: "numeric" })}</span>
+                    <span className="day-label">
+                      <span className="day-name">{dayName(log.createdAt)}</span>
+                      <span>{format.dateTime(log.createdAt, { month: "long", year: "numeric" })}</span>
+                    </span>
+                  </time>
+                </h2>
+              )}
+              <LogCard log={log} now={now} circleId={circleId} priority={i === 0} />
+            </Fragment>
+          ))}
           {feed.length > PAGE && (
             <div className="plate grid justify-items-center pt-6">
               <Link href={`/c/${circleId}?before=${feed[PAGE - 1].createdAt.getTime()}${qs ? `&${qs}` : ""}`} className="btn">
@@ -198,7 +238,7 @@ async function Extras({ circleId, userId, locale, now }: { circleId: string; use
 
       {memories.length > 0 && (
         <section aria-labelledby="memories" className="grid gap-3">
-          <h2 id="memories" className="title">{tr("memoriesTitle")}</h2>
+          <h2 id="memories" className="chapter">{tr("memoriesTitle")}</h2>
           <ul className="rows grid">
             {memories.map((m) => (
               <li key={m.logId}>

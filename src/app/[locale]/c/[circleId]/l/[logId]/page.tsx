@@ -74,7 +74,7 @@ export default async function LogThread({ params }: PageProps<"/[locale]/c/[circ
       )}
 
       <section className="grid gap-4" aria-labelledby="comments-title">
-        <h2 id="comments-title" className="title">{t("title")}</h2>
+        <h2 id="comments-title" className="chapter">{t("title")}</h2>
         {comments.length === 0 && <p className="text-ink-2">{t("empty")}</p>}
         <ul className="rows grid">
           {comments.map((c) => (

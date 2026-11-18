@@ -81,7 +81,7 @@ export default async function Person({ params }: PageProps<"/[locale]/c/[circleI
 
       {favourites.length > 0 && (
         <section aria-labelledby="loved" className="grid gap-3">
-          <h2 id="loved" className="title">{t("loved")}</h2>
+          <h2 id="loved" className="chapter">{t("loved")}</h2>
           <ul className="-mx-4 flex snap-x scroll-pl-4 gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:scroll-pl-0 lg:px-0">
             {favourites.map(({ f, r }) => (
               <li key={f.mediaId} className="grid w-[104px] shrink-0 snap-start content-start gap-2">
@@ -95,7 +95,7 @@ export default async function Person({ params }: PageProps<"/[locale]/c/[circleI
       )}
 
       <section aria-labelledby="recent" className="grid gap-3">
-        <h2 id="recent" className="title">{t("recent")}</h2>
+        <h2 id="recent" className="chapter">{t("recent")}</h2>
         {recent.length === 0 ? <p className="plate pt-5 text-ink-2">{t("noLogs")}</p> : <div className="grid">{recent.map((log) => <LogCard key={log.id} log={log} now={now} circleId={circleId} />)}</div>}
         {mine.length > recent.length && (
           <div className="plate grid justify-items-center pt-6">
