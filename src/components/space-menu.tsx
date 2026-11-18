@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Check, ChevronDown, User, Users } from "lucide-react";
+import { Check, ChevronDown, Plus, User, Users } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 
-type Labels = { open: string; title: string; personal: string; here: string };
+type Labels = { open: string; title: string; personal: string; here: string; more: string };
 
 /**
- * Every place the person can be in, one tap away from any page: their own space and each of their Cerchie.
+ * Every place the person can be in, one tap away from any page: their own space, each of their Cerchie, and the page
+ * where they join or create another one.
  * A disclosure (a button and the list of links it opens), not a menu widget: links keep their own keyboard behaviour.
  * It closes on Escape, on a tap outside, and when the page changes.
  */
@@ -58,6 +59,12 @@ export function SpaceMenu({ circles, currentId, labels }: { circles: { id: strin
                 </Link>
               </li>
             ))}
+            <li>
+              <Link href="/me/circles" className={item(false)} onClick={() => setOpen(false)}>
+                <Plus size={18} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />
+                <span className="min-w-0 flex-1 truncate">{labels.more}</span>
+              </Link>
+            </li>
           </ul>
         </div>
       )}

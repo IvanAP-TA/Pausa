@@ -145,3 +145,43 @@ test("the data export downloads the person's own data @phone", async ({ page }) 
   const data = await res.json();
   expect(data.profile.email).toBe("marco@pausa.test");
 });
+
+test("the space bar leads to the page of my Cerchie, where a pasted invite link gets me in", async ({ page }) => {
+  await signInAs(page, "giulia", `/it/c/${CIRCLE}`);
+  await page.getByRole("button", { name: /Cambia spazio/ }).click();
+  await page.getByRole("link", { name: "Unisciti o crea una Cerchia" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Le tue Cerchie" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Crea una Cerchia nuova" })).toBeVisible();
+
+  // The whole link, as copied from a chat: the code is its last piece. (Already a member: no use is spent.)
+  await page.getByLabel("Codice o link di invito").fill("https://pausa.example/it/join/DIVANO24?from=chat");
+  await page.getByRole("button", { name: "Entra", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/it/c/${CIRCLE}$`));
+
+  // A code that is no invite says so, instead of failing.
+  await page.goto("/it/me/circles");
+  await page.getByLabel("Codice o link di invito").fill("ZZZZ9999");
+  await page.getByRole("button", { name: "Entra", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Questo invito non esiste." })).toBeVisible();
+});
+
+test("log a film in private, then delete it from my space", async ({ page }) => {
+  await signInAs(page, "luca", `/it/c/${CIRCLE}/log?private=1`);
+  await page.getByRole("searchbox").or(page.getByPlaceholder("Cerca un film, una serie, un anime")).first().fill("Inception");
+  await page.getByRole("button", { name: "Cerca" }).click();
+  await page.getByRole("button", { name: /Inception/ }).first().click();
+  await page.getByRole("button", { name: "Registra" }).click();
+  await expect(page).toHaveURL(/\/it\/me\?ok=logged/);
+  const row = page.locator("li[id^='l-']").filter({ hasText: "Privato: lo vedi solo tu" }).filter({ hasText: "Inception" });
+  await expect(row).toHaveCount(1);
+
+  await row.getByRole("button", { name: /Elimina la visione di/ }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("Non si può annullare");
+  await dialog.getByRole("button", { name: "Annulla" }).click(); // asking is not doing
+  await expect(row).toHaveCount(1);
+  await row.getByRole("button", { name: /Elimina la visione di/ }).click();
+  await dialog.getByRole("button", { name: "Elimina", exact: true }).click();
+  await expect(page.getByText("Visione eliminata.")).toBeVisible();
+  await expect(row).toHaveCount(0);
+});

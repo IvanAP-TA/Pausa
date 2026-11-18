@@ -1,19 +1,20 @@
 import { cookies } from "next/headers";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
-import { Download, ListChecks, Lock, Plus, Settings, Users, X } from "lucide-react";
+import { Download, ListChecks, Lock, Plus, Settings, Trash2, Users, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
 import { getMyCircles, getMyDiary, getMyDiaryCounts } from "@/lib/data";
-import { setLogScopeAction, shareLogAction, unshareLogAction } from "@/lib/space-actions";
+import { deleteMyLogAction, setLogScopeAction, shareLogAction, unshareLogAction } from "@/lib/space-actions";
 import { formatProgress } from "@/lib/core/progress";
 import { Avatar } from "@/components/avatar";
+import { ConfirmForm } from "@/components/confirm-form";
 import { LAST_CIRCLE_COOKIE } from "@/components/circle-memory";
 import { Poster } from "@/components/poster";
 import { Stars } from "@/components/stars";
 import { SubmitButton } from "@/components/submit-button";
 
 const PAGE = 40;
-const NOTICES = ["shared", "unshared", "private", "open", "logged"] as const;
+const NOTICES = ["shared", "unshared", "private", "open", "logged", "deleted"] as const;
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/me">) {
   const { locale } = await params;
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/me">) {
 
 /**
  * My space: everything I watched, whoever can read it. Each row says where it shows (every Cerchia, some, or only here)
- * and carries the one action that changes it. What I import lands here, private.
+ * and carries the one action that changes it, plus the bin that deletes it for good. What I import lands here.
  */
 export default async function MySpace({ params, searchParams }: PageProps<"/[locale]/me">) {
   const { locale } = await params;
@@ -102,7 +103,7 @@ export default async function MySpace({ params, searchParams }: PageProps<"/[loc
               log.episode ? formatProgress({ season: log.season, episode: log.episode }) : log.season ? tf("season", { n: log.season }) : null,
             ].filter(Boolean);
             return (
-              <li key={log.id} id={`l-${log.id}`} className="grid scroll-mt-4 grid-cols-[72px_minmax(0,1fr)] gap-x-4 gap-y-3 py-5">
+              <li key={log.id} id={`l-${log.id}`} className="grid scroll-mt-16 grid-cols-[72px_minmax(0,1fr)_auto] gap-x-4 gap-y-3 py-5">
                 {home ? <Link href={`/c/${home.id}/m/${log.media.id}`} aria-label={tf("openTitle", { title: log.media.title })} className="self-start"><Poster media={log.media} size="sm" /></Link> : <Poster media={log.media} size="sm" />}
                 <div className="grid min-w-0 content-start gap-1.5">
                   <h2 className="title text-xl">{log.media.title}</h2>
@@ -111,6 +112,18 @@ export default async function MySpace({ params, searchParams }: PageProps<"/[loc
                   </p>
                   {log.rating ? <Stars className="text-base" rating={log.rating} label={tf("rating", { stars: log.rating / 2 })} /> : null}
                 </div>
+                <ConfirmForm
+                  action={deleteMyLogAction}
+                  fields={{ logId: log.id, locale, ...(only ? { only } : {}) }}
+                  trigger={<Trash2 size={18} strokeWidth={1.6} aria-hidden="true" />}
+                  triggerLabel={t("delete", { title: log.media.title })}
+                  triggerClassName="-mr-2 -mt-2 grid size-11 place-items-center self-start text-muted transition-colors duration-150 hover:text-error"
+                  title={t("deleteTitle", { title: log.media.title })}
+                  body={<p>{log.scope === "circles" || log.sharedWith.length > 0 ? t("deleteBodyShared") : t("deleteBody")}</p>}
+                  confirm={t("deleteCta")}
+                  cancel={t("cancel")}
+                  pending={t("deleting")}
+                />
 
                 {/* Where this log shows, and the one thing to do about it. */}
                 <div className="col-span-full grid gap-2">

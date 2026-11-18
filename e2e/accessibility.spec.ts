@@ -6,7 +6,7 @@ import { CIRCLE, signInAs } from "./helpers";
  * lesser ones are printed so they are not forgotten. */
 
 const PUBLIC = ["/it", "/en", "/es", "/it/sign-in", "/it/guide", "/it/guide/movie-night-guide", "/it/privacy", "/it/terms"];
-const PRIVATE = [`/it/c/${CIRCLE}`, `/it/c/${CIRCLE}/serata`, `/it/c/${CIRCLE}/lists`, `/it/c/${CIRCLE}/members`, `/it/c/${CIRCLE}/insights`, `/it/c/${CIRCLE}/ranking`, `/it/c/${CIRCLE}/ranking?from=2000&to=2010&votes=1&sort=year`, `/it/c/${CIRCLE}/log`, `/it/c/${CIRCLE}/notifications`, `/it/account`, `/it/me`, `/it/me/import`, `/it/me/imports`];
+const PRIVATE = [`/it/c/${CIRCLE}`, `/it/c/${CIRCLE}/serata`, `/it/c/${CIRCLE}/lists`, `/it/c/${CIRCLE}/members`, `/it/c/${CIRCLE}/insights`, `/it/c/${CIRCLE}/ranking`, `/it/c/${CIRCLE}/ranking?from=2000&to=2010&votes=1&sort=year`, `/it/c/${CIRCLE}/log`, `/it/c/${CIRCLE}/notifications`, `/it/account`, `/it/me`, `/it/me/import`, `/it/me/imports`, `/it/me/circles`];
 
 async function audit(page: Page, label: string) {
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();

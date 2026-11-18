@@ -1003,12 +1003,21 @@
       "unshared": "Quitado del grupo.",
       "private": "Ahora es privado: ya no aparece en ninguna Cerchia.",
       "open": "Ahora es visible en todas tus Cerchie.",
-      "logged": "Registrado en tu espacio, en privado."
+      "logged": "Registrado en tu espacio, en privado.",
+      "deleted": "Visionado eliminado."
     },
     "manageImports": "Gestionar importaciones",
-    "switchOpen": "Cambiar de espacio: todas tus Cerchie",
+    "switchOpen": "Cambiar de espacio: todas tus Cerchie, o entra en otra",
     "switchTitle": "Espacio actual",
-    "here": "Estás aquí"
+    "here": "Estás aquí",
+    "moreCircles": "Únete o crea una Cerchia",
+    "delete": "Eliminar el visionado de {title}",
+    "deleteTitle": "¿Eliminar el visionado de «{title}»?",
+    "deleteBody": "Desaparece de tu espacio, con su nota y su reseña. No se puede deshacer.",
+    "deleteBodyShared": "Desaparece de tu espacio y de cada Cerchia donde aparece, con su nota, reseña, comentarios y reacciones. No se puede deshacer. Si solo quieres quitarlo de los grupos, usa «Hacer privado».",
+    "deleteCta": "Eliminar",
+    "deleting": "Eliminando…",
+    "cancel": "Cancelar"
   },
   "media": {
     "runtime": "{m} min",
@@ -1024,9 +1033,9 @@
   },
   "imports": {
     "title": "Gestionar importaciones",
-    "lede": "Cada importación que has hecho y dónde acabó. Si mandaste una a una Cerchia por error, desde aquí la quitas entera.",
+    "lede": "Cada importación que has hecho y dónde acabó. Si mandaste una a una Cerchia por error, desde aquí la quitas entera, o la eliminas del todo.",
     "emptyTitle": "No hay importaciones que gestionar.",
-    "emptyBody": "Aquí aparecen las importaciones que hagas a partir de ahora.",
+    "emptyBody": "Aquí aparecen las importaciones que hagas, y los días en que añadiste muchos visionados de una vez.",
     "toImport": "Importa tu historial",
     "added": "{count, plural, =0 {ningún visionado nuevo} one {# visionado añadido} other {# visionados añadidos}}",
     "inCircle": "En la Cerchia «{circle}»: {count, plural, one {# visionado} other {# visionados}}{lists, plural, =0 {} one {, # lista} other {, # listas}}",
@@ -1040,6 +1049,36 @@
     "cancel": "Cancelar",
     "removing": "Quitando…",
     "removed": "{count, plural, =0 {Ningún visionado que quitar} one {# visionado quitado del grupo} other {# visionados quitados del grupo}}{lists, plural, =0 {} one {, # lista vuelve a ser personal} other {, # listas vuelven a ser personales}}. Todo sigue en tu espacio privado.",
-    "note": "Las importaciones hechas antes de esta función no aparecen aquí: son todas privadas, en tu espacio."
+    "note": "Quitar de una Cerchia no borra nada: los visionados siguen en tu espacio privado. Eliminar es definitivo.",
+    "delete": "{count, plural, one {Eliminar # visionado} other {Eliminar # visionados}}",
+    "deleteTitle": "¿Eliminar estos visionados?",
+    "deleteBody": "{count, plural, one {# visionado se elimina} other {# visionados se eliminan}} de tu espacio y de cada Cerchia, con notas, reseñas, comentarios y reacciones. No se puede deshacer.",
+    "deleteKeep": "Los visionados que ya tenías antes de esta importación, y los registrados a mano, no se tocan. Las listas se quedan.",
+    "deleteCta": "Eliminar para siempre",
+    "deleting": "Eliminando…",
+    "deleted": "{count, plural, =0 {Ningún visionado que eliminar} one {# visionado eliminado} other {# visionados eliminados}}.",
+    "olderTitle": "Importaciones anteriores",
+    "olderLede": "Las importaciones hechas antes de que Pausa las separara no llevan etiqueta. Abajo están los días en que añadiste muchos visionados de una vez: casi siempre es una importación.",
+    "olderAdded": "{count, plural, one {# visionado añadido} other {# visionados añadidos}} ese día",
+    "olderInCircles": "{count, plural, one {# visible} other {# visibles}} en tus Cerchie",
+    "olderHide": "Quitar de las Cerchie",
+    "olderHideTitle": "¿Quitar de las Cerchie los visionados del {date}?",
+    "olderHideBody": "{count, plural, one {# visionado desaparece} other {# visionados desaparecen}} del diario de todas tus Cerchie y pasan a ser privados. No se borra nada: siguen en tu espacio, y puedes volver a añadirlos a un grupo uno a uno.",
+    "olderAll": "Vale para los {count} visionados añadidos ese día, también los que hubieras registrado a mano.",
+    "olderHideCta": "Quitar de las Cerchie",
+    "olderDeleteTitle": "¿Eliminar los visionados del {date}?"
+  },
+  "circles": {
+    "title": "Tus Cerchie",
+    "lede": "Los grupos de los que formas parte. Puedes estar en más de uno: entra en otro con una invitación, o crea uno nuevo.",
+    "none": "Aún no estás en ninguna Cerchia.",
+    "admin": "Admin",
+    "joinTitle": "Entra en otra Cerchia",
+    "joinBody": "Pide una invitación a alguien que ya esté dentro y pega aquí el código o el enlace entero.",
+    "joinLabel": "Código o enlace de invitación",
+    "joining": "Entrando…",
+    "createTitle": "Crea una Cerchia nueva",
+    "createBody": "Serás admin y recibirás un enlace para enviar a tus amigos.",
+    "creating": "Creando…"
   }
 }

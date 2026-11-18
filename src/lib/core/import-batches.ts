@@ -5,7 +5,7 @@
  * nothing else: the shares this run made are dropped and the lists it created become personal. The viewings stay in the
  * person's own space, and anything shared by hand, or by another import, is left alone. */
 
-import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { circle, circleMember, importBatch, list, log, logShare } from "../../db/schema";
 import type { AnyDb } from "./db-types";
 import type { ImportSource } from "./import-parsers";
@@ -83,4 +83,67 @@ export async function removeImportFromCircle(db: AnyDb, input: { userId: string;
   await db.delete(logShare).where(eq(logShare.importBatchId, batch.id));
   await db.update(list).set({ circleId: null }).where(groupLists);
   return { removed, lists };
+}
+
+/**
+ * Deletes the viewings one run added, for good (their comments and reactions go with them). Only logs carrying the run's
+ * id and written by its owner: viewings the person already had, or logged by hand, are not touched. Lists stay.
+ */
+export async function deleteImportLogs(db: AnyDb, input: { userId: string; batchId: string }): Promise<{ deleted: number } | { error: BatchError }> {
+  const [batch] = await db.select({ id: importBatch.id }).from(importBatch)
+    .where(and(eq(importBatch.id, input.batchId), eq(importBatch.userId, input.userId)));
+  if (!batch) return { error: "not_found" };
+  const mine = and(eq(log.importBatchId, batch.id), eq(log.userId, input.userId));
+  const [{ n: deleted }] = await db.select({ n: sql<number>`count(*)` }).from(log).where(mine);
+  await db.delete(log).where(mine);
+  return { deleted };
+}
+
+/* ───────────── Before runs were tracked ─────────────
+ * Older imports left no mark on their logs, and the oldest ones are open to every Cerchia. What still gives them away is
+ * that they were all written on the same day: a day (UTC) on which the person added BULK_MIN or more viewings without a
+ * run is offered as one block, to hide from the Cerchie or delete together. */
+
+export const BULK_MIN = 10;
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const dayOf = sql<string>`date(${log.createdAt} / 1000, 'unixepoch')`;
+const shownSomewhere = sql`(${log.scope} = 'circles' or exists (select 1 from ${logShare} where ${logShare.logId} = ${log.id}))`;
+const untracked = (userId: string, day: string) => and(eq(log.userId, userId), isNull(log.importBatchId), sql`${dayOf} = ${day}`);
+
+export type BulkDay = { day: string; logs: number; inCircles: number };
+
+/** The person's bulk days, newest first. `inCircles`: how many of those viewings a Cerchia can still see. */
+export async function listBulkDays(db: AnyDb, userId: string): Promise<BulkDay[]> {
+  const rows = await db
+    .select({ day: dayOf, logs: sql<number>`count(*)`, inCircles: sql<number>`coalesce(sum(case when ${shownSomewhere} then 1 else 0 end), 0)` })
+    .from(log)
+    .where(and(eq(log.userId, userId), isNull(log.importBatchId)))
+    .groupBy(dayOf)
+    .having(sql`count(*) >= ${BULK_MIN}`)
+    .orderBy(desc(dayOf));
+  return rows.map((r) => ({ day: r.day, logs: Number(r.logs), inCircles: Number(r.inCircles) }));
+}
+
+async function bulkDay(db: AnyDb, userId: string, day: string) {
+  if (!DAY.test(day)) return null;
+  const [{ n }] = await db.select({ n: sql<number>`count(*)` }).from(log).where(untracked(userId, day));
+  return n >= BULK_MIN ? n : null; // a day with a few hand-written logs is not a block: use the single buttons
+}
+
+/** Takes a bulk day out of every Cerchia: its viewings become private and their shares are dropped. Nothing is deleted. */
+export async function hideBulkDay(db: AnyDb, input: { userId: string; day: string }): Promise<{ removed: number } | { error: BatchError }> {
+  if ((await bulkDay(db, input.userId, input.day)) === null) return { error: "not_found" };
+  const these = untracked(input.userId, input.day);
+  const [{ n: removed }] = await db.select({ n: sql<number>`count(*)` }).from(log).where(and(these, shownSomewhere));
+  await db.delete(logShare).where(inArray(logShare.logId, db.select({ id: log.id }).from(log).where(these)));
+  await db.update(log).set({ scope: "private" }).where(these);
+  return { removed };
+}
+
+/** Deletes every viewing of a bulk day, for good. */
+export async function deleteBulkDay(db: AnyDb, input: { userId: string; day: string }): Promise<{ deleted: number } | { error: BatchError }> {
+  const deleted = await bulkDay(db, input.userId, input.day);
+  if (deleted === null) return { error: "not_found" };
+  await db.delete(log).where(untracked(input.userId, input.day));
+  return { deleted };
 }

@@ -43,9 +43,12 @@ export async function createCircle(formData: FormData) {
 export async function joinCircle(formData: FormData) {
   const user = await requireUser();
   await enforce("joinCircle", user.id);
-  const code = z.string().trim().toUpperCase().min(4).max(16).parse(formData.get("code"));
-  const db = await getDb();
   const locale = localeFrom(formData.get("locale"));
+  // People paste the whole invite link as often as the code: the code is its last piece.
+  const typed = String(formData.get("code") ?? "").trim().split(/[?#]/)[0].split("/").filter(Boolean).pop() ?? "";
+  const code = typed.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16);
+  if (code.length < 4) redirect(`/${locale}/join/${code || "-"}`); // the join page says the invite does not exist
+  const db = await getDb();
   const res = await redeemInvite(db, user.id, code);
   // Unknown / expired / revoked / used-up: the join page explains which.
   if ("error" in res) redirect(`/${locale}/join/${encodeURIComponent(code)}`);

@@ -3,8 +3,8 @@ import { Lock, Users } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { getDb } from "@/db";
 import { requireUser } from "@/lib/session";
-import { listImportBatches } from "@/lib/core/import-batches";
-import { removeImportFromCircleAction } from "@/lib/import/actions";
+import { listBulkDays, listImportBatches } from "@/lib/core/import-batches";
+import { deleteBulkDayAction, deleteImportAction, hideBulkDayAction, removeImportFromCircleAction } from "@/lib/import/actions";
 import { ConfirmForm } from "@/components/confirm-form";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/me/imports">) {
@@ -13,21 +13,27 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/me/impor
   return { title: t("title"), robots: { index: false } };
 }
 
+const DELETE = "btn btn-sm border-error text-error hover:border-error";
+
 /**
- * Manage imports: every run of the import screen, where it went, and the one button that takes a whole run out of the
- * Cerchia it landed in. Nothing is deleted: the viewings stay in the person's own space.
+ * Manage imports: every run of the import screen, where it went, and two buttons for a whole run: take it out of the
+ * Cerchia it landed in (the viewings stay in the person's own space), or delete its viewings for good. Imports older than
+ * the tracking have no run: they show below as the days on which many viewings were added at once, with the same two buttons.
  */
 export default async function ImportsPage({ params, searchParams }: PageProps<"/[locale]/me/imports">) {
   const { locale } = await params;
   const sp = await searchParams;
   setRequestLocale(locale);
   const user = await requireUser();
-  const [batches, t, ti, tc, format] = await Promise.all([
-    listImportBatches(await getDb(), user.id), getTranslations("imports"), getTranslations("import"), getTranslations("common"), getFormatter(),
+  const db = await getDb();
+  const [batches, days, t, ti, tc, format] = await Promise.all([
+    listImportBatches(db, user.id), listBulkDays(db, user.id),
+    getTranslations("imports"), getTranslations("import"), getTranslations("common"), getFormatter(),
   ]);
   const num = (v: unknown) => (typeof v === "string" && /^\d{1,7}$/.test(v) ? Number(v) : null);
   const removed = num(sp.removed);
   const lists = num(sp.lists) ?? 0;
+  const deleted = num(sp.deleted);
 
   return (
     <main className="grid gap-6 px-4 pb-12 pt-2">
@@ -38,14 +44,17 @@ export default async function ImportsPage({ params, searchParams }: PageProps<"/
       </div>
 
       {removed !== null && <p role="status" className="well p-3 text-sm">{t("removed", { count: removed, lists })}</p>}
+      {deleted !== null && <p role="status" className="well p-3 text-sm">{t("deleted", { count: deleted })}</p>}
 
-      {batches.length === 0 ? (
+      {batches.length === 0 && days.length === 0 ? (
         <section className="well empty grid gap-3 p-6">
           <h2 className="title">{t("emptyTitle")}</h2>
           <p className="text-ink-2">{t("emptyBody")}</p>
           <Link href="/me/import" className="btn w-fit">{t("toImport")}</Link>
         </section>
-      ) : (
+      ) : null}
+
+      {batches.length > 0 && (
         <ul className="rows grid">
           {batches.map((b) => {
             const stillThere = b.inCircle + b.listsInCircle > 0;
@@ -58,12 +67,14 @@ export default async function ImportsPage({ params, searchParams }: PageProps<"/
                     {" · "}{t("added", { count: b.logs })}
                   </p>
                 </div>
-                {b.circle && stillThere ? (
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="flex min-w-0 items-center gap-2 text-sm text-ink-2">
-                      <Users size={16} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />
-                      <span className="[overflow-wrap:anywhere]">{t("inCircle", { count: b.inCircle, lists: b.listsInCircle, circle: b.circle.name })}</span>
-                    </p>
+                <p className="flex min-w-0 items-center gap-2 text-sm text-ink-2">
+                  {b.circle && stillThere ? <Users size={16} strokeWidth={1.6} aria-hidden="true" className="shrink-0" /> : <Lock size={16} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />}
+                  <span className="[overflow-wrap:anywhere]">
+                    {b.circle && stillThere ? t("inCircle", { count: b.inCircle, lists: b.listsInCircle, circle: b.circle.name }) : b.circle ? t("takenOut", { circle: b.circle.name }) : t("privateOnly")}
+                  </span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {b.circle && stillThere && (
                     <ConfirmForm
                       action={removeImportFromCircleAction}
                       fields={{ batchId: b.id, locale }}
@@ -74,17 +85,74 @@ export default async function ImportsPage({ params, searchParams }: PageProps<"/
                       cancel={t("cancel")}
                       pending={t("removing")}
                     />
-                  </div>
-                ) : (
-                  <p className="flex items-center gap-2 text-sm text-ink-2">
-                    <Lock size={16} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />
-                    {b.circle ? t("takenOut", { circle: b.circle.name }) : t("privateOnly")}
-                  </p>
-                )}
+                  )}
+                  {b.logs > 0 && (
+                    <ConfirmForm
+                      action={deleteImportAction}
+                      fields={{ batchId: b.id, locale }}
+                      trigger={t("delete", { count: b.logs })}
+                      triggerClassName={DELETE}
+                      title={t("deleteTitle")}
+                      body={<><p>{t("deleteBody", { count: b.logs })}</p><p>{t("deleteKeep")}</p></>}
+                      confirm={t("deleteCta")}
+                      cancel={t("cancel")}
+                      pending={t("deleting")}
+                    />
+                  )}
+                </div>
               </li>
             );
           })}
         </ul>
+      )}
+
+      {days.length > 0 && (
+        <section className="grid gap-3">
+          <h2 className="chapter">{t("olderTitle")}</h2>
+          <p className="max-w-prose text-sm text-ink-2">{t("olderLede")}</p>
+          <ul className="rows grid">
+            {days.map((d) => {
+              const date = format.dateTime(new Date(`${d.day}T12:00:00Z`), { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+              return (
+                <li key={d.day} className="grid gap-3 py-5">
+                  <div className="grid gap-1">
+                    <h3 className="title text-xl"><time dateTime={d.day}>{date}</time></h3>
+                    <p className="text-sm text-muted">{t("olderAdded", { count: d.logs })}</p>
+                  </div>
+                  <p className="flex min-w-0 items-center gap-2 text-sm text-ink-2">
+                    {d.inCircles > 0 ? <Users size={16} strokeWidth={1.6} aria-hidden="true" className="shrink-0" /> : <Lock size={16} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />}
+                    {d.inCircles > 0 ? t("olderInCircles", { count: d.inCircles }) : t("privateOnly")}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {d.inCircles > 0 && (
+                      <ConfirmForm
+                        action={hideBulkDayAction}
+                        fields={{ day: d.day, locale }}
+                        trigger={t("olderHide")}
+                        title={t("olderHideTitle", { date })}
+                        body={<><p>{t("olderHideBody", { count: d.inCircles })}</p><p>{t("olderAll", { count: d.logs })}</p></>}
+                        confirm={t("olderHideCta")}
+                        cancel={t("cancel")}
+                        pending={t("removing")}
+                      />
+                    )}
+                    <ConfirmForm
+                      action={deleteBulkDayAction}
+                      fields={{ day: d.day, locale }}
+                      trigger={t("delete", { count: d.logs })}
+                      triggerClassName={DELETE}
+                      title={t("olderDeleteTitle", { date })}
+                      body={<><p>{t("deleteBody", { count: d.logs })}</p><p>{t("olderAll", { count: d.logs })}</p></>}
+                      confirm={t("deleteCta")}
+                      cancel={t("cancel")}
+                      pending={t("deleting")}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
 
       <p className="text-sm text-muted">{t("note")}</p>

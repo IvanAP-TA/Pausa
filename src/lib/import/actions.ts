@@ -7,7 +7,9 @@ import { hasLocale } from "next-intl";
 import { getDb } from "@/db";
 import { routing } from "@/i18n/routing";
 import { CHUNK_LIMIT, importList, importRows, type ImportResult, type ListImportResult } from "@/lib/core/import";
-import { createImportBatch, getImportBatch, removeImportFromCircle } from "@/lib/core/import-batches";
+import {
+  createImportBatch, deleteBulkDay, deleteImportLogs, getImportBatch, hideBulkDay, removeImportFromCircle,
+} from "@/lib/core/import-batches";
 import type { ImportRow } from "@/lib/core/import-parsers";
 import { requireUser } from "@/lib/session";
 import { enrichAnime, enrichMovies } from "./enrich";
@@ -136,16 +138,51 @@ export async function importListChunk(input: unknown): Promise<ListChunkResult> 
   }
 }
 
-/** "Manage imports": takes one run out of the Cerchia it went to. The viewings stay in the person's own space. */
+/* ───────────── Manage imports ───────────── */
+
+/** Every action of the page answers the same way: back to the list, with what was done (?removed= or ?deleted=). */
+function backToImports(formData: FormData, query: string): never {
+  const rawLocale = formData.get("locale");
+  const locale = typeof rawLocale === "string" && hasLocale(routing.locales, rawLocale) ? rawLocale : routing.defaultLocale;
+  revalidatePath("/[locale]/me", "layout");
+  revalidatePath("/[locale]/c/[circleId]", "layout");
+  redirect(`/${locale}/me/imports?${query}`);
+}
+
+const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+/** Takes one run out of the Cerchia it went to. The viewings stay in the person's own space. */
 export async function removeImportFromCircleAction(formData: FormData) {
   const user = await requireUser();
   await enforce("shareLog", user.id);
-  const rawLocale = formData.get("locale");
-  const locale = typeof rawLocale === "string" && hasLocale(routing.locales, rawLocale) ? rawLocale : routing.defaultLocale;
-  const id = batchId.parse(formData.get("batchId"));
-  const res = await removeImportFromCircle(await getDb(), { userId: user.id, batchId: id });
+  const res = await removeImportFromCircle(await getDb(), { userId: user.id, batchId: batchId.parse(formData.get("batchId")) });
   if ("error" in res) throw new Error(res.error);
-  revalidatePath("/[locale]/me", "layout");
-  revalidatePath("/[locale]/c/[circleId]", "layout");
-  redirect(`/${locale}/me/imports?removed=${res.removed}&lists=${res.lists}`);
+  backToImports(formData, `removed=${res.removed}&lists=${res.lists}`);
+}
+
+/** Deletes the viewings one run added, for good. */
+export async function deleteImportAction(formData: FormData) {
+  const user = await requireUser();
+  await enforce("shareLog", user.id);
+  const res = await deleteImportLogs(await getDb(), { userId: user.id, batchId: batchId.parse(formData.get("batchId")) });
+  if ("error" in res) throw new Error(res.error);
+  backToImports(formData, `deleted=${res.deleted}`);
+}
+
+/** An import from before runs were tracked (a day of bulk additions): out of every Cerchia, kept in the personal space. */
+export async function hideBulkDayAction(formData: FormData) {
+  const user = await requireUser();
+  await enforce("shareLog", user.id);
+  const res = await hideBulkDay(await getDb(), { userId: user.id, day: day.parse(formData.get("day")) });
+  if ("error" in res) throw new Error(res.error);
+  backToImports(formData, `removed=${res.removed}&lists=0`);
+}
+
+/** The same day of bulk additions, deleted for good. */
+export async function deleteBulkDayAction(formData: FormData) {
+  const user = await requireUser();
+  await enforce("shareLog", user.id);
+  const res = await deleteBulkDay(await getDb(), { userId: user.id, day: day.parse(formData.get("day")) });
+  if ("error" in res) throw new Error(res.error);
+  backToImports(formData, `deleted=${res.deleted}`);
 }

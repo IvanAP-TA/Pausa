@@ -4,7 +4,10 @@ import { circleMember, invite, list, log, logShare } from "../../db/schema";
 import { createCircleWithInvite, redeemInvite } from "./circles";
 import type { AnyDb } from "./db-types";
 import { importList, importRows } from "./import";
-import { createImportBatch, getImportBatch, listImportBatches, removeImportFromCircle } from "./import-batches";
+import {
+  BULK_MIN, createImportBatch, deleteBulkDay, deleteImportLogs, getImportBatch, hideBulkDay, listBulkDays, listImportBatches,
+  removeImportFromCircle,
+} from "./import-batches";
 import type { ImportRow } from "./import-parsers";
 import { shareLog } from "./sharing";
 import { createTestDb, seedUsers } from "./test-db";
@@ -142,8 +145,84 @@ describe("the list of imports", () => {
   });
 });
 
+describe("deleting an import", () => {
+  it("deletes the viewings the run added, and only those", async () => {
+    await db.insert(log).values({ id: "hand", userId: "u-ann", mediaId: (await seedMedia()), watchedOn: "2026-02-02" });
+    const other = await batchFor(null);
+    await importRows(db, "u-ann", [row("Kept")], { ...opts, batchId: other });
+    const batchId = await batchFor(divano);
+    await importRows(db, "u-ann", [row("One"), row("Two"), row("Kept")], { ...opts, batchId, circleId: divano });
+    expect(await shownIn(divano)).toBe(4); // hand + One + Two + Kept (already there, shared by this run)
+
+    expect(await deleteImportLogs(db, { userId: "u-bob", batchId })).toEqual({ error: "not_found" });
+    expect(await deleteImportLogs(db, { userId: "u-ann", batchId })).toEqual({ deleted: 2 });
+    expect((await db.select({ id: log.id }).from(log)).length).toBe(2); // the hand-written one and the other run's
+    expect(await deleteImportLogs(db, { userId: "u-ann", batchId })).toEqual({ deleted: 0 });
+  });
+});
+
+describe("bulk days (imports from before runs were tracked)", () => {
+  const at = (day: string, hour = 10) => new Date(`${day}T${String(hour).padStart(2, "0")}:00:00Z`);
+  const bulk = async (userId: string, day: string, n: number, scope: "circles" | "private" = "circles") => {
+    const mediaId = await seedMedia();
+    await db.insert(log).values(Array.from({ length: n }, (_, i) => ({ id: `${userId}-${day}-${i}`, userId, mediaId, watchedOn: "2020-01-01", scope, createdAt: at(day, i % 24) })));
+  };
+
+  it("lists the days with many untracked viewings, and how many a Cerchia still sees", async () => {
+    await bulk("u-ann", "2026-11-10", BULK_MIN + 2);
+    await bulk("u-ann", "2026-11-12", BULK_MIN, "private");
+    await bulk("u-ann", "2026-11-14", BULK_MIN - 1); // a busy day by hand: not a block
+    await bulk("u-bob", "2026-11-10", BULK_MIN);
+    const batchId = await batchFor(null);
+    await importRows(db, "u-ann", Array.from({ length: BULK_MIN }, (_, i) => row(`T${i}`)), { ...opts, batchId }); // tracked: has its own row
+    const [first] = await db.select().from(log).where(eq(log.id, "u-ann-2026-11-12-0"));
+    await shareLog(db, { logId: first.id, circleId: divano, actorId: "u-ann" });
+
+    expect(await listBulkDays(db, "u-ann")).toEqual([
+      { day: "2026-11-12", logs: BULK_MIN, inCircles: 1 },
+      { day: "2026-11-10", logs: BULK_MIN + 2, inCircles: BULK_MIN + 2 },
+    ]);
+  });
+
+  it("hides a day from every Cerchia without deleting anything, and leaves other days and people alone", async () => {
+    await bulk("u-ann", "2026-11-10", BULK_MIN);
+    await bulk("u-ann", "2026-11-11", BULK_MIN);
+    await bulk("u-bob", "2026-11-10", BULK_MIN);
+    expect(await shownIn(divano)).toBe(BULK_MIN * 3);
+
+    expect(await hideBulkDay(db, { userId: "u-ann", day: "2026-11-10" })).toEqual({ removed: BULK_MIN });
+    expect(await shownIn(divano)).toBe(BULK_MIN * 2);
+    expect((await db.select({ id: log.id }).from(log)).length).toBe(BULK_MIN * 3);
+    expect(await hideBulkDay(db, { userId: "u-ann", day: "2026-11-10" })).toEqual({ removed: 0 });
+    expect((await listBulkDays(db, "u-ann")).find((d) => d.day === "2026-11-10")).toMatchObject({ inCircles: 0 });
+  });
+
+  it("drops the shares of a hidden day too", async () => {
+    await bulk("u-ann", "2026-11-12", BULK_MIN, "private");
+    await shareLog(db, { logId: "u-ann-2026-11-12-0", circleId: divano, actorId: "u-ann" });
+    expect(await hideBulkDay(db, { userId: "u-ann", day: "2026-11-12" })).toEqual({ removed: 1 });
+    expect((await db.select().from(logShare)).length).toBe(0);
+  });
+
+  it("deletes a day for good, only that person's, only untracked viewings", async () => {
+    await bulk("u-ann", "2026-11-10", BULK_MIN);
+    await bulk("u-bob", "2026-11-10", BULK_MIN);
+    expect(await deleteBulkDay(db, { userId: "u-ann", day: "2026-11-10" })).toEqual({ deleted: BULK_MIN });
+    expect((await db.select({ id: log.id }).from(log).where(eq(log.userId, "u-ann"))).length).toBe(0);
+    expect((await db.select({ id: log.id }).from(log).where(eq(log.userId, "u-bob"))).length).toBe(BULK_MIN);
+  });
+
+  it("refuses a day that is not a block, or not a day", async () => {
+    await bulk("u-ann", "2026-11-14", BULK_MIN - 1);
+    expect(await hideBulkDay(db, { userId: "u-ann", day: "2026-11-14" })).toEqual({ error: "not_found" });
+    expect(await deleteBulkDay(db, { userId: "u-ann", day: "2026-11-14" })).toEqual({ error: "not_found" });
+    expect(await deleteBulkDay(db, { userId: "u-ann", day: "' or 1=1 --" })).toEqual({ error: "not_found" });
+    expect((await db.select({ id: log.id }).from(log)).length).toBe(BULK_MIN - 1);
+  });
+});
+
 async function seedMedia() {
   const { mediaEntity } = await import("../../db/schema");
-  await db.insert(mediaEntity).values({ id: "m-hand", kind: "movie", originalTitle: "By hand" });
+  await db.insert(mediaEntity).values({ id: "m-hand", kind: "movie", originalTitle: "By hand" }).onConflictDoNothing();
   return "m-hand";
 }

@@ -1003,12 +1003,21 @@
       "unshared": "Removed from the group.",
       "private": "Now private: it no longer shows in any Cerchia.",
       "open": "Now visible in all your Cerchie.",
-      "logged": "Logged in your space, privately."
+      "logged": "Logged in your space, privately.",
+      "deleted": "Viewing deleted."
     },
     "manageImports": "Manage imports",
-    "switchOpen": "Change space: all your Cerchie",
+    "switchOpen": "Switch space: all your Cerchie, or join another",
     "switchTitle": "Current space",
-    "here": "You are here"
+    "here": "You are here",
+    "moreCircles": "Join or create a Cerchia",
+    "delete": "Delete the viewing of {title}",
+    "deleteTitle": "Delete the viewing of \"{title}\"?",
+    "deleteBody": "It disappears from your space, with its rating and review. This cannot be undone.",
+    "deleteBodyShared": "It disappears from your space and from every Cerchia that shows it, with its rating, review, comments and reactions. This cannot be undone. To only take it out of the groups, use \"Make private\".",
+    "deleteCta": "Delete",
+    "deleting": "Deleting…",
+    "cancel": "Cancel"
   },
   "media": {
     "runtime": "{m} min",
@@ -1024,9 +1033,9 @@
   },
   "imports": {
     "title": "Manage imports",
-    "lede": "Every import you ran and where it went. If you sent one to a Cerchia by mistake, take all of it out from here.",
+    "lede": "Every import you ran and where it went. If you sent one to a Cerchia by mistake, take all of it out from here, or delete it altogether.",
     "emptyTitle": "No imports to manage.",
-    "emptyBody": "Imports you run from now on show up here.",
+    "emptyBody": "Imports you run show up here, and so do the days on which you added many viewings at once.",
     "toImport": "Import your history",
     "added": "{count, plural, =0 {no new viewings} one {# viewing added} other {# viewings added}}",
     "inCircle": "In the Cerchia \"{circle}\": {count, plural, one {# viewing} other {# viewings}}{lists, plural, =0 {} one {, # list} other {, # lists}}",
@@ -1040,6 +1049,36 @@
     "cancel": "Cancel",
     "removing": "Removing…",
     "removed": "{count, plural, =0 {No viewings to remove} one {# viewing removed from the group} other {# viewings removed from the group}}{lists, plural, =0 {} one {, # list made personal again} other {, # lists made personal again}}. Everything stays in your private space.",
-    "note": "Imports made before this feature do not show here: they are all private, in your space."
+    "note": "Removing from a Cerchia deletes nothing: the viewings stay in your private space. Deleting is final.",
+    "delete": "{count, plural, one {Delete # viewing} other {Delete # viewings}}",
+    "deleteTitle": "Delete these viewings?",
+    "deleteBody": "{count, plural, one {# viewing is deleted} other {# viewings are deleted}} from your space and from every Cerchia, with ratings, reviews, comments and reactions. This cannot be undone.",
+    "deleteKeep": "Viewings you already had before this import, and those you logged by hand, are not touched. Lists stay.",
+    "deleteCta": "Delete for good",
+    "deleting": "Deleting…",
+    "deleted": "{count, plural, =0 {No viewings to delete} one {# viewing deleted} other {# viewings deleted}}.",
+    "olderTitle": "Earlier imports",
+    "olderLede": "Imports made before Pausa kept them apart carry no label. Below are the days on which you added many viewings at once: almost always, that is an import.",
+    "olderAdded": "{count, plural, one {# viewing added} other {# viewings added}} that day",
+    "olderInCircles": "{count, plural, one {# visible} other {# visible}} in your Cerchie",
+    "olderHide": "Remove from the Cerchie",
+    "olderHideTitle": "Remove the viewings of {date} from the Cerchie?",
+    "olderHideBody": "{count, plural, one {# viewing disappears} other {# viewings disappear}} from the diary of all your Cerchie and become private. Nothing is deleted: they stay in your space, and you can add them back to a group one by one.",
+    "olderAll": "This covers all {count} viewings added that day, including any you logged by hand.",
+    "olderHideCta": "Remove from the Cerchie",
+    "olderDeleteTitle": "Delete the viewings of {date}?"
+  },
+  "circles": {
+    "title": "Your Cerchie",
+    "lede": "The groups you belong to. You can be in more than one: join another with an invite, or create a new one.",
+    "none": "You are not in any Cerchia yet.",
+    "admin": "Admin",
+    "joinTitle": "Join another Cerchia",
+    "joinBody": "Ask someone who is already in for an invite, then paste the code or the whole link here.",
+    "joinLabel": "Invite code or link",
+    "joining": "Joining…",
+    "createTitle": "Create a new Cerchia",
+    "createBody": "You become its admin and get a link to send to your friends.",
+    "creating": "Creating…"
   }
 }

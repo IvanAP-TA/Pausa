@@ -978,7 +978,7 @@
     "personal": "Il mio spazio",
     "circles": "Cerchie",
     "title": "Il mio spazio",
-    "lede": "Tutto quello che hai visto, in un posto solo tuo. Quello che importi arriva qui: è privato, a meno che tu non scelga una Cerchia come destinazione.",
+    "lede": "Tutto quello che hai visto, in un posto solo tuo. Quello che importi arriva qui: è privato, a meno che tu non scelga una Cerchia come destinazione. Con il cestino elimini una visione.",
     "add": "Registra in privato",
     "import": "Importa",
     "account": "Account",
@@ -1003,12 +1003,21 @@
       "unshared": "Tolto dal gruppo.",
       "private": "Ora è privato: non compare più in nessuna Cerchia.",
       "open": "Ora è visibile in tutte le tue Cerchie.",
-      "logged": "Registrato nel tuo spazio, in privato."
+      "logged": "Registrato nel tuo spazio, in privato.",
+      "deleted": "Visione eliminata."
     },
     "manageImports": "Gestisci importazioni",
-    "switchOpen": "Cambia spazio: tutte le tue Cerchie",
+    "switchOpen": "Cambia spazio: tutte le tue Cerchie, o entra in un'altra",
     "switchTitle": "Spazio attuale",
-    "here": "Sei qui"
+    "here": "Sei qui",
+    "moreCircles": "Unisciti o crea una Cerchia",
+    "delete": "Elimina la visione di {title}",
+    "deleteTitle": "Eliminare la visione di «{title}»?",
+    "deleteBody": "Sparisce dal tuo spazio, con voto e recensione. Non si può annullare.",
+    "deleteBodyShared": "Sparisce dal tuo spazio e da ogni Cerchia in cui compare, con voto, recensione, commenti e reazioni. Non si può annullare. Se vuoi solo toglierla dai gruppi, usa «Rendi privato».",
+    "deleteCta": "Elimina",
+    "deleting": "Elimino…",
+    "cancel": "Annulla"
   },
   "media": {
     "runtime": "{m} min",
@@ -1024,9 +1033,9 @@
   },
   "imports": {
     "title": "Gestisci importazioni",
-    "lede": "Ogni importazione che hai fatto e dove è finita. Se ne hai mandata una in una Cerchia per sbaglio, da qui la togli tutta insieme.",
+    "lede": "Ogni importazione che hai fatto e dove è finita. Se ne hai mandata una in una Cerchia per sbaglio, da qui la togli tutta insieme, oppure la elimini del tutto.",
     "emptyTitle": "Nessuna importazione da gestire.",
-    "emptyBody": "Qui compaiono le importazioni che fai da ora in poi.",
+    "emptyBody": "Qui compaiono le importazioni che fai, e i giorni in cui hai aggiunto tante visioni in una volta.",
     "toImport": "Importa la tua cronologia",
     "added": "{count, plural, =0 {nessuna visione nuova} one {# visione aggiunta} other {# visioni aggiunte}}",
     "inCircle": "Nella Cerchia «{circle}»: {count, plural, one {# visione} other {# visioni}}{lists, plural, =0 {} one {, # lista} other {, # liste}}",
@@ -1040,6 +1049,36 @@
     "cancel": "Annulla",
     "removing": "Tolgo…",
     "removed": "{count, plural, =0 {Nessuna visione da togliere} one {# visione tolta dal gruppo} other {# visioni tolte dal gruppo}}{lists, plural, =0 {} one {, # lista tornata personale} other {, # liste tornate personali}}. Tutto resta nel tuo spazio privato.",
-    "note": "Le importazioni fatte prima di questa funzione non compaiono qui: sono tutte private, nel tuo spazio."
+    "note": "Togliere da una Cerchia non cancella niente: le visioni restano nel tuo spazio privato. Eliminare invece è definitivo.",
+    "delete": "{count, plural, one {Elimina # visione} other {Elimina # visioni}}",
+    "deleteTitle": "Eliminare queste visioni?",
+    "deleteBody": "{count, plural, one {# visione viene eliminata} other {# visioni vengono eliminate}} dal tuo spazio e da ogni Cerchia, con voti, recensioni, commenti e reazioni. Non si può annullare.",
+    "deleteKeep": "Le visioni che avevi già prima di questa importazione, e quelle registrate a mano, non vengono toccate. Le liste restano.",
+    "deleteCta": "Elimina per sempre",
+    "deleting": "Elimino…",
+    "deleted": "{count, plural, =0 {Nessuna visione da eliminare} one {# visione eliminata} other {# visioni eliminate}}.",
+    "olderTitle": "Importazioni precedenti",
+    "olderLede": "Le importazioni fatte prima che Pausa le tenesse separate non hanno un'etichetta. Qui sotto trovi i giorni in cui hai aggiunto tante visioni in una volta: quasi sempre è un'importazione.",
+    "olderAdded": "{count, plural, one {# visione aggiunta} other {# visioni aggiunte}} quel giorno",
+    "olderInCircles": "{count, plural, one {# visibile} other {# visibili}} nelle tue Cerchie",
+    "olderHide": "Togli dalle Cerchie",
+    "olderHideTitle": "Togliere dalle Cerchie le visioni del {date}?",
+    "olderHideBody": "{count, plural, one {# visione sparisce} other {# visioni spariscono}} dal diario di tutte le tue Cerchie e diventano private. Non viene cancellato niente: restano nel tuo spazio, e puoi riaggiungerle a un gruppo una per una.",
+    "olderAll": "Vale per tutte le {count} visioni aggiunte quel giorno, anche quelle che avessi registrato a mano.",
+    "olderHideCta": "Togli dalle Cerchie",
+    "olderDeleteTitle": "Eliminare le visioni del {date}?"
+  },
+  "circles": {
+    "title": "Le tue Cerchie",
+    "lede": "I gruppi di cui fai parte. Puoi stare in più di una: entra in un'altra con un invito, o creane una nuova.",
+    "none": "Non sei ancora in nessuna Cerchia.",
+    "admin": "Admin",
+    "joinTitle": "Entra in un'altra Cerchia",
+    "joinBody": "Chiedi un invito a chi è già dentro, poi incolla qui il codice o il link intero.",
+    "joinLabel": "Codice o link di invito",
+    "joining": "Entro…",
+    "createTitle": "Crea una Cerchia nuova",
+    "createBody": "Diventi admin e ricevi un link da mandare agli amici.",
+    "creating": "Creo…"
   }
 }

@@ -9,6 +9,7 @@ import { getDb } from "@/db";
 import { requireUser } from "./session";
 import { enforce } from "./limit-guard";
 import { setLogScope, shareLog, unshareLog } from "./core/sharing";
+import { deleteLog } from "./core/content";
 import { ensureMediaDetail } from "./media-detail";
 
 /* The personal space: who reads each of my logs. Each action answers by sending the person back to the same row, with a
@@ -57,6 +58,16 @@ export async function setLogScopeAction(formData: FormData) {
   if ("error" in res) throw new Error(res.error);
   refresh();
   back(formData, logId, scope === "private" ? "private" : "open");
+}
+
+/** Deletes one of my logs for good, from my space and from every Cerchia that showed it. The row is gone: back to the top. */
+export async function deleteMyLogAction(formData: FormData) {
+  const user = await requireUser();
+  const res = await deleteLog(await getDb(), { logId: id.parse(formData.get("logId")), actorId: user.id });
+  if ("error" in res) throw new Error(res.error);
+  refresh();
+  const only = formData.get("only") === "private" ? "&only=private" : "";
+  redirect(`/${localeFrom(formData.get("locale"))}/me?ok=deleted${only}`);
 }
 
 /** For the log form: what the picked title is about, when a catalogue knows. */
