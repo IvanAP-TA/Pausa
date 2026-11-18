@@ -100,9 +100,15 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
         <div className="min-w-0">
           <h1 className="display max-w-none">{coverGlyph && <span aria-hidden="true" className="mr-2">{coverGlyph}</span>}{circle!.name}</h1>
           {about?.description && <p className="mt-2 max-w-prose text-ink-2 [overflow-wrap:anywhere]">{about.description}</p>}
-          <p className="mt-2 text-sm text-muted">
-            {t("members", { count: members.length })}, {t("logsThisYear", { count: stats.logsThisYear })}
-          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+            <p className="text-sm text-muted">
+              {t("members", { count: members.length })}, {t("logsThisYear", { count: stats.logsThisYear })}
+            </p>
+            <Link href={`/c/${circleId}/ranking`} className="btn btn-sm">
+              <Trophy size={18} strokeWidth={1.6} aria-hidden="true" />
+              {tt("ranking")}
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -144,12 +150,7 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
         </ul>
       )}
 
-      {/* Two rows under shared hairlines: the ranking (on a phone; the rail has it from 64rem), then search. */}
       <div className="grid">
-        <Link href={`/c/${circleId}/ranking`} className="row-link flex min-h-12 items-center gap-3 border-t border-rule text-base font-semibold transition-colors duration-150 hover:bg-paper-2 lg:hidden">
-          <Trophy size={20} strokeWidth={1.6} aria-hidden="true" />
-          {tt("ranking")}
-        </Link>
         <FilterBar circleId={circleId} members={members} filters={filters} qs={qs} year={now.getFullYear()} resultCount={filtered ? Math.min(feed.length, PAGE) : null} hasMore={feed.length > PAGE} />
       </div>
 
