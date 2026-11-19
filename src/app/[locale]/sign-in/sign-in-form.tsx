@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth-client";
 import { GoogleButton, useEmbedded } from "@/components/google-button";
+import { isNativeShell, nativeDoneUrl } from "@/lib/native-shell";
 
 type Status = "idle" | "sending" | "sent" | "error";
 
@@ -17,7 +18,8 @@ export function SignInForm({ callbackURL, google }: { callbackURL: string; googl
     e.preventDefault();
     const email = String(new FormData(e.currentTarget).get("email") ?? "");
     setStatus("sending");
-    const { error } = await authClient.signIn.magicLink({ email, callbackURL });
+    // In the native shell the email link opens in the browser: it ends on api/native/done, which hands the session back to the shell.
+    const { error } = await authClient.signIn.magicLink({ email, callbackURL: isNativeShell() ? nativeDoneUrl(callbackURL) : callbackURL });
     setStatus(error ? "error" : "sent");
   }
 

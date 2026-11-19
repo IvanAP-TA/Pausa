@@ -4,12 +4,16 @@ import { useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth-client";
 import { isEmbeddedBrowser } from "@/lib/embedded-browser";
+import { isNativeShell, nativeStartUrl } from "@/lib/native-shell";
 
 const noop = () => () => {};
 
-/** True inside WhatsApp, Instagram and similar in-app browsers, where Google refuses sign-in. Read on the client only. */
+/**
+ * True inside WhatsApp, Instagram and similar in-app browsers, where Google refuses sign-in. Read on the client only.
+ * Not true in Pausa's own native shell: it also runs in a WebView, but it signs in through the system browser (api/native/*).
+ */
 export function useEmbedded() {
-  return useSyncExternalStore(noop, () => isEmbeddedBrowser(navigator.userAgent), () => false);
+  return useSyncExternalStore(noop, () => !isNativeShell() && isEmbeddedBrowser(navigator.userAgent), () => false);
 }
 
 /**
@@ -33,7 +37,11 @@ export function GoogleButton({ callbackURL, enabled, className = "", hint = true
   return (
     <button
       type="button"
-      onClick={() => authClient.signIn.social({ provider: "google", callbackURL })}
+      onClick={() => {
+        // In the native shell the shell itself sends this address to the system browser (Google refuses WebViews).
+        if (isNativeShell()) window.location.href = nativeStartUrl(callbackURL);
+        else authClient.signIn.social({ provider: "google", callbackURL });
+      }}
       className={`btn ${className}`}
     >
       <GoogleMark />

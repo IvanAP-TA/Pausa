@@ -5,6 +5,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { anonymous } from "better-auth/plugins/anonymous";
 import { magicLink } from "better-auth/plugins/magic-link";
+import { oneTimeToken } from "better-auth/plugins/one-time-token";
 import { nextCookies } from "better-auth/next-js";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
@@ -83,6 +84,9 @@ async function createAuth() {
           await sendMagicLinkEmail(email, url);
         },
       }),
+      // The native shells (Android/desktop) cannot sign in with Google inside their WebView, so the sign-in runs in the system browser
+      // and comes back as a single-use token (3 minutes, stored hashed) that the shell swaps for its own session: see api/native/*.
+      oneTimeToken({ expiresIn: 3, disableClientRequest: true, storeToken: "hashed" }),
       nextCookies(),
     ],
   });
