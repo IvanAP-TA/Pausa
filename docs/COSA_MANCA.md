@@ -29,8 +29,8 @@ Stato al 17 novembre 2026, a lavoro di sviluppo concluso. Il codice è pronto pe
 
 ## 3. App nativa (Tauri), quando il sito è online
 
-- [ ] Provare `npm run tauri dev` e costruire gli installer desktop (`npm run tauri build`); firma del codice.
-- [ ] **Android**: Android SDK/NDK, `tauri android init`, account Google Play (25 $ una tantum).
+- [x] Installer desktop costruiti (MSI e NSIS, `pausa.exe` si avvia). Resta la **firma del codice** (certificato a pagamento; senza, Windows mostra SmartScreen).
+- [x] **Android**: SDK/NDK installati, progetto generato, APK debug costruito. Restano: APK/AAB di release **firmato**, prova su telefono vero, account Google Play (25 $ una tantum).
 - [ ] **iOS**: Mac con Xcode, account Apple Developer (99 $/anno).
 - [ ] Schede degli store (screenshot, descrizione, informativa), link profondi per aprire le Serate nell'app, aggiornamenti automatici, notifiche native.
 - [ ] Pulsante di download diretto sulla landing, quando esistono i file (oggi "Scarica l'app" installa la PWA dal browser).
