@@ -19,6 +19,7 @@ export const LIMITS = {
   search: { max: 120, windowMs: 3_600_000 }, // each one may call TMDB
   importRows: { max: 600, windowMs: 3_600_000 }, // one hit per chunk of ~20 titles: room for a history of ~12,000
   report: { max: 20, windowMs: 3_600_000 },
+  reviewLogin: { max: 10, windowMs: 3_600_000 }, // password attempts on /review, counted per IP
   shareLog: { max: 300, windowMs: 3_600_000 }, // adding imported titles to a group, one by one
 } as const satisfies Record<string, Limit>;
 

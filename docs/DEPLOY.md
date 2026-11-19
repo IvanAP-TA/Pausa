@@ -58,6 +58,8 @@ Anche i valori non segreti possono essere salvati con `wrangler secret put`: per
 | `ADMIN_EMAILS` | variabile | chi può aprire `/it/admin/metrics` e `/it/admin/reports` (email separate da virgola) | — |
 | `CONTACT_EMAIL` | variabile | contatto mostrato in privacy e termini | — |
 | `LEGAL_ENTITY` | variabile | titolare del trattamento mostrato in privacy e termini | — |
+| `REVIEW_EMAIL` | variabile | solo per la revisione degli store: indirizzo dell'account di prova (anche inventato, es. `review@pausa.gnagno.org`; non riceve email) | scelto da te |
+| `REVIEW_PASSWORD` | **segreto** | password della pagina `/en/review` per i revisori Google Play | scegline una lunga e casuale |
 | `SENTRY_DSN` | segreto, facoltativo | segnalazione degli errori a Sentry | sentry.io → progetto → DSN |
 | `NEXT_PUBLIC_CF_ANALYTICS_TOKEN` | **variabile di build**, facoltativa | contatore visite senza cookie (Cloudflare Web Analytics) | Cloudflare → Web Analytics → aggiungi il sito → token del beacon. Serve per sapere quanti visitatori della landing si iscrivono. |
 | `NEXT_PUBLIC_SITE_URL` | variabile, facoltativo | se diverso da `BETTER_AUTH_URL` | — |
@@ -113,6 +115,12 @@ Controlli, in quest'ordine:
 2. `https://…workers.dev/api/health/engine` risponde `{"engine":"wasm", …}`. Se risponde `"typescript"` il sito funziona ma usa il ripiego più lento: controlla che `src/lib/engine/engine.wasm` sia nel repository e che `wrangler.jsonc` abbia `"main": "worker.ts"`.
 
 Se `BETTER_AUTH_URL` è già `https://pausa.gnagno.org`, aspetta di collegare quel dominio prima di provare l'accesso: i link email puntano all'indirizzo configurato.
+
+### Accesso per la revisione degli store
+
+Google Play non può ricevere il link via email. Con `REVIEW_EMAIL` e `REVIEW_PASSWORD` impostati, la pagina `https://pausa.gnagno.org/en/review` (senza link dal sito, `noindex`) chiede solo la password e apre una sessione normale nella Cerchia **Demo circle** (3 persone, 6 film d'epoca con voti), di cui il revisore è amministratore. Senza le due variabili la pagina non esiste (404). Dopo 10 password sbagliate in un'ora da uno stesso IP la pagina rifiuta altri tentativi. Per spegnere l'accesso basta cancellare il segreto: `npx wrangler secret delete REVIEW_PASSWORD`.
+
+Nella Play Console (Contenuti dell'app → Accesso all'app) scrivi, in inglese: *Open https://pausa.gnagno.org/en/review, enter the password, tap "Open the demo".* e metti la password nel campo password.
 
 ## 4. Dominio
 

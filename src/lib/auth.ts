@@ -9,6 +9,7 @@ import { nextCookies } from "better-auth/next-js";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { sendMagicLinkEmail } from "./email";
+import { keepReviewLink } from "./review";
 
 export const googleEnabled = () => Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
@@ -77,7 +78,10 @@ async function createAuth() {
       magicLink({
         expiresIn: 60 * 15,
         // Resend when RESEND_API_KEY is set; in dev without a key the link is printed to the server log.
-        sendMagicLink: async ({ email, url }) => sendMagicLinkEmail(email, url),
+        sendMagicLink: async ({ email, url }) => {
+          if (keepReviewLink(email, url)) return; // app-store review sign-in: followed in memory, never emailed
+          await sendMagicLinkEmail(email, url);
+        },
       }),
       nextCookies(),
     ],
