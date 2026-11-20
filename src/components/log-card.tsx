@@ -18,11 +18,17 @@ import { MessageCircle } from "lucide-react";
 export function LogCard({ log, now, circleId, onThread = false, priority = false }: { log: FeedLog; now: Date; circleId?: string; onThread?: boolean; priority?: boolean }) {
   const t = useTranslations("feed");
   const tk = useTranslations("kind");
+  const tm = useTranslations("media");
   const format = useFormatter();
+  // How long it is: films only (a series runtime is per episode, and says little).
+  const run = log.media.kind === "movie" && log.about.runtimeMin
+    ? (log.about.runtimeMin >= 60 ? tm("runtimeLong", { h: Math.floor(log.about.runtimeMin / 60), m: log.about.runtimeMin % 60 }) : tm("runtime", { m: log.about.runtimeMin }))
+    : null;
 
   const facts = [
     tk(log.media.kind),
     log.media.year ? String(log.media.year) : null,
+    run,
     log.episode ? formatProgress({ season: log.season, episode: log.episode }) : log.season ? t("season", { n: log.season }) : null,
     log.platform ? t("on", { platform: log.platform }) : null,
   ].filter(Boolean);
@@ -62,6 +68,7 @@ export function LogCard({ log, now, circleId, onThread = false, priority = false
           {titleHref ? <Link href={titleHref} className="inline-flex min-h-11 items-center underline-offset-4 hover:underline">{log.media.title}</Link> : log.media.title}
         </h3>
         <p className="text-sm text-muted">{facts.join(", ")}</p>
+        {log.about.genres.length > 0 && <p className="text-sm text-ink-2">{log.about.genres.slice(0, 3).join(" · ")}</p>}
         {log.rating ? (
           <Stars className="mt-1" rating={log.rating} label={t("rating", { stars: log.rating / 2 })} />
         ) : null}
@@ -74,6 +81,11 @@ export function LogCard({ log, now, circleId, onThread = false, priority = false
           </p>
         )}
       </div>
+
+      {/* With no review of their own, two lines of what the title is about, so the diary says more than a name. */}
+      {!log.review && log.about.overview ? (
+        <p className="col-span-full line-clamp-2 text-sm text-muted">{log.about.overview}</p>
+      ) : null}
 
       {/* The review is the reader's own voice: full width, at lead size. */}
       {log.review ? (

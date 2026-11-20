@@ -195,7 +195,7 @@ export async function createLog(formData: FormData) {
   if (input.overview) await saveUserOverview(input.mediaId, localeFrom(formData.get("locale")), input.overview);
 
   const locale = localeFrom(formData.get("locale"));
-  redirect(input.isPrivate ? `/${locale}/me?ok=logged#l-${logId}` : `/${locale}/c/${input.circleId}`);
+  redirect(input.isPrivate ? `/${locale}/me/diary?ok=logged#l-${logId}` : `/${locale}/c/${input.circleId}`);
 }
 
 export async function toggleReaction(logId: string, emoji: string) {
@@ -250,15 +250,21 @@ export async function searchMedia(query: string, localeParam: string): Promise<M
 
 /* ───────────── Liste ───────────── */
 
+/** A group list (from a Cerchia, its members only) or a personal one (from the profile: no Cerchia at all). */
 export async function createList(formData: FormData) {
   const user = await requireUser();
-  const circleId = z.string().min(1).parse(formData.get("circleId"));
   const name = z.string().trim().min(1).max(80).parse(formData.get("name"));
   const kind = z.enum(["watchlist", "list", "ranking"]).catch("list").parse(formData.get("kind"));
   const personal = formData.get("scope") === "personal";
-  if (!(await getCircleForMember(circleId, user.id))) throw new Error("Not a member of this circle");
   const db = await getDb();
-  await db.insert(s.list).values({ circleId: personal ? null : circleId, ownerId: user.id, name, kind });
+  if (personal) {
+    await db.insert(s.list).values({ circleId: null, ownerId: user.id, name, kind });
+    revalidatePath("/[locale]/me/lists", "page");
+    return;
+  }
+  const circleId = z.string().min(1).parse(formData.get("circleId"));
+  if (!(await getCircleForMember(circleId, user.id))) throw new Error("Not a member of this circle");
+  await db.insert(s.list).values({ circleId, ownerId: user.id, name, kind });
   revalidatePath(`/[locale]/c/[circleId]/lists`, "page");
 }
 
@@ -275,6 +281,7 @@ export async function addToList(formData: FormData) {
   const [{ next }] = await db.select({ next: sql<number>`coalesce(max(${s.listItem.position}) + 1, 0)` }).from(s.listItem).where(eq(s.listItem.listId, listId));
   await db.insert(s.listItem).values({ listId, mediaId, position: next, addedBy: user.id }).onConflictDoNothing();
   revalidatePath(`/[locale]/c/[circleId]/lists`, "page");
+  revalidatePath("/[locale]/me/lists", "page");
   revalidatePath(`/[locale]/c/[circleId]/l/[logId]`, "page");
 }
 

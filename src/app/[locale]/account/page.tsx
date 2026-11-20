@@ -5,7 +5,7 @@ import { PushToggle } from "@/components/push-toggle";
 import { pushEnabled } from "@/lib/push";
 import { requireUser } from "@/lib/session";
 import { getMyCircles } from "@/lib/data";
-import { deleteAccountAction, updateProfileAction } from "@/lib/manage-actions";
+import { deleteAccountAction } from "@/lib/manage-actions";
 import { saveServicesAction } from "@/lib/discover-actions";
 import { saveNotificationPrefsAction } from "@/lib/manage-actions";
 import { NOTIFICATION_TYPES, getDisabledTypes } from "@/lib/core/settings";
@@ -18,7 +18,7 @@ import { regionProviders, tmdbEnabled } from "@/lib/tmdb";
 import { FOUNDER_AT, peopleBrought } from "@/lib/core/circles";
 import { Check } from "lucide-react";
 import { cookies } from "next/headers";
-import { SpaceSwitch } from "@/components/space-switch";
+import { Shell } from "@/components/shell";
 import { Preferences } from "@/components/preferences";
 import { BackLink } from "@/components/back-link";
 import { LAST_CIRCLE_COOKIE } from "@/components/circle-memory";
@@ -36,11 +36,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function Account({ params, searchParams }: PageProps<"/[locale]/account">) {
   const { locale } = await params;
-  const { saved, e, country: countryParam } = await searchParams;
+  const { e, country: countryParam } = await searchParams;
   setRequestLocale(locale);
   const user = await requireUser();
-  const [circles, t, td, mineByUser, brought] = await Promise.all([
-    getMyCircles(user.id), getTranslations("account"), getTranslations("services"),
+  const [circles, t, td, tp, mineByUser, brought] = await Promise.all([
+    getMyCircles(user.id), getTranslations("account"), getTranslations("services"), getTranslations("profile"),
     getDb().then((db) => getUserProviders(db, [user.id])),
     getDb().then((db) => peopleBrought(db, user.id)),
   ]);
@@ -59,11 +59,10 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
   const me = { id: user.id, name: user.name, image: user.image };
 
   return (
-    <div className="projector mx-auto min-h-dvh max-w-md lg:max-w-[40rem]">
-    <SpaceSwitch current={home ? "circle" : "personal"} circle={home} circles={circles} me={me} />
+    <Shell circle={home} circles={circles} me={me}>
     <main className="grid gap-10 px-4 pb-10 pt-4">
       <header className="grid gap-2">
-        <BackLink href={home ? `/c/${home.id}` : "/me"} label={t("back")} />
+        <BackLink href="/me" label={tp("title")} />
         <h1 className="display">{t("title")}</h1>
         <p className="text-sm text-muted [overflow-wrap:anywhere]">{user.email}</p>
         {brought > 0 && (
@@ -74,17 +73,10 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
         )}
       </header>
 
-      <form action={updateProfileAction} className="grid gap-4">
-        <input type="hidden" name="locale" value={locale} />
-        <div className="field-label">
-          <label htmlFor="name">{t("name")}</label>
-          <input id="name" name="name" required maxLength={40} defaultValue={user.name} className="field" />
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button className="btn w-full sm:w-fit">{t("save")}</button>
-          {saved && <p role="status" className="text-sm text-success">{t("saved")}</p>}
-        </div>
-      </form>
+      <Link href="/me/edit" className="well grid gap-1 p-4 transition-colors duration-150 hover:bg-paper-2">
+        <span className="font-semibold">{tp("edit")}</span>
+        <span className="text-sm text-muted">{tp("editHint")}</span>
+      </Link>
 
       <section className="grid gap-3">
         <div className="grid gap-2">
@@ -189,6 +181,6 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
         <Link href="/terms" className="link inline-flex min-h-11 items-center">{t("terms")}</Link>
       </nav>
     </main>
-    </div>
+    </Shell>
   );
 }

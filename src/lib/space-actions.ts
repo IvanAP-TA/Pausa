@@ -21,7 +21,7 @@ const localeFrom = (v: unknown) => (typeof v === "string" && hasLocale(routing.l
 function back(formData: FormData, logId: string, ok: string): never {
   // Only same-page filters travel back: nothing from the form is trusted as a URL.
   const only = formData.get("only") === "private" ? "&only=private" : "";
-  redirect(`/${localeFrom(formData.get("locale"))}/me?ok=${ok}${only}#l-${logId}`);
+  redirect(`/${localeFrom(formData.get("locale"))}/me/diary?ok=${ok}${only}#l-${logId}`);
 }
 
 function refresh() {
@@ -67,7 +67,7 @@ export async function deleteMyLogAction(formData: FormData) {
   if ("error" in res) throw new Error(res.error);
   refresh();
   const only = formData.get("only") === "private" ? "&only=private" : "";
-  redirect(`/${localeFrom(formData.get("locale"))}/me?ok=deleted${only}`);
+  redirect(`/${localeFrom(formData.get("locale"))}/me/diary?ok=deleted${only}`);
 }
 
 /** For the log form: what the picked title is about, when a catalogue knows. */

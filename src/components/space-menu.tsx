@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Check, ChevronDown, Plus, User, Users } from "lucide-react";
+import { Check, ChevronDown, Plus, Users } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 
-type Labels = { open: string; title: string; personal: string; here: string; more: string };
+type Labels = { open: string; title: string; here: string; more: string };
 
 /**
- * Where am I, and where else can I go: the name of the current place (a Cerchia, or my own space) is the button.
- * It opens every place the person can be in, one tap away from any page: their own space, each of their Cerchie,
- * and the page where they join or create another one.
+ * Which Cerchia am I in, and where else can I go: its name is the button. It opens every Cerchia of the person, one tap
+ * away from any page, and the page where they join or create another one. (My own things live in the Profile tab.)
  * A disclosure (a button and the list of links it opens), not a menu widget: links keep their own keyboard behaviour.
  * It closes on Escape, on a tap outside, and when the page changes.
  */
@@ -33,13 +32,12 @@ export function SpaceMenu({ circles, currentId, currentName, labels }: { circles
 
   const item = (active: boolean) =>
     `flex min-h-12 items-center gap-3 px-4 text-base transition-colors duration-150 hover:bg-paper-2 ${active ? "font-semibold text-ink" : "text-ink-2 hover:text-ink"}`;
-  const Here = currentId === null ? User : Users;
 
   return (
     <div ref={root} className="flex min-w-0">
       <button ref={button} type="button" aria-expanded={open} aria-controls={panel} aria-label={`${currentName}: ${labels.open}`} onClick={() => setOpen((v) => !v)}
         className="flex min-h-11 min-w-0 items-center gap-2 px-2 text-left transition-colors duration-150 hover:bg-paper-2 aria-expanded:bg-paper-2">
-        <Here size={18} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-muted" />
+        <Users size={18} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-muted" />
         <span className="min-w-0 truncate text-base font-semibold text-ink">{currentName}</span>
         <ChevronDown size={18} strokeWidth={1.8} aria-hidden="true" className={`shrink-0 text-muted transition-transform duration-200 ease-out motion-reduce:transition-none ${open ? "rotate-180" : ""}`} />
       </button>
@@ -56,13 +54,6 @@ export function SpaceMenu({ circles, currentId, currentName, labels }: { circles
                 </Link>
               </li>
             ))}
-            <li>
-              <Link href="/me" aria-current={currentId === null ? "page" : undefined} className={item(currentId === null)} onClick={() => setOpen(false)}>
-                <User size={18} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />
-                <span className="min-w-0 flex-1 truncate">{labels.personal}</span>
-                {currentId === null && <Check size={18} strokeWidth={1.8} aria-label={labels.here} className="shrink-0 text-accent" />}
-              </Link>
-            </li>
             <li>
               <Link href="/me/circles" className={item(false)} onClick={() => setOpen(false)}>
                 <Plus size={18} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />

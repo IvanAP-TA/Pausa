@@ -15,7 +15,7 @@ import { enforce } from "./limit-guard";
 import { REPORT_REASONS, createReport, resolveReport } from "./core/moderation";
 import { deleteCircle } from "./core/circles";
 import { NOTIFICATION_TYPES, setCircleProfile, setDisabledTypes, setEmailDigest, setLiveWatching, setMemberPrefs } from "./core/settings";
-import { deleteAccount, updateProfile } from "./core/account";
+import { deleteAccount } from "./core/account";
 import { MAX_EPISODE, MAX_SEASON, toPosition } from "./core/progress";
 import {
   deleteComment, deleteList, deleteLog, moveListItem, removeListItem, renameCircle, renameList, updateComment, updateLog,
@@ -112,6 +112,7 @@ export async function renameCircleAction(formData: FormData) {
 
 function listsChanged() {
   revalidatePath("/[locale]/c/[circleId]/lists", "page");
+  revalidatePath("/[locale]/me/lists", "page");
 }
 
 export async function moveListItemAction(formData: FormData) {
@@ -148,14 +149,6 @@ export async function deleteListAction(formData: FormData) {
 }
 
 /* ───────────── Account ───────────── */
-
-export async function updateProfileAction(formData: FormData) {
-  const user = await requireUser();
-  const name = z.string().trim().min(1).max(40).parse(formData.get("name"));
-  await updateProfile(await getDb(), { userId: user.id, name });
-  revalidatePath("/", "layout");
-  redirect(`/${localeFrom(formData.get("locale"))}/account?saved=1`);
-}
 
 /** Needs the account email typed back: deleting is not undoable, so a stray tap must not do it. */
 export async function deleteAccountAction(formData: FormData) {

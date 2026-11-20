@@ -171,7 +171,7 @@ test("log a film in private, then delete it from my space", async ({ page }) => 
   // ?private=1 preselects "Solo io", and the button says where the viewing goes.
   await expect(page.getByRole("radio", { name: /Solo io/ })).toBeChecked();
   await page.getByRole("button", { name: "Salva nel mio spazio" }).click();
-  await expect(page).toHaveURL(/\/it\/me\?ok=logged/);
+  await expect(page).toHaveURL(/\/it\/me\/diary\?ok=logged/);
   const row = page.locator("li[id^='l-']").filter({ hasText: "Chi lo vede: solo tu" }).filter({ hasText: "Inception" });
   await expect(row).toHaveCount(1);
 

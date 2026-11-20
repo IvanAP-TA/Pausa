@@ -5,6 +5,7 @@ import { getDb } from "@/db";
 import { requireUser } from "@/lib/session";
 import { getCircleFeed, getMembers, getNowWatching } from "@/lib/data";
 import { latestRatings, loadCircleFacts, tasteSimilarity } from "@/lib/core/insights";
+import { getProfile } from "@/lib/core/profile";
 import { formatProgress } from "@/lib/core/progress";
 import { Avatar } from "@/components/avatar";
 import { LogCard } from "@/components/log-card";
@@ -27,11 +28,12 @@ export default async function Person({ params }: PageProps<"/[locale]/c/[circleI
   const who = members.find((m) => m.id === userId);
   if (!who) notFound();
 
-  const [t, tk, tf, format, { facts }, recent, watching] = await Promise.all([
-    getTranslations("person"), getTranslations("kind"), getTranslations("feed"), getFormatter(),
+  const [t, tk, tf, tp, tg, format, { facts }, recent, watching, profile] = await Promise.all([
+    getTranslations("person"), getTranslations("kind"), getTranslations("feed"), getTranslations("profile"), getTranslations("profile.genres"), getFormatter(),
     getDb().then((db) => loadCircleFacts(db, circleId, locale)),
     getCircleFeed(circleId, viewer.id, locale, 5, undefined, undefined, { by: userId }),
     getNowWatching(circleId, locale, viewer.id),
+    getDb().then((db) => getProfile(db, userId)),
   ]);
   const now = new Date();
   const mine = facts.filter((f) => f.userId === userId);
@@ -57,6 +59,29 @@ export default async function Person({ params }: PageProps<"/[locale]/c/[circleI
           </p>
         </div>
       </header>
+
+      {/* What they wrote about themselves: a few lines, the genres they love, the titles they pinned. */}
+      {profile?.bio && <p className="max-w-prose text-lg text-ink-2 [overflow-wrap:anywhere]">{profile.bio}</p>}
+      {profile && profile.favoriteGenres.length > 0 && (
+        <ul aria-label={tp("genresTitle")} className="flex flex-wrap gap-2">
+          {profile.favoriteGenres.map((g) => <li key={g} className="tag">{tg(g)}</li>)}
+        </ul>
+      )}
+      {profile && profile.favorites.length > 0 && (
+        <section aria-labelledby="pinned" className="grid gap-3">
+          <h2 id="pinned" className="title">{tp("favorites")}</h2>
+          <ol className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+            {profile.favorites.map((m) => (
+              <li key={m.id} className="grid min-w-0 content-start gap-1.5">
+                <Link href={`/c/${circleId}/m/${m.id}`} className="grid gap-1.5">
+                  <Poster media={m} />
+                  <span className="line-clamp-2 text-sm leading-tight text-ink-2 [overflow-wrap:anywhere]">{m.title}</span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {live && (
         <p className="well grid grid-cols-[56px_minmax(0,1fr)] items-center gap-3 p-3">

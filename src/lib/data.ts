@@ -115,6 +115,7 @@ export async function getCircleFeed(circleId: string, viewerId: string, locale: 
       createdAt: at.mapWith(s.log.createdAt),
       author: { id: s.user.id, name: s.user.name, image: s.user.image },
       media: mediaFields(locale),
+      runtimeMin: s.mediaEntity.runtimeMin,
     })
     .from(s.log)
     .innerJoin(s.circleMember, and(eq(s.circleMember.userId, s.log.userId), eq(s.circleMember.circleId, circleId)))
@@ -127,8 +128,9 @@ export async function getCircleFeed(circleId: string, viewerId: string, locale: 
   const ids = logs.map((l) => l.id);
   if (ids.length === 0) return [];
 
-  // One D1 batch: three small reads, one round trip.
-  const [withRows, reactionRows, commentRows] = await db.batch([
+  const mediaIds = [...new Set(logs.map((l) => l.media.id))];
+  // One D1 batch: four small reads, one round trip.
+  const [withRows, reactionRows, commentRows, aboutRows] = await db.batch([
     db.select({ logId: s.logWatchedWith.logId, id: s.user.id, name: s.user.name })
       .from(s.logWatchedWith).innerJoin(s.user, eq(s.user.id, s.logWatchedWith.userId))
       .where(inArray(s.logWatchedWith.logId, ids)),
@@ -138,7 +140,11 @@ export async function getCircleFeed(circleId: string, viewerId: string, locale: 
     db.select({ logId: s.comment.logId, body: s.comment.body, isSpoiler: s.comment.isSpoiler, author: { id: s.user.id, name: s.user.name, image: s.user.image } })
       .from(s.comment).innerJoin(s.user, eq(s.user.id, s.comment.userId))
       .where(inArray(s.comment.logId, ids)).orderBy(asc(s.comment.createdAt)),
+    // What each title is about (genres, synopsis), when someone already looked it up: the diary says a little more than the name.
+    db.select({ mediaId: s.mediaDetail.mediaId, genres: s.mediaDetail.genres, overview: s.mediaDetail.overview })
+      .from(s.mediaDetail).where(and(inArray(s.mediaDetail.mediaId, mediaIds), eq(s.mediaDetail.locale, locale))),
   ]);
+  const aboutOf = new Map(aboutRows.map((a) => [a.mediaId, a]));
 
   return logs.map((l) => {
     const counts = new Map<string, { emoji: string; count: number; mine: boolean }>();
@@ -157,6 +163,7 @@ export async function getCircleFeed(circleId: string, viewerId: string, locale: 
       reactions: [...counts.values()],
       commentCount: thread.length,
       lastComment: last ? { body: last.body, isSpoiler: last.isSpoiler, author: last.author } : null,
+      about: { genres: aboutOf.get(l.media.id)?.genres ?? [], overview: aboutOf.get(l.media.id)?.overview ?? null, runtimeMin: l.runtimeMin },
     };
   });
 }

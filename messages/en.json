@@ -18,7 +18,8 @@
     "lists": "Lists",
     "ranking": "Ranking",
     "circle": "Circle",
-    "logShort": "Log"
+    "logShort": "Log",
+    "profile": "Profile"
   },
   "kind": {
     "movie": "Film",
@@ -166,7 +167,10 @@
     "group": "Circle lists",
     "scopeCircle": "For the Circle",
     "scopePersonal": "Just for me",
-    "emptyPersonal": "No personal lists yet."
+    "emptyPersonal": "No personal lists yet.",
+    "mineLede": "Watchlists and lists that are only yours: no Cerchia sees them. Group lists live on each Cerchia’s Lists page.",
+    "mineMoved": "Your personal lists and watchlist now live in your profile.",
+    "mineLink": "Open my lists"
   },
   "circle": {
     "members": "Members",
@@ -817,7 +821,9 @@
         "privacy": "Reveals private information",
         "other": "Other"
       }
-    }
+    },
+    "deleteListNamed": "Delete the list {name}",
+    "deleteListWarnPersonal": "The list and its titles disappear. This cannot be undone."
   },
   "account": {
     "back": "Back",
@@ -930,7 +936,14 @@
       "ghost": "Ghost",
       "rocket": "Rocket",
       "heart": "Heart"
-    }
+    },
+    "removeMineTitle": "Take my films out of this group",
+    "removeMineHint": "They stay in your profile, nobody loses them elsewhere.",
+    "removeMineBody": "All your viewings leave {circle}’s diary and its Ranking. Nothing is deleted: they stay in your profile and in the other Cerchie that saw them. Comments and reactions stay on the viewings.",
+    "removeMineType": "To confirm, type {word}",
+    "removeMineWrong": "It has to be the word {word}. Nothing was taken out.",
+    "removeMineGo": "Take my films out",
+    "removeMineDone": "{count, plural, =0 {There was nothing of yours in this group.} one {Done: # viewing taken out of this group.} other {Done: # viewings taken out of this group.}}"
   },
   "notifPrefs": {
     "title": "Which alerts you want",
@@ -1046,10 +1059,11 @@
     "delete": "Delete the viewing of {title}",
     "deleteTitle": "Delete the viewing of \"{title}\"?",
     "deleteBody": "It disappears from your space, with its rating and review. This cannot be undone.",
-    "deleteBodyShared": "It disappears from your space and from every Cerchia that shows it, with its rating, review, comments and reactions. This cannot be undone. To only take it out of the groups, use \"Make private\".",
+    "deleteBodyShared": "It disappears from your space and from every Cerchia that shows it, with its rating, review, comments and reactions. This cannot be undone. To only take it out of the groups, use \"Just for me\".",
     "deleteCta": "Delete",
     "deleting": "Deleting…",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "diaryTitle": "My diary"
   },
   "media": {
     "runtime": "{m} min",
@@ -1112,5 +1126,72 @@
     "createTitle": "Create a new Cerchia",
     "createBody": "You become its admin and get a link to send to your friends.",
     "creating": "Creating…"
+  },
+  "profile": {
+    "title": "Profile",
+    "edit": "Edit profile",
+    "saved": "Profile updated.",
+    "logs": "{count, plural, =0 {No viewings} one {# viewing} other {# viewings}}",
+    "noBio": "No bio yet: write a couple of lines about yourself with the button below.",
+    "genresTitle": "Favourite genres",
+    "favorites": "Favourite films",
+    "change": "Change",
+    "favoritesEmpty": "Pick your favourite films",
+    "favoritesHint": "Up to 5 titles, the ones that are you. Your Cerchie see them.",
+    "mine": "Only mine",
+    "diary": "My diary",
+    "diaryBody": "{count, plural, =0 {Still empty} one {# viewing} other {# viewings}}, {private, plural, =0 {none just yours} one {# just yours} other {# just yours}}",
+    "lists": "Watchlist and lists",
+    "listsBody": "Your personal lists: only you see them.",
+    "import": "Import",
+    "importBody": "From Letterboxd, IMDb, Trakt, AniList or MyAnimeList.",
+    "settings": "Settings",
+    "settingsBody": "Account, notifications, streaming services, language and theme.",
+    "forYou": "For you",
+    "forYouBody": "Titles like the ones you rated well, that you have not logged yet.",
+    "name": "Name",
+    "avatar": "Profile picture",
+    "avatarPhoto": "Your current photo",
+    "avatarInitial": "Your initial",
+    "avatarPick": "Picture {glyph}",
+    "bio": "A couple of lines about you",
+    "bioPlaceholder": "What you love watching, what you can’t stand, the last film that made your night…",
+    "genresPick": "Favourite genres (up to {max})",
+    "save": "Save profile",
+    "saving": "Saving…",
+    "removeFavorite": "Remove {title} from favourites",
+    "addFavorite": "Add {title} to favourites",
+    "searchFavorite": "Search a film or a series…",
+    "full": "You already have {max} favourites: remove one to add another.",
+    "count": "{count} of {max}",
+    "genres": {
+      "action": "Action",
+      "adventure": "Adventure",
+      "animation": "Animation",
+      "anime": "Anime",
+      "comedy": "Comedy",
+      "crime": "Crime",
+      "documentary": "Documentary",
+      "drama": "Drama",
+      "family": "Family",
+      "fantasy": "Fantasy",
+      "history": "History",
+      "horror": "Horror",
+      "musical": "Musical",
+      "mystery": "Mystery",
+      "romance": "Romance",
+      "scifi": "Sci-fi",
+      "thriller": "Thriller",
+      "war": "War",
+      "western": "Western"
+    },
+    "editHint": "Name, picture, bio, genres and favourite films."
+  },
+  "aside": {
+    "label": "In this group",
+    "why": "Why these titles",
+    "top": "Top of the Ranking",
+    "topEmpty": "A ranking needs more ratings.",
+    "allRanking": "The whole Ranking"
   }
 }

@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNotNull, ne } from "drizzle-orm";
-import { circle, circleMember, comment, invite, list, listItem, log, mediaEntity, nowWatching, user } from "../../db/schema";
+import { circle, circleMember, comment, favorite, invite, list, listItem, log, mediaEntity, nowWatching, user } from "../../db/schema";
 import type { AnyDb } from "./db-types";
 
 /* Account: profile, data export, deletion. Pausa's users are in the EU, so these are part of launching, not extras. */
@@ -13,8 +13,8 @@ export async function updateProfile(db: AnyDb, input: { userId: string; name: st
  * Other people's content is not included, except their comments on this person's logs, which they wrote in this person's thread.
  */
 export async function exportAccountData(db: AnyDb, userId: string) {
-  const [profile] = await db.select({ id: user.id, name: user.name, email: user.email, locale: user.locale, createdAt: user.createdAt }).from(user).where(eq(user.id, userId));
-  const [circles, logs, comments, lists, watching] = await Promise.all([
+  const [profile] = await db.select({ id: user.id, name: user.name, email: user.email, locale: user.locale, bio: user.bio, favoriteGenres: user.favoriteGenres, createdAt: user.createdAt }).from(user).where(eq(user.id, userId));
+  const [circles, logs, comments, lists, watching, favorites] = await Promise.all([
     db.select({ id: circle.id, name: circle.name, role: circleMember.role, joinedAt: circleMember.joinedAt })
       .from(circleMember).innerJoin(circle, eq(circle.id, circleMember.circleId)).where(eq(circleMember.userId, userId)),
     db.select({
@@ -24,6 +24,7 @@ export async function exportAccountData(db: AnyDb, userId: string) {
     db.select({ id: comment.id, logId: comment.logId, body: comment.body, createdAt: comment.createdAt }).from(comment).where(eq(comment.userId, userId)),
     db.select({ id: list.id, name: list.name, kind: list.kind, circleId: list.circleId }).from(list).where(eq(list.ownerId, userId)),
     db.select({ title: mediaEntity.originalTitle, progress: nowWatching.progress }).from(nowWatching).innerJoin(mediaEntity, eq(mediaEntity.id, nowWatching.mediaId)).where(eq(nowWatching.userId, userId)),
+    db.select({ title: mediaEntity.originalTitle, year: mediaEntity.year }).from(favorite).innerJoin(mediaEntity, eq(mediaEntity.id, favorite.mediaId)).where(eq(favorite.userId, userId)).orderBy(asc(favorite.position)),
   ]);
   const listIds = lists.map((l) => l.id);
   const items = listIds.length
@@ -38,6 +39,7 @@ export async function exportAccountData(db: AnyDb, userId: string) {
     comments,
     lists: lists.map((l) => ({ ...l, items: items.filter((i) => i.listId === l.id).map((i) => i.title) })),
     nowWatching: watching[0] ?? null,
+    favorites,
   };
 }
 

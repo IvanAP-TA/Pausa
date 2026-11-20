@@ -448,7 +448,7 @@ export function ImportClient({ circles, tmdb }: { circles: { id: string; name: s
             <div className="flex flex-wrap gap-2">
               {destCircle
                 ? <Link href={`/c/${destCircle.id}`} className="btn btn-primary">{t("done.toCircle", { circle: destCircle.name })}</Link>
-                : <Link href="/me?only=private" className="btn btn-primary">{t("done.toSpace")}</Link>}
+                : <Link href="/me/diary?only=private" className="btn btn-primary">{t("done.toSpace")}</Link>}
               {totals.lists > 0 && destCircle && <Link href={`/c/${destCircle.id}/lists`} className="btn">{t("done.toLists")}</Link>}
               <button type="button" onClick={reset} className="btn btn-quiet">{t("done.again")}</button>
             </div>

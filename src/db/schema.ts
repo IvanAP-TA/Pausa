@@ -20,6 +20,9 @@ export const user = sqliteTable("user", {
   /** Opt-in daily email with what happened while you were away, for people who have no push on any device. */
   emailDigest: integer("email_digest", { mode: "boolean" }).notNull().default(false),
   digestSentAt: integer("digest_sent_at", { mode: "timestamp_ms" }),
+  /** The profile: a few lines about me, and the genres I love (shown on my profile, seen by my Cerchie). */
+  bio: text("bio"),
+  favoriteGenres: text("favorite_genres", { mode: "json" }).$type<string[]>().notNull().default([]),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -166,6 +169,14 @@ export const mediaDetail = sqliteTable("media_detail", {
   source: text("source", { enum: ["tmdb", "anilist", "user", "none"] }).notNull().default("none"),
   fetchedAt: integer("fetched_at", { mode: "timestamp_ms" }).notNull().default(now),
 }, (t) => [primaryKey({ columns: [t.mediaId, t.locale] })]);
+
+/** The titles a person pins on their profile, in their order (a handful, like a shelf). */
+export const favorite = sqliteTable("favorite", {
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  mediaId: text("media_id").notNull().references(() => mediaEntity.id),
+  position: integer("position").notNull().default(0),
+  createdAt: createdAt(),
+}, (t) => [primaryKey({ columns: [t.userId, t.mediaId] })]);
 
 /* ───────────── Streaming availability (TMDB watch providers, via JustWatch) ───────────── */
 

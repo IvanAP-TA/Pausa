@@ -148,6 +148,15 @@ The "where to watch" filter needs the TMDB token (see "TMDB token").
 - **Feed search and filters** (`?q=`, kind, person, rating, streaming service): `src/lib/data.ts` `getCircleFeed`, UI in `c/[circleId]/filter-bar.tsx`.
 - **Landing.** The hero has the Google sign-in button; "Prova la Serata" lives only in the navbar.
 
+## Profile, recommendations and housekeeping
+
+- **Profile** (`/<locale>/me`, the round picture at the end of the tab bar): name, picture (a gallery of emoji avatars, no uploads; a Google photo can be kept), a bio of up to 280 characters, up to 5 favourite genres and up to 5 favourite titles (`favorite` table), plus the doors to everything that is only mine: **my diary** (`/me/diary`, the former "Il mio spazio"), **my lists and watchlist** (`/me/lists`, personal lists no longer sit on the group's Lists page), **import** and **settings** (`/account`, which keeps language and theme, notifications, services, data and deletion). Edit at `/me/edit`. Other members see bio, genres and favourites on the person's page in the Cerchia. Logic and tests: `src/lib/core/profile.ts`.
+- **Recommendations, where they show**: "Per te" (titles like the ones I rated well, TMDB) on the profile; "Da vedere insieme" (the Rust/WebAssembly engine on the group's ratings) on the Serata page, in the second column on wide screens, and in Insights with the reasons.
+- **Second column on desktop** (80rem and up): what to watch together and the top five of the ranking, fetched from `/api/circle/<id>/aside` only on screens that wide.
+- **Take my films out of a group**: Cerchia page, my settings, "Togli i miei film da questo gruppo", confirmed by typing PAUSA (any case). Nothing is deleted: viewings shared with all my Cerchie become private and are shared one by one with my other Cerchie at their original time; private ones added to this group are taken out of it.
+- **Lists**: the bin is in each list's header (owner, or an admin for a group list), with a confirmation.
+- **Diary**: each entry also shows the runtime (films), up to three genres, and two lines of synopsis when there is no review, from titles already looked up (`media_detail`), in the same D1 batch as reactions and comments.
+
 ## Group ranking and list import
 
 - **Ranking** (`/<locale>/c/<circle>/ranking`, its own entry, "Classifica", a tab of the bottom bar on phones and a row of the left rail on desktop): every title anyone in the Cerchia logged, with each member's latest rating, the group's average and the number of votes. Filters: search, type, who watched it, release year (from / to), minimum votes (starts at 2 from three members up, so one lonely 5★ does not top the list), "only what everyone watched"; sort by average, most rated, release year, recently watched or title; 40 per page, all in the URL. Genre is not filtered: the app does not store it. Logic and tests: `src/lib/core/ranking.ts`.

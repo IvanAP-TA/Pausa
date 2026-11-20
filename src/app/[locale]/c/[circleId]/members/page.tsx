@@ -13,7 +13,9 @@ import { COVERS, COVER_GLYPH } from "@/lib/core/settings";
 import { Avatar } from "@/components/avatar";
 import { TmdbAttribution } from "@/components/tmdb-attribution";
 import { CopyInvite } from "./copy-invite";
-import { Ellipsis } from "lucide-react";
+import { ChevronDown, Ellipsis } from "lucide-react";
+import { removeMyLogsFromCircleAction } from "@/lib/profile-actions";
+import { CONFIRM_WORD } from "@/lib/core/profile";
 
 // A settings row: the label and its help on the left, the control on the right.
 const row = "flex min-h-11 cursor-pointer items-center justify-between gap-4 py-3";
@@ -29,7 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function Members({ params, searchParams }: PageProps<"/[locale]/c/[circleId]/members">) {
   const { locale, circleId } = await params;
-  const { e, saved } = await searchParams;
+  const { e, saved, removed } = await searchParams;
   setRequestLocale(locale);
   const user = await requireUser();
   const now = new Date();
@@ -55,7 +57,8 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
       <input type="hidden" name="circleId" value={circleId} />
     </>
   );
-  const error = typeof e === "string" && ["forbidden", "last_admin", "not_member", "confirm"].includes(e) ? e : null;
+  const error = typeof e === "string" && ["forbidden", "last_admin", "not_member", "confirm", "word"].includes(e) ? e : null;
+  const removedCount = typeof removed === "string" && /^d+$/.test(removed) ? Number(removed) : null;
 
   return (
     <main className="grid gap-10 px-4 pb-8 pt-8">
@@ -76,7 +79,7 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
 
       </header>
 
-      {error && <p role="alert" className="border border-error p-3 text-sm text-error">{t(`errors.${error}`)}</p>}
+      {error && error !== "word" && <p role="alert" className="border border-error p-3 text-sm text-error">{t(`errors.${error}`)}</p>}
 
       {/* The invite comes first: bringing friends in is what this page is for. The one well on this screen. */}
       <section className="well grained grid gap-5 p-5">
@@ -197,6 +200,29 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
           </div>
           <button className="btn w-full sm:w-fit">{ts("save")}</button>
         </form>
+
+        {/* Taking all my viewings out of this group: they stay in my profile. Behind a typed word, always the same, so it never happens by accident. */}
+        <details id="mine" className="group scroll-mt-20 border-y border-rule" open={error === "word" || removedCount !== null}>
+          <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 marker:content-none">
+            <span className="grid">
+              <span className="font-semibold">{ts("removeMineTitle")}</span>
+              <span className="text-sm text-muted">{ts("removeMineHint")}</span>
+            </span>
+            <ChevronDown size={20} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-muted transition-transform duration-200 ease-out group-open:rotate-180 motion-reduce:transition-none" />
+          </summary>
+          <form action={removeMyLogsFromCircleAction} className="grid gap-4 pb-6 pt-2">
+            {hidden}
+            <p className="text-ink-2">{ts("removeMineBody", { circle: circle!.name })}</p>
+            {removedCount !== null && <p role="status" className="well p-3 text-sm">{ts("removeMineDone", { count: removedCount })}</p>}
+            <div className="field-label">
+              <label htmlFor="remove-word">{ts("removeMineType", { word: CONFIRM_WORD })}</label>
+              <input id="remove-word" name="word" required autoComplete="off" autoCapitalize="characters" spellCheck={false}
+                aria-invalid={error === "word" || undefined} aria-describedby={error === "word" ? "remove-word-error" : undefined} className="field tabular uppercase" />
+              {error === "word" && <p id="remove-word-error" className="text-sm text-error">{ts("removeMineWrong", { word: CONFIRM_WORD })}</p>}
+            </div>
+            <button className="btn btn-quiet w-full text-error sm:w-fit">{ts("removeMineGo")}</button>
+          </form>
+        </details>
 
         {isAdmin && (
           <form action={saveCircleSettingsAction} className="grid gap-4">
