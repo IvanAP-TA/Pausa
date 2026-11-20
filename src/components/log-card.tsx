@@ -33,7 +33,7 @@ export function LogCard({ log, now, circleId, onThread = false, priority = false
     <article className="plate grid grid-cols-[104px_minmax(0,1fr)] gap-x-4 gap-y-4 py-5 sm:grid-cols-[128px_minmax(0,1fr)]">
       <header className="col-span-full flex items-center gap-2 text-sm text-muted">
         {circleId ? (
-          <Link href={`/c/${circleId}/p/${log.author.id}`} className="inline-flex min-h-10 items-center gap-2 text-ink underline-offset-4 hover:underline">
+          <Link href={`/c/${circleId}/p/${log.author.id}`} className="inline-flex min-h-11 items-center gap-2 text-ink underline-offset-4 hover:underline">
             <Avatar user={log.author} />
             <strong>{log.author.name}</strong>
           </Link>
@@ -59,7 +59,7 @@ export function LogCard({ log, now, circleId, onThread = false, priority = false
 
       <div className="grid min-w-0 content-start gap-2">
         <h3 className="title">
-          {titleHref ? <Link href={titleHref} className="underline-offset-4 hover:underline">{log.media.title}</Link> : log.media.title}
+          {titleHref ? <Link href={titleHref} className="inline-flex min-h-11 items-center underline-offset-4 hover:underline">{log.media.title}</Link> : log.media.title}
         </h3>
         <p className="text-sm text-muted">{facts.join(", ")}</p>
         {log.rating ? (

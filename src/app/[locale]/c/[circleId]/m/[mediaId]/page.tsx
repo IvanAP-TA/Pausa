@@ -11,6 +11,7 @@ import { Poster } from "@/components/poster";
 import { Stars } from "@/components/stars";
 import { SubmitButton } from "@/components/submit-button";
 import { TmdbAttribution } from "@/components/tmdb-attribution";
+import { BackLink } from "@/components/back-link";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/c/[circleId]/m/[mediaId]">) {
   const { locale, mediaId } = await params;
@@ -47,7 +48,7 @@ export default async function MediaPage({ params }: PageProps<"/[locale]/c/[circ
 
   return (
     <main className="grid gap-8 px-4 pb-8 pt-6">
-      <Link href={`/c/${circleId}`} className="link inline-flex min-h-11 w-fit items-center text-sm">{tc("back")}</Link>
+      <BackLink href={`/c/${circleId}`} label={tc("back")} />
 
       <header className="grid grid-cols-[128px_minmax(0,1fr)] gap-x-4 gap-y-5 sm:grid-cols-[176px_minmax(0,1fr)] sm:gap-x-6">
         <Poster media={media} size="lg" priority />

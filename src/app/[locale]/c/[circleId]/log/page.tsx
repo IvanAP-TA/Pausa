@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireUser } from "@/lib/session";
-import { getMedia, getMembers } from "@/lib/data";
+import { getCircleForMember, getMedia, getMembers } from "@/lib/data";
 import { tmdbEnabled } from "@/lib/tmdb";
 import { Download } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -18,9 +18,9 @@ export default async function NewLog({ params, searchParams }: PageProps<"/[loca
   const { media, with: withParam, private: privateParam } = await searchParams;
   setRequestLocale(locale);
   const user = await requireUser();
-  const [members, t, ti, picked] = await Promise.all([
+  const [members, circle, ti, picked] = await Promise.all([
     getMembers(circleId),
-    getTranslations("log"),
+    getCircleForMember(circleId, user.id),
     getTranslations("circle"),
     typeof media === "string" ? getMedia(media, locale) : Promise.resolve(null),
   ]);
@@ -29,9 +29,9 @@ export default async function NewLog({ params, searchParams }: PageProps<"/[loca
 
   return (
     <main className="grid gap-6 px-4 pb-8 pt-6">
-      <h1 className="display">{t("title")}</h1>
       <LogForm
         circleId={circleId}
+        circleName={circle?.name ?? ""}
         today={today}
         tmdb={tmdbEnabled()}
         initialPicked={picked}

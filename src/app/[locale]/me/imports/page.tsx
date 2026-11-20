@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/session";
 import { listBulkDays, listImportBatches } from "@/lib/core/import-batches";
 import { deleteBulkDayAction, deleteImportAction, hideBulkDayAction, removeImportFromCircleAction } from "@/lib/import/actions";
 import { ConfirmForm } from "@/components/confirm-form";
+import { BackLink } from "@/components/back-link";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/me/imports">) {
   const { locale } = await params;
@@ -38,7 +39,7 @@ export default async function ImportsPage({ params, searchParams }: PageProps<"/
   return (
     <main className="grid gap-6 px-4 pb-12 pt-2">
       <div className="grid gap-3">
-        <Link href="/me" className="link inline-flex min-h-11 w-fit items-center text-sm">{tc("back")}</Link>
+        <BackLink href={"/me"} label={tc("back")} />
         <h1 className="display">{t("title")}</h1>
         <p className="max-w-prose text-ink-2">{t("lede")}</p>
       </div>

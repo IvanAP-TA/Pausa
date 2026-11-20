@@ -5,6 +5,7 @@ import { createList } from "@/lib/actions";
 import { deleteListAction, moveListItemAction, removeListItemAction, renameListAction } from "@/lib/manage-actions";
 import { Poster } from "@/components/poster";
 import { ListAdd } from "./list-add";
+import { BackLink } from "@/components/back-link";
 import { ArrowDown, ArrowUp, ChevronDown, X } from "lucide-react";
 
 type ListRow = Awaited<ReturnType<typeof getCircleLists>>[number];
@@ -22,12 +23,13 @@ export default async function Lists({ params }: PageProps<"/[locale]/c/[circleId
   const { locale, circleId } = await params;
   setRequestLocale(locale);
   const user = await requireUser();
-  const [circle, groupLists, myLists, t, tm] = await Promise.all([
+  const [circle, groupLists, myLists, t, tm, tt] = await Promise.all([
     getCircleForMember(circleId, user.id),
     getCircleLists(circleId, locale),
     getCircleLists(null, locale, user.id),
     getTranslations("lists"),
     getTranslations("manage"),
+    getTranslations("tabs"),
   ]);
   const isAdmin = circle?.role === "admin";
 
@@ -125,7 +127,9 @@ export default async function Lists({ params }: PageProps<"/[locale]/c/[circleId
   };
 
   return (
-    <main className="grid gap-10 px-4 pb-8 pt-8">
+    <main className="grid gap-10 px-4 pb-8 pt-4">
+      {/* On a phone the lists are reached from the diary (no tab of their own): the way back to it. */}
+      <div className="-mb-6 lg:hidden"><BackLink href={`/c/${circleId}`} label={tt("diary")} /></div>
       <h1 className="display">{t("title")}</h1>
 
       <div className="grid gap-4">

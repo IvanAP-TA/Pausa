@@ -17,20 +17,21 @@ const icons: Record<"diary" | "serata" | "lists" | "ranking" | "circle", LucideI
 
 /**
  * The navigation of the shell: a solid bar under the thumb on phones, a rail on the left from 64rem.
- * On phones the bar is three tracks, `1fr auto 1fr`: the + sits in the middle one, so it is on the centre line of the
- * screen whatever the number of tabs on each side: two and two, so the bar holds five things. From 64rem the two groups
- * dissolve (`lg:contents`) into one column, which also carries the wordmark and the ranking (on a phone the ranking is a
- * row at the top of the diary).
- * The current tab lights a stretch of the hairline it sits against: the top edge of the bar, the right edge of the rail.
+ * On phones the bar is three tracks, `1fr auto 1fr`: "Registra" (the +) sits in the middle one, on the centre line of
+ * the screen, with Diario and Serata on one side and Classifica and Cerchia on the other. The lists live in the diary
+ * and in the Cerchia page on a phone, and get their own row on the rail.
+ * Pages reached from the diary (a title, an entry, a person, the notifications) keep the Diario tab lit, so the bar
+ * always says where you are. The current tab lights a stretch of the hairline it sits against.
  */
 export function TabBar({ circleId, me }: { circleId: string; me: { id: string; name: string; image?: string | null } }) {
   const t = useTranslations("tabs");
   const ta = useTranslations("account");
   const pathname = usePathname();
   const base = `/c/${circleId}`;
+  const underDiary = ["/m/", "/l/", "/p/", "/notifications", "/insights", "/import"].some((p) => pathname.startsWith(`${base}${p}`));
 
   const tab = (key: keyof typeof icons, href: string, railOnly = false) => {
-    const active = href === base ? pathname === base : pathname.startsWith(href);
+    const active = href === base ? pathname === base || underDiary : pathname.startsWith(href);
     const Icon = icons[key];
     return (
       <Link
@@ -48,6 +49,8 @@ export function TabBar({ circleId, me }: { circleId: string; me: { id: string; n
     );
   };
 
+  const logging = pathname.startsWith(`${base}/log`);
+
   return (
     <nav
       aria-label="Pausa"
@@ -60,19 +63,25 @@ export function TabBar({ circleId, me }: { circleId: string; me: { id: string; n
         {tab("diary", base)}
         {tab("serata", `${base}/serata`)}
       </div>
+      {/* The one action of the app, named: "Registra" under the square on a phone, the whole phrase on the rail. */}
       <Link
         href={`${base}/log`}
+        aria-current={logging ? "page" : undefined}
         aria-label={t("log")}
-        className="grid size-12 place-items-center justify-self-center bg-accent text-accent-ink transition-[background-color,transform] duration-150 hover:bg-accent-hover active:scale-[0.97] lg:-order-1 lg:mb-4 lg:h-12 lg:w-full lg:justify-self-stretch"
+        className="group grid min-w-16 justify-items-center gap-1 px-1 text-xs font-semibold text-ink lg:-order-1 lg:mb-4 lg:flex lg:h-12 lg:w-full lg:items-center lg:justify-center lg:gap-2 lg:bg-accent lg:text-base lg:text-accent-ink lg:transition-[background-color,transform] lg:duration-150 lg:hover:bg-accent-hover lg:active:scale-[0.98]"
       >
-        <Plus size={24} strokeWidth={1.8} aria-hidden="true" />
+        <span className="grid size-10 place-items-center bg-accent text-accent-ink transition-[background-color,transform] duration-150 group-hover:bg-accent-hover group-active:scale-[0.94] lg:size-auto lg:bg-transparent lg:group-hover:bg-transparent">
+          <Plus size={22} strokeWidth={2} aria-hidden="true" />
+        </span>
+        <span aria-hidden="true" className="lg:hidden">{t("logShort")}</span>
+        <span aria-hidden="true" className="hidden lg:inline">{t("log")}</span>
       </Link>
       <div className="grid grid-cols-2 lg:contents">
-        {tab("lists", `${base}/lists`)}
-        {tab("ranking", `${base}/ranking`, true)}
+        {tab("ranking", `${base}/ranking`)}
+        {tab("lists", `${base}/lists`, true)}
         {tab("circle", `${base}/members`)}
       </div>
-      {/* Desktop only: who you are, and the way out. On phones the same lives in the Cerchia tab and the diary header. */}
+      {/* Desktop only: who you are, and the way out. On phones the avatar sits in the bar on top. */}
       <div className="hidden lg:mt-auto lg:grid lg:gap-1 lg:border-t lg:border-rule lg:pt-4">
         <Link href="/account" className="flex items-center gap-3 px-3 py-2 text-sm transition-colors duration-150 hover:bg-paper-2">
           <Avatar user={me} size={28} />

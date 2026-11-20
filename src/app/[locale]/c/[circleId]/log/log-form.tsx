@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
 import { createLog, getEpisodeLimits, searchMedia, setNowWatching } from "@/lib/actions";
@@ -10,21 +10,26 @@ import type { EpisodeLimits } from "@/lib/core/episodes";
 import { EpisodeFields } from "@/components/episode-fields";
 import type { MediaSummary } from "@/lib/data";
 import { Poster } from "@/components/poster";
-import { Minus, Star } from "lucide-react";
+import { ChevronDown, Lock, Minus, Search, Star, Users } from "lucide-react";
 
 type Props = {
-  circleId: string; today: string; tmdb: boolean; members: { id: string; name: string; image?: string | null }[];
+  circleId: string; circleName: string; today: string; tmdb: boolean; members: { id: string; name: string; image?: string | null }[];
   initialPicked?: MediaSummary | null; initialWith?: string[]; initialPrivate?: boolean;
 };
 
-export function LogForm({ circleId, today, tmdb, members, initialPicked = null, initialWith = [], initialPrivate = false }: Props) {
+/**
+ * Logging a viewing, the habit of the app, in as few taps as possible: type (results come as you type), tap the title,
+ * tap the stars, save. Everything else (date, where, episode, spoilers, with whom) waits behind "Aggiungi dettagli",
+ * and the save button stays in reach at the bottom of the screen and says where the viewing goes.
+ */
+export function LogForm({ circleId, circleName, today, tmdb, members, initialPicked = null, initialWith = [], initialPrivate = false }: Props) {
   const t = useTranslations("log");
   const tk = useTranslations("kind");
   const tf = useTranslations("feed");
   const tc = useTranslations("common");
   const locale = useLocale();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<MediaSummary[] | null>(null);
+  const [results, setResults] = useState<{ q: string; items: MediaSummary[] } | null>(null);
   const [picked, setPicked] = useState<MediaSummary | null>(initialPicked);
   // Episode counts of the picked series/anime, looked up once it is chosen. Tied to the title so a stale answer is never shown.
   const [fetched, setFetched] = useState<{ id: string; limits: EpisodeLimits | null } | null>(null);
@@ -35,7 +40,7 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
     getEpisodeLimits(picked.id).then((l) => { if (live) setFetched({ id: picked.id, limits: l }); }).catch(() => {});
     return () => { live = false; };
   }, [picked]);
-  // What the picked title is about: asked once it is chosen. `null` = still asking; no synopsis = the form offers a field to write one.
+  // What the picked title is about: asked once it is chosen. No synopsis = the details offer a field to write one.
   const [about, setAbout] = useState<{ id: string; overview: string | null; genres: string[] } | null>(null);
   const detail = picked && about?.id === picked.id ? about : null;
   useEffect(() => {
@@ -48,35 +53,50 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
   }, [picked, locale]);
   const [rating, setRating] = useState(0);
   const [mode, setMode] = useState<"watched" | "watching">("watched");
+  const [isPrivate, setIsPrivate] = useState(initialPrivate);
   const [searching, startSearch] = useTransition();
 
-  function runSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (!query.trim()) return;
-    startSearch(async () => setResults(await searchMedia(query, locale)));
+  // Results as you type: a short pause after the last key, two letters at least; only the answer to the latest text is kept.
+  const latest = useRef("");
+  function search(q: string) {
+    const clean = q.trim();
+    latest.current = clean;
+    if (clean.length < 2) return;
+    startSearch(async () => {
+      const items = await searchMedia(clean, locale);
+      if (latest.current === clean) setResults({ q: clean, items });
+    });
   }
+  useEffect(() => {
+    const id = setTimeout(() => search(query), 350);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
   if (!picked) {
+    const shown = query.trim().length >= 2 ? results : null;
     return (
       <section className="grid gap-4">
-        <form onSubmit={runSearch} role="search" className="flex gap-2">
+        <h1 className="display">{t("title")}</h1>
+        <form onSubmit={(e) => { e.preventDefault(); search(query); }} role="search" className="relative">
           <label htmlFor="q" className="sr-only">{t("search")}</label>
-          <input id="q" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search")} autoFocus
-            className="field min-h-14 flex-1 text-lg" />
-          <button disabled={searching} className="btn btn-primary min-h-14 shrink-0">
-            {t("searchCta")}
-          </button>
+          <Search size={20} strokeWidth={1.6} aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted" />
+          <input id="q" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search")}
+            enterKeyHint="search" autoComplete="off" autoCorrect="off" spellCheck={false}
+            className="field min-h-14 w-full pl-12 text-lg" />
         </form>
+        <p aria-live="polite" className="sr-only">{searching ? t("searching") : shown ? t("resultsCount", { count: shown.items.length }) : ""}</p>
         {!tmdb && <p className="text-sm text-muted">{t("tmdbOff")}</p>}
-        {results && results.length === 0 && <p className="plate pt-5 text-ink-2">{t("noResults")}</p>}
-        {results && results.length > 0 && (
-          <ul className="rows grid">
-            {results.map((m) => (
+        {searching && !shown && <p className="text-sm text-muted">{t("searching")}</p>}
+        {shown && shown.items.length === 0 && !searching && <p className="plate pt-5 text-ink-2">{t("noResults")}</p>}
+        {shown && shown.items.length > 0 && (
+          <ul className={`rows grid transition-opacity duration-150 ${searching ? "opacity-60" : ""}`}>
+            {shown.items.map((m) => (
               <li key={m.id}>
-                <button type="button" onClick={() => setPicked(m)} className="grid w-full grid-cols-[56px_minmax(0,1fr)] items-center gap-3 py-3 text-left transition-colors duration-150 hover:bg-paper-2 active:translate-y-px">
+                <button type="button" onClick={() => setPicked(m)} className="grid min-h-[92px] w-full grid-cols-[56px_minmax(0,1fr)] items-center gap-3 py-3 text-left transition-colors duration-150 hover:bg-paper-2 active:bg-paper-2">
                   <Poster media={m} size="sm" />
                   <span className="grid min-w-0 gap-1">
-                    <span className="title text-xl">{m.title}</span>
+                    <span className="title text-xl [overflow-wrap:anywhere]">{m.title}</span>
                     <span className="text-sm text-muted">{[m.year, tk(m.kind)].filter(Boolean).join(", ")}</span>
                   </span>
                 </button>
@@ -88,27 +108,35 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
     );
   }
 
-  // The picked title leads the form: its poster printed large beside its name.
+  // The picked title: a compact head (poster, name, change), the synopsis folded to two lines.
   const pickedCard = (
-    <div className="grid grid-cols-[128px_minmax(0,1fr)] gap-4">
-      <Poster media={picked} />
-      <div className="grid min-w-0 content-start justify-items-start gap-2">
-        <p className="title">{picked.title}</p>
-        <p className="text-sm text-muted">{[picked.year, tk(picked.kind)].filter(Boolean).join(", ")}</p>
-        {detail && detail.genres.length > 0 && <p className="text-sm text-ink-2">{detail.genres.join(", ")}</p>}
-        <button type="button" onClick={() => setPicked(null)} className="btn btn-quiet btn-sm mt-2">
-          {tc("change")}
-        </button>
+    <div className="grid gap-3">
+      <h1 className="sr-only">{t("title")}</h1>
+      <div className="grid grid-cols-[56px_minmax(0,1fr)] items-start gap-4">
+        <Poster media={picked} size="sm" />
+        <div className="grid min-w-0 content-start justify-items-start gap-1">
+          <p className="title text-2xl [overflow-wrap:anywhere]">{picked.title}</p>
+          <p className="text-sm text-muted">{[picked.year, tk(picked.kind), ...(detail?.genres.slice(0, 2) ?? [])].filter(Boolean).join(", ")}</p>
+          <button type="button" onClick={() => { setPicked(null); setRating(0); }} className="-ml-2 inline-flex min-h-11 items-center px-2 text-sm text-ink-2 underline underline-offset-4 transition-colors duration-150 hover:text-ink">
+            {tc("change")}
+          </button>
+        </div>
       </div>
-      {/* The synopsis keeps its place while it loads, so the form below does not jump. */}
-      <p aria-live="polite" className={`col-span-full min-h-[3lh] text-ink-2 ${detail ? "" : "skeleton"}`}>
-        {detail ? detail.overview ?? <span className="text-muted">{t("noOverview")}</span> : <span className="sr-only">{t("loadingOverview")}</span>}
-      </p>
+      {detail?.overview ? (
+        <details className="group text-ink-2">
+          <summary className="cursor-pointer list-none marker:content-none">
+            <span className="line-clamp-2 group-open:line-clamp-none">{detail.overview}</span>
+            <span className="mt-1 inline-flex min-h-11 items-center gap-1 text-sm text-muted group-open:hidden">{t("more")}<ChevronDown size={16} aria-hidden="true" /></span>
+          </summary>
+        </details>
+      ) : !detail ? (
+        <p aria-live="polite" className="skeleton min-h-[2lh]"><span className="sr-only">{t("loadingOverview")}</span></p>
+      ) : null}
     </div>
   );
 
   const modeToggle = (
-    <div role="radiogroup" aria-label={t("title")} className="grid grid-cols-2 border-b border-rule">
+    <div role="radiogroup" aria-label={t("modeLabel")} className="grid grid-cols-2 border-b border-rule">
       {(["watched", "watching"] as const).map((m) => (
         <button
           key={m}
@@ -116,7 +144,7 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
           role="radio"
           aria-checked={mode === m}
           onClick={() => setMode(m)}
-          className={`-mb-px min-h-11 border-b-2 px-3 font-display text-lg transition-colors duration-150 active:translate-y-px ${mode === m ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"}`}
+          className={`-mb-px min-h-12 border-b-2 px-3 font-display text-lg transition-colors duration-150 ${mode === m ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"}`}
         >
           {m === "watched" ? t("modeWatched") : t("modeWatching")}
         </button>
@@ -142,10 +170,21 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
           <legend className="mb-2 text-sm text-ink-2">{t("progress")}</legend>
           <EpisodeFields key={picked.id + (limits ? "k" : "")} limits={limits} seasonName="season" episodeName="episode" disabled={picked.kind === "movie"} />
         </fieldset>
-        <Submit label={t("setWatching")} pending={t("saving")} />
+        <SaveBar><Submit label={t("setWatching")} pending={t("saving")} /></SaveBar>
       </form>
     );
   }
+
+  const who = (value: boolean, Icon: typeof Users, label: string, hint: string) => (
+    <label className="relative cursor-pointer">
+      <input type="radio" name="isPrivate" value={value ? "on" : ""} checked={isPrivate === value} onChange={() => setIsPrivate(value)} className="peer sr-only" />
+      <span className="grid h-full grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 border border-rule p-3 transition-colors duration-150 hover:border-muted peer-checked:border-accent peer-checked:bg-paper-2 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus">
+        <Icon size={20} strokeWidth={1.6} aria-hidden="true" className="row-span-2 mt-0.5 text-accent" />
+        <span className="font-semibold text-ink">{label}</span>
+        <span className="text-sm text-muted">{hint}</span>
+      </span>
+    </label>
+  );
 
   return (
     <form action={createLog} className="grid gap-6">
@@ -156,66 +195,90 @@ export function LogForm({ circleId, today, tmdb, members, initialPicked = null, 
 
       <RatingField rating={rating} onChange={setRating} label={t("rating")} valueText={rating ? tf("rating", { stars: rating / 2 }) : t("noRating")} emptyText={t("noRating")} />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="field-label">
-          {t("watchedOn")}
-          <input type="date" name="watchedOn" defaultValue={today} max={today} required className="field tabular" />
-        </label>
-        <label className="field-label">
-          {t("platform")}
-          <input name="platform" maxLength={60} placeholder={t("platformPlaceholder")} className="field" />
-        </label>
-      </div>
-
-      {picked.kind !== "movie" && (
-        <fieldset className="grid gap-1.5">
-          <legend className="mb-2 text-sm text-ink-2">{t("episodeLogged")}</legend>
-          <EpisodeFields key={picked.id + (limits ? "k" : "")} limits={limits} seasonName="season" episodeName="logEpisode" optionalSeasonLabel={t("seasonLogged")} />
-        </fieldset>
-      )}
-
-      {detail && !detail.overview && (
-        <label className="field-label">
-          {t("overview")}
-          <textarea name="overview" rows={3} maxLength={1200} placeholder={t("overviewPlaceholder")} className="field" />
-        </label>
-      )}
-
       <label className="field-label">
         {t("review")}
-        <textarea name="review" rows={4} maxLength={4000} className="field" />
+        <textarea name="review" rows={3} maxLength={4000} className="field" />
       </label>
 
-      <div className="grid">
-        <label className="flex min-h-11 items-center gap-3"><input type="checkbox" name="containsSpoilers" className="size-5 shrink-0 accent-accent" />{t("spoilers")}</label>
-        <label className="flex min-h-11 items-center gap-3"><input type="checkbox" name="isRewatch" className="size-5 shrink-0 accent-accent" />{t("rewatch")}</label>
-      </div>
-
-      {members.length > 0 && (
-        <fieldset className="grid gap-2">
-          <legend className="mb-2 text-sm text-ink-2">{t("with")}</legend>
-          <div className="flex flex-wrap gap-2">
-            {members.map((m) => (
-              <PersonChip key={m.id} name="watchedWith" value={m.id} user={m} defaultChecked={initialWith.includes(m.id)} />
-            ))}
+      {/* Everything optional, folded: most viewings need none of it. */}
+      <details className="group border-y border-rule" open={initialWith.length > 0}>
+        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 marker:content-none">
+          <span className="grid">
+            <span className="font-semibold">{t("details")}</span>
+            <span className="text-sm text-muted">{t("detailsHint")}</span>
+          </span>
+          <ChevronDown size={20} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-muted transition-transform duration-200 ease-out group-open:rotate-180 motion-reduce:transition-none" />
+        </summary>
+        <div className="grid gap-6 pb-6 pt-2">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="field-label">
+              {t("watchedOn")}
+              <input type="date" name="watchedOn" defaultValue={today} max={today} required className="field tabular" />
+            </label>
+            <label className="field-label">
+              {t("platform")}
+              <input name="platform" maxLength={60} placeholder={t("platformPlaceholder")} autoComplete="off" className="field" />
+            </label>
           </div>
-        </fieldset>
-      )}
 
-      <label className="flex min-h-11 items-start gap-3 border-t border-rule pt-4">
-        <input type="checkbox" name="isPrivate" defaultChecked={initialPrivate} className="mt-0.5 size-5 shrink-0 accent-accent" />
-        <span className="grid gap-0.5">{t("privateOnly")}<span className="text-sm text-muted">{t("privateHelp")}</span></span>
-      </label>
+          {picked.kind !== "movie" && (
+            <fieldset className="grid gap-1.5">
+              <legend className="mb-2 text-sm text-ink-2">{t("episodeLogged")}</legend>
+              <EpisodeFields key={picked.id + (limits ? "k" : "")} limits={limits} seasonName="season" episodeName="logEpisode" optionalSeasonLabel={t("seasonLogged")} />
+            </fieldset>
+          )}
 
-      <Submit label={t("submit")} pending={t("saving")} />
+          {detail && !detail.overview && (
+            <label className="field-label">
+              {t("overview")}
+              <textarea name="overview" rows={3} maxLength={1200} placeholder={t("overviewPlaceholder")} className="field" />
+            </label>
+          )}
+
+          <div className="grid">
+            <label className="flex min-h-11 items-center gap-3"><input type="checkbox" name="containsSpoilers" className="size-5 shrink-0 accent-accent" />{t("spoilers")}</label>
+            <label className="flex min-h-11 items-center gap-3"><input type="checkbox" name="isRewatch" className="size-5 shrink-0 accent-accent" />{t("rewatch")}</label>
+          </div>
+
+          {members.length > 0 && (
+            <fieldset className="grid gap-2">
+              <legend className="mb-2 text-sm text-ink-2">{t("with")}</legend>
+              <div className="flex flex-wrap gap-2">
+                {members.map((m) => (
+                  <PersonChip key={m.id} name="watchedWith" value={m.id} user={m} defaultChecked={initialWith.includes(m.id)} />
+                ))}
+              </div>
+            </fieldset>
+          )}
+        </div>
+      </details>
+
+      <fieldset className="grid gap-2">
+        <legend className="mb-2 text-sm text-ink-2">{t("who")}</legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {who(false, Users, t("whoCircles"), t("whoCirclesHint", { circle: circleName }))}
+          {who(true, Lock, t("whoMe"), t("whoMeHint"))}
+        </div>
+      </fieldset>
+
+      <SaveBar><Submit label={isPrivate ? t("submitPrivate") : t("submit")} pending={t("saving")} /></SaveBar>
     </form>
+  );
+}
+
+/** Keeps the save button in reach: stuck to the bottom of the screen, just above the tab bar, while the form scrolls. */
+function SaveBar({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="sticky bottom-[calc(76px+env(safe-area-inset-bottom))] z-10 -mx-4 border-t border-rule bg-paper px-4 py-3 lg:bottom-0 lg:mx-0 lg:border-t-0 lg:px-0">
+      {children}
+    </div>
   );
 }
 
 function Submit({ label, pending }: { label: string; pending: string }) {
   const status = useFormStatus();
   return (
-    <button disabled={status.pending} className="btn btn-primary w-full sm:w-fit">
+    <button disabled={status.pending} className="btn btn-primary w-full">
       {status.pending ? pending : label}
     </button>
   );
@@ -245,7 +308,7 @@ export function RatingField({ rating, onChange, label, valueText, emptyText }: {
     <fieldset className="grid gap-2">
       <legend className="mb-2 text-sm text-ink-2">{label}</legend>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <div onPointerMove={track} onPointerLeave={() => setHover(null)} className="group relative flex h-11 w-[242px] items-center has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
+        <div onPointerMove={track} onPointerLeave={() => setHover(null)} className="group relative flex h-11 w-[242px] touch-manipulation items-center has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
           <span aria-hidden="true" className="grid h-11 w-[22px] shrink-0 place-items-center text-muted">
             <Minus size={14} strokeWidth={1.6} aria-hidden="true" />
           </span>

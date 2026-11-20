@@ -2,7 +2,7 @@ import { getFormatter, getTranslations, setRequestLocale } from "next-intl/serve
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
 import { FilterBar } from "./filter-bar";
-import { getCircleFeed, getCircleForMember, getCircleStats, getMembers, getMyCircleSettings, getNowWatching, getUnreadCount, type FeedFilters } from "@/lib/data";
+import { getCircleFeed, getCircleForMember, getCircleStats, getMembers, getMyCircleSettings, getNowWatching, type FeedFilters } from "@/lib/data";
 import { advanceWatching, clearNowWatching } from "@/lib/actions";
 import { formatProgress } from "@/lib/core/progress";
 import { Suspense } from "react";
@@ -13,8 +13,7 @@ import { Avatar } from "@/components/avatar";
 import { PauseMark } from "@/components/brand";
 import { LogCard } from "@/components/log-card";
 import { Poster } from "@/components/poster";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Bell, Check, Trophy } from "lucide-react";
+import { ChevronRight, List } from "lucide-react";
 import { Fragment } from "react";
 
 const PAGE = 20;
@@ -44,16 +43,14 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
   const filtered = Object.values(filters).some(Boolean);
   const qs = new URLSearchParams(Object.entries({ q: filters.q, kind: filters.kind, by: filters.by, with: filters.with, year: filters.year, min: filters.minRating }).flatMap(([k, v]) => (v ? [[k, String(v)]] : []))).toString();
 
-  const [circle, members, stats, watching, feed, unread, t, ta, about, tt, format] = await Promise.all([
+  const [circle, members, stats, watching, feed, t, about, tt, format] = await Promise.all([
     getCircleForMember(circleId, user.id),
     getMembers(circleId),
     getCircleStats(circleId, now.getFullYear()),
     getNowWatching(circleId, locale, user.id),
     // One extra row tells us whether there is a next page.
     getCircleFeed(circleId, user.id, locale, PAGE + 1, undefined, before, filters),
-    getUnreadCount(user.id),
     getTranslations("feed"),
-    getTranslations("account"),
     getMyCircleSettings(circleId, user.id),
     getTranslations("tabs"),
     getFormatter(),
@@ -71,42 +68,23 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
 
   return (
     <main className="grid gap-6 px-4 pb-8 max-lg:!pt-0">
-      <header className="-mt-14 grid gap-3 lg:mt-0 lg:gap-5 lg:pt-6">
-        {/* The tools sit at the far end of the mast (on a phone the layout draws the wordmark on the same line). */}
-        <div className="pointer-events-none flex h-14 items-center justify-end lg:h-auto">
-        <div className="pointer-events-auto -mr-2 flex shrink-0 items-center gap-1">
-          <div className="mr-2 hidden -space-x-1.5 sm:flex">
-            {members.slice(0, 5).map((m) => <Avatar key={m.id} user={m} className="ring-2 ring-paper" />)}
-          </div>
-          <ThemeToggle />
-          <Link href="/account" aria-label={ta("profile")} className="grid size-11 place-items-center transition-colors duration-150 hover:bg-paper-2 lg:hidden">
-            <Avatar user={{ id: user.id, name: user.name, image: user.image }} size={30} />
-          </Link>
-          <Link
-            href={`/c/${circleId}/notifications`}
-            aria-label={unread ? t("unread", { count: unread }) : t("notifications")}
-            className="relative grid size-11 place-items-center text-ink-2 transition-colors duration-150 hover:bg-paper-2 hover:text-ink"
-          >
-            <Bell size={22} strokeWidth={1.6} aria-hidden="true" />
-            {unread > 0 && (
-              <span aria-hidden="true" className="tabular absolute right-0.5 top-0.5 grid min-w-5 place-items-center bg-accent px-1 text-xs font-semibold leading-5 text-accent-ink">
-                {unread > 9 ? "9+" : unread}
-              </span>
-            )}
-          </Link>
-        </div>
-        </div>
-        {/* The name of the Cerchia has the full width of the sheet. */}
+      <header className="grid gap-3 pt-6">
+        {/* The name of the Cerchia has the full width of the sheet; who is in it, and the group's lists, right under it. */}
         <div className="min-w-0">
-          <h1 className="display max-w-none">{coverGlyph && <span aria-hidden="true" className="mr-2">{coverGlyph}</span>}{circle!.name}</h1>
+          <h1 className="display max-w-none [text-wrap:balance]">{coverGlyph && <span aria-hidden="true" className="mr-2">{coverGlyph}</span>}{circle!.name}</h1>
           {about?.description && <p className="mt-2 max-w-prose text-ink-2 [overflow-wrap:anywhere]">{about.description}</p>}
           <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-            <p className="text-sm text-muted">
-              {t("members", { count: members.length })}, {t("logsThisYear", { count: stats.logsThisYear })}
-            </p>
-            <Link href={`/c/${circleId}/ranking`} className="btn btn-sm">
-              <Trophy size={18} strokeWidth={1.6} aria-hidden="true" />
-              {tt("ranking")}
+            <Link href={`/c/${circleId}/members`} className="group flex min-h-11 min-w-0 items-center gap-3">
+              <span className="flex shrink-0 -space-x-1.5" aria-hidden="true">
+                {members.slice(0, 4).map((m) => <Avatar key={m.id} user={m} size={28} className="ring-2 ring-paper" />)}
+              </span>
+              <span className="text-sm text-muted transition-colors duration-150 group-hover:text-ink">
+                {t("members", { count: members.length })}, {t("logsThisYear", { count: stats.logsThisYear })}
+              </span>
+            </Link>
+            <Link href={`/c/${circleId}/lists`} className="btn btn-sm">
+              <List size={18} strokeWidth={1.6} aria-hidden="true" />
+              {tt("lists")}
             </Link>
           </div>
         </div>
@@ -114,7 +92,7 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
 
       {/* On air: who is watching what right now. A strip that scrolls sideways on a phone, each entry a small plate. */}
       {watching.length > 0 && (
-        <ul className="-mx-4 flex snap-x scroll-pl-4 gap-0.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:scroll-pl-0 lg:px-0">
+        <ul tabIndex={0} aria-label={t("onAir")} className="-mx-4 flex snap-x scroll-pl-4 gap-0.5 overflow-x-auto overscroll-x-contain px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:scroll-pl-0 lg:px-0">
           {watching.map((w) => (
             <li key={w.user.id} className="well reel grid w-[min(82vw,20rem)] shrink-0 snap-start grid-cols-[56px_minmax(0,1fr)] gap-3 px-3 py-[26px]">
               <Poster media={w.media} size="sm" />
@@ -210,32 +188,36 @@ async function Extras({ circleId, userId, locale, now }: { circleId: string; use
   const [memories, onboarding, tr] = await Promise.all([memoriesFor(db, circleId, now, { locale }), onboardingFor(db, circleId, userId), getTranslations("retention")]);
   return (
     <>
-      {onboarding && !onboarding.done && (
-        <section aria-labelledby="first-steps" className="well grained grid gap-3 p-5">
-          <h2 id="first-steps" className="title">{tr("firstStepsTitle")}</h2>
-          <ul className="rows grid text-base">
-            {([
-              ["hasLog", tr("stepLog"), `/c/${circleId}/log`],
-              ["hasCompany", tr("stepInvite"), `/c/${circleId}/members`],
-              ["hasSerata", tr("stepSerata"), `/c/${circleId}/serata`],
-            ] as const).map(([key, label, href]) => (
-              <li key={key}>
-                {onboarding[key] ? (
-                  <span className="flex min-h-11 items-center gap-3 text-muted line-through">
-                    <Check size={18} strokeWidth={1.6} aria-hidden="true" />
+      {onboarding && !onboarding.done && (() => {
+        // Only what is left to do; what is done becomes a count and a meter, not a list of struck-through lines.
+        const steps = ([
+          ["hasLog", tr("stepLog"), `/c/${circleId}/log`],
+          ["hasCompany", tr("stepInvite"), `/c/${circleId}/members`],
+          ["hasSerata", tr("stepSerata"), `/c/${circleId}/serata`],
+        ] as const);
+        const doneCount = steps.filter(([key]) => onboarding[key]).length;
+        return (
+          <section aria-labelledby="first-steps" className="well grained grid gap-3 p-5">
+            <div className="grid gap-2">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 id="first-steps" className="title">{tr("firstStepsTitle")}</h2>
+                <span className="tabular shrink-0 text-sm text-muted">{tr("stepsDone", { done: doneCount, total: steps.length })}</span>
+              </div>
+              <span className="meter" aria-hidden="true"><span style={{ transform: `scaleX(${doneCount / steps.length})` }} /></span>
+            </div>
+            <ul className="rows grid text-base">
+              {steps.filter(([key]) => !onboarding[key]).map(([key, label, href]) => (
+                <li key={key}>
+                  <Link href={href} className="flex min-h-12 items-center justify-between gap-3 font-semibold transition-colors duration-150 hover:text-accent">
                     {label}
-                  </span>
-                ) : (
-                  <Link href={href} className="flex min-h-11 items-center gap-3 font-semibold underline-offset-4 hover:underline">
-                    <span aria-hidden="true" className="size-[18px] border border-muted" />
-                    {label}
+                    <ChevronRight size={20} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-muted" />
                   </Link>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })()}
 
       {memories.length > 0 && (
         <section aria-labelledby="memories" className="grid gap-3">

@@ -16,7 +16,7 @@ export const LIMITS = {
   comment: { max: 60, windowMs: 3_600_000 },
   react: { max: 300, windowMs: 3_600_000 },
   createSerata: { max: 20, windowMs: 3_600_000 },
-  search: { max: 120, windowMs: 3_600_000 }, // each one may call TMDB
+  search: { max: 300, windowMs: 3_600_000 }, // each one may call TMDB; the log form searches as you type (debounced)
   importRows: { max: 600, windowMs: 3_600_000 }, // one hit per chunk of ~20 titles: room for a history of ~12,000
   report: { max: 20, windowMs: 3_600_000 },
   reviewLogin: { max: 10, windowMs: 3_600_000 }, // password attempts on /review, counted per IP

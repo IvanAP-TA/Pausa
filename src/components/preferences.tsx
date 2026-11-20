@@ -4,12 +4,12 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
-import { authClient } from "@/lib/auth-client";
 import { THEMES, THEME_COOKIE, type Theme } from "@/lib/theme";
 
 const NAMES: Record<string, string> = { it: "Italiano", en: "English", es: "Español" };
 
-export function AccountControls({ initialTheme }: { initialTheme: Theme }) {
+/** Language and theme: personal preferences, set on the Account page. Both apply at once, no save button. */
+export function Preferences({ initialTheme }: { initialTheme: Theme }) {
   const t = useTranslations("common");
   const locale = useLocale();
   const pathname = usePathname();
@@ -26,8 +26,7 @@ export function AccountControls({ initialTheme }: { initialTheme: Theme }) {
   const select = "field w-auto";
   const row = "flex min-h-11 items-center justify-between gap-4 py-3";
   return (
-    <section className="grid gap-4">
-      <div className="rows grid">
+    <div className="rows grid">
         <label className={row}>
           {t("language")}
           <select value={locale} onChange={(e) => router.replace(pathname, { locale: e.target.value })} className={select}>
@@ -40,14 +39,6 @@ export function AccountControls({ initialTheme }: { initialTheme: Theme }) {
             {THEMES.map((th) => <option key={th} value={th}>{t(`themes.${th}`)}</option>)}
           </select>
         </label>
-      </div>
-      <button
-        type="button"
-        onClick={async () => { await authClient.signOut(); router.replace("/sign-in"); }}
-        className="btn btn-quiet w-full sm:w-fit"
-      >
-        {t("signOut")}
-      </button>
-    </section>
+    </div>
   );
 }

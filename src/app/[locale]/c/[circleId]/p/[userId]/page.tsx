@@ -10,6 +10,7 @@ import { Avatar } from "@/components/avatar";
 import { LogCard } from "@/components/log-card";
 import { Poster } from "@/components/poster";
 import { Stars } from "@/components/stars";
+import { BackLink } from "@/components/back-link";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -45,7 +46,7 @@ export default async function Person({ params }: PageProps<"/[locale]/c/[circleI
 
   return (
     <main className="grid gap-6 px-4 pb-8 pt-6">
-      <Link href={`/c/${circleId}/members`} className="link inline-flex min-h-11 w-fit items-center text-sm">{t("back")}</Link>
+      <BackLink href={`/c/${circleId}/members`} label={t("back")} />
 
       <header className="flex items-center gap-4">
         <Avatar user={who} size={64} />

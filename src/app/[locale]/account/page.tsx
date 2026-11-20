@@ -17,7 +17,12 @@ import { COUNTRIES, getUserProviders, isCountry } from "@/lib/core/streaming";
 import { regionProviders, tmdbEnabled } from "@/lib/tmdb";
 import { FOUNDER_AT, peopleBrought } from "@/lib/core/circles";
 import { Check } from "lucide-react";
-import { Wordmark } from "@/components/brand";
+import { cookies } from "next/headers";
+import { SpaceSwitch } from "@/components/space-switch";
+import { Preferences } from "@/components/preferences";
+import { BackLink } from "@/components/back-link";
+import { LAST_CIRCLE_COOKIE } from "@/components/circle-memory";
+import { THEME_COOKIE, parseTheme } from "@/lib/theme";
 
 // A settings row: the label and its help on the left, the control on the right.
 const row = "flex min-h-11 cursor-pointer items-center justify-between gap-4 py-3";
@@ -48,12 +53,17 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
   const picked = typeof countryParam === "string" && isCountry(countryParam) ? countryParam : await countryOf(user.id, locale);
   const catalogue = await regionProviders(picked, locale);
   const regionNames = new Intl.DisplayNames([locale], { type: "region" });
+  const jar = await cookies();
+  const lastId = jar.get(LAST_CIRCLE_COOKIE)?.value;
+  const home = circles.find((c) => c.id === lastId) ?? circles[0] ?? null;
+  const me = { id: user.id, name: user.name, image: user.image };
 
   return (
-    <main className="projector mx-auto grid max-w-[40rem] gap-10 px-4 py-10">
+    <div className="projector mx-auto min-h-dvh max-w-md lg:max-w-[40rem]">
+    <SpaceSwitch current={home ? "circle" : "personal"} circle={home} circles={circles} me={me} />
+    <main className="grid gap-10 px-4 pb-10 pt-4">
       <header className="grid gap-2">
-        <p className="mb-4"><Wordmark size="text-3xl" /></p>
-        <Link href={circles[0] ? `/c/${circles[0].id}/members` : "/"} className="link inline-flex min-h-11 w-fit items-center text-sm">{t("back")}</Link>
+        <BackLink href={home ? `/c/${home.id}` : "/me"} label={t("back")} />
         <h1 className="display">{t("title")}</h1>
         <p className="text-sm text-muted [overflow-wrap:anywhere]">{user.email}</p>
         {brought > 0 && (
@@ -76,16 +86,13 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
         </div>
       </form>
 
-      {circles.length > 1 && (
-        <section className="grid gap-3">
-          <h2 className="chapter">{t("circles")}</h2>
-          <ul className="rows grid">
-            {circles.map((c) => (
-              <li key={c.id}><Link href={`/c/${c.id}`} className="title flex min-h-12 items-center text-xl transition-colors duration-150 hover:text-accent">{c.name}</Link></li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <section className="grid gap-3">
+        <div className="grid gap-2">
+          <h2 className="chapter">{t("theme")}</h2>
+          <p className="text-ink-2">{t("themeHint")}</p>
+        </div>
+        <Preferences initialTheme={parseTheme(jar.get(THEME_COOKIE)?.value)} />
+      </section>
 
       {pushEnabled() ? <PushToggle publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!} /> : (
         <p className="text-sm text-muted">{(await getTranslations("pushSettings"))("off")}</p>
@@ -182,5 +189,6 @@ export default async function Account({ params, searchParams }: PageProps<"/[loc
         <Link href="/terms" className="link inline-flex min-h-11 items-center">{t("terms")}</Link>
       </nav>
     </main>
+    </div>
   );
 }

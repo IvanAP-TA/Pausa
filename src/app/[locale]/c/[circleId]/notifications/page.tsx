@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/session";
 import { getNotifications } from "@/lib/data";
 import { Avatar } from "@/components/avatar";
 import { MarkRead } from "./mark-read";
+import { BackLink } from "@/components/back-link";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -27,7 +28,7 @@ export default async function Notifications({ params }: PageProps<"/[locale]/c/[
   return (
     <main className="grid gap-6 px-4 pb-8 pt-6">
       {hasUnread && <MarkRead />}
-      <Link href={`/c/${circleId}`} className="link inline-flex min-h-11 w-fit items-center text-sm">{tc("back")}</Link>
+      <BackLink href={`/c/${circleId}`} label={tc("back")} />
       <h1 className="display">{t("title")}</h1>
 
       {items.length === 0 ? (

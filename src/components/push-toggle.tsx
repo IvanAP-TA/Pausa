@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { BellOff } from "lucide-react";
 import { subscribePush, unsubscribePush } from "@/lib/push-actions";
 
 type State = "loading" | "unsupported" | "off" | "on" | "blocked" | "needs-install";
@@ -69,7 +70,7 @@ export function PushToggle({ publicKey }: { publicKey: string }) {
       <p className="text-ink-2">{t("body")}</p>
       {state === "unsupported" && <p className="text-sm text-muted">{t("unsupported")}</p>}
       {state === "needs-install" && <p className="text-sm text-muted">{t("iosHint")}</p>}
-      {state === "blocked" && <p className="text-sm text-error">{t("blocked")}</p>}
+      {state === "blocked" && <p role="status" className="flex gap-3 border border-rule p-3 text-sm text-ink-2"><BellOff size={18} strokeWidth={1.6} aria-hidden="true" className="mt-0.5 shrink-0 text-ink" />{t("blocked")}</p>}
       {state === "off" && (
         <button type="button" onClick={enable} disabled={busy} className="btn btn-primary w-full sm:w-fit">{t("enable")}</button>
       )}

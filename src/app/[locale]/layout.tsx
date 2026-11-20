@@ -26,6 +26,10 @@ export const viewport: Viewport = {
   // The app opens dark unless someone pinned a theme: the browser bar takes the dark ground.
   themeColor: THEME_COLOR.dark,
   colorScheme: "dark light",
+  // Paint under the notch and the home bar (the sticky bars pad themselves back with env(safe-area-inset-*)), and let the
+  // Android keyboard shrink the layout so a field at the bottom stays above it.
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 export function generateStaticParams() {

@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/session";
 import { getMyCircles } from "@/lib/data";
 import { createCircle, joinCircle } from "@/lib/actions";
 import { SubmitButton } from "@/components/submit-button";
+import { BackLink } from "@/components/back-link";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/me/circles">) {
   const { locale } = await params;
@@ -25,7 +26,7 @@ export default async function MyCircles({ params }: PageProps<"/[locale]/me/circ
   return (
     <main className="grid gap-8 px-4 pb-12 pt-2">
       <div className="grid gap-3">
-        <Link href="/me" className="link inline-flex min-h-11 w-fit items-center text-sm">{tc("back")}</Link>
+        <BackLink href={"/me"} label={tc("back")} />
         <h1 className="display">{t("title")}</h1>
         <p className="max-w-prose text-ink-2">{t("lede")}</p>
       </div>

@@ -17,7 +17,8 @@
     "log": "Log a watch",
     "lists": "Lists",
     "ranking": "Ranking",
-    "circle": "Circle"
+    "circle": "Circle",
+    "logShort": "Log"
   },
   "kind": {
     "movie": "Film",
@@ -87,11 +88,20 @@
     "openTitle": "Open the page of {title}",
     "commentCta": "Comment",
     "commentSpoiler": "Comment with spoilers: open to read it",
-    "commentsMore": "{count, plural, one {and one more comment} other {and # more comments}}"
+    "commentsMore": "{count, plural, one {and one more comment} other {and # more comments}}",
+    "onAir": "Watching right now",
+    "reactCount": "{name}: {count, plural, =0 {no reactions} one {# reaction} other {# reactions}}",
+    "reactionName": {
+      "moved": "Moved",
+      "popcorn": "Popcorn-worthy",
+      "love": "Love it",
+      "laugh": "So funny",
+      "mindblown": "Mind-blown"
+    }
   },
   "log": {
     "title": "What did you watch?",
-    "search": "Search a film, a series, an anime",
+    "search": "Search a film, a series, an anime…",
     "searchCta": "Search",
     "noResults": "No titles found.",
     "tmdbOff": "TMDB search is off: only titles already in Pausa are searched.",
@@ -122,7 +132,19 @@
     "noOverview": "No synopsis available for this title.",
     "loadingOverview": "Looking for the synopsis…",
     "privateOnly": "Only in my space",
-    "privateHelp": "No Cerchia sees it until you add it yourself."
+    "privateHelp": "No Cerchia sees it until you add it yourself.",
+    "searching": "Searching…",
+    "resultsCount": "{count, plural, =0 {No titles found} one {# title found} other {# titles found}}",
+    "more": "More",
+    "modeLabel": "Watched or watching",
+    "details": "Add details",
+    "detailsHint": "Date, where, episode, spoilers, with whom",
+    "who": "Who sees it",
+    "whoCircles": "My Cerchie",
+    "whoCirclesHint": "{circle} and your other Cerchie see it.",
+    "whoMe": "Only me",
+    "whoMeHint": "It stays in your space. Share it whenever you like.",
+    "submitPrivate": "Save to my space"
   },
   "lists": {
     "title": "Lists",
@@ -183,7 +205,9 @@
       "makeAdmin": "Make admin",
       "makeMember": "Remove admin",
       "remove": "Remove",
-      "confirmRemove": "Yes, remove {name}"
+      "confirmRemove": "Yes, remove {name}",
+      "manage": "Manage {name}",
+      "manageShort": "Manage"
     },
     "leave": {
       "title": "Leave the Circle",
@@ -197,11 +221,12 @@
       "confirm": "The name does not match. Nothing was deleted."
     },
     "importTitle": "Import your history",
-    "importBody": "From Letterboxd, AniList or MyAnimeList."
+    "importBody": "From Letterboxd, IMDb, Trakt, AniList or MyAnimeList.",
+    "listsBody": "The group’s watchlists and lists."
   },
   "serata": {
     "title": "Tonight we watch",
-    "lede": "A shortlist of 2–8 titles, everyone votes from their phone, a result in under two minutes. No account needed to join, just a name.",
+    "lede": "2 to 8 titles, everyone votes from their phone, a result in under two minutes. No account needed to join, just a name.",
     "modeLabel": "Mode",
     "mode": {
       "bracket": "Lightning bracket",
@@ -211,7 +236,7 @@
       "bracket": "Head-to-heads, one at a time. 30 seconds each.",
       "table": "3 votes each and one veto. One minute."
     },
-    "pickTitle": "The shortlist",
+    "pickTitle": "The candidates",
     "picked": "{count} of {max}",
     "search": "Add a title",
     "emptyPool": "Search for a title, or fill the group watchlist first.",
@@ -288,11 +313,11 @@
       "error": "Couldn't get you in. Try again.",
       "avatar": "Pick a picture"
     },
-    "suggest": "Fill the roster for us",
+    "suggest": "Pick for us",
     "suggesting": "Choosing…",
     "suggestHint": "It starts from the watchlist and from titles the group would love, and drops the ones half of you have already seen.",
     "servicesCommon": "Services you all have: {names} ({setBy} of {members} have set theirs).",
-    "servicesNone": "Nobody has set their streaming services yet (it is on the Account page).",
+    "servicesNone": "Nobody has said which streaming services they have yet.",
     "suggestEmpty": "I cannot find enough new titles for everyone. Add some yourself.",
     "invite": {
       "headline": "{host} invites you to a Serata",
@@ -301,7 +326,11 @@
       "title": "You have been invited to a Serata",
       "titleDone": "Here is what we are watching tonight",
       "description": "Pausa: pick what to watch together, in two minutes. Just a name."
-    }
+    },
+    "pickHint": "Tap the posters to pick 2 to 8, or let Pausa do it.",
+    "createWith": "{count, plural, other {Open movie night with # titles}}",
+    "needTwo": "{count, plural, =0 {Pick at least 2 titles} one {Pick one more} other {Pick at least 2 titles}}",
+    "servicesLink": "Add them in Account."
   },
   "join": {
     "title": "You're invited to {name}",
@@ -813,7 +842,9 @@
     "loggingOut": "Logging out…",
     "profile": "Your profile",
     "brought": "{count, plural, one {You brought one person to Pausa.} other {You brought # people to Pausa.}}",
-    "founder": "Founder"
+    "founder": "Founder",
+    "theme": "Appearance",
+    "themeHint": "Dark or light: pick the one you like."
   },
   "errors": {
     "notFoundTitle": "Nothing here",
@@ -832,7 +863,8 @@
     "stepSerata": "Run your first Serata",
     "memoriesTitle": "A year ago… and beyond",
     "yearsAgo": "{count, plural, one {A year ago} other {# years ago}}",
-    "saw": "watched"
+    "saw": "watched",
+    "stepsDone": "{done} of {total}"
   },
   "services": {
     "title": "Your streaming services",
@@ -868,7 +900,7 @@
     "enable": "Turn on notifications",
     "disable": "Turn off",
     "enabled": "Notifications are on for this device.",
-    "blocked": "Notifications are blocked in the browser settings.",
+    "blocked": "Notifications are blocked for this site. To turn them back on, tap the lock next to the address, open Permissions (or Site settings), allow Notifications and reload the page.",
     "unsupported": "This browser does not support notifications.",
     "iosHint": "On iPhone, first add Pausa to the Home Screen (Share → Add to Home Screen), then reopen it from there and turn notifications on.",
     "off": "Notifications are not set up on this server.",
@@ -978,32 +1010,32 @@
     "personal": "My space",
     "circles": "Cerchie",
     "title": "My space",
-    "lede": "Everything you watched, in a place that is only yours. What you import arrives here: it is private, unless you pick a Cerchia as its destination.",
-    "add": "Log privately",
+    "lede": "Everything you watched, in a place of your own. Each viewing says who sees it: your Cerchie, or only you. What you import stays yours unless you pick a Cerchia. The bin deletes a viewing.",
+    "add": "Log just for me",
     "import": "Import",
     "account": "Account",
     "show": "What to show",
     "all": "Everything ({count})",
-    "onlyPrivate": "Private only ({count})",
+    "onlyPrivate": "Only mine ({count})",
     "emptyTitle": "Nothing here yet.",
-    "emptyPrivateTitle": "No private viewings.",
+    "emptyPrivateTitle": "Nothing just for you yet.",
     "emptyBody": "Import your history from Letterboxd, IMDb, Trakt, AniList or MyAnimeList, or log a viewing.",
-    "inAllCircles": "Visible in all your Cerchie",
-    "makePrivate": "Make private",
-    "onlyYou": "Private: only you see it",
-    "sharedWith": "Private, added to:",
+    "inAllCircles": "Who sees it: your Cerchie",
+    "makePrivate": "Just for me",
+    "onlyYou": "Who sees it: only you",
+    "sharedWith": "Who sees it: you, and",
     "removeFrom": "Remove from {circle}",
     "addTo": "Add to {circle}",
     "addToGroup": "Add to a group",
     "addShort": "Add",
-    "openToAll": "Show in all my Cerchie",
+    "openToAll": "Show to all my Cerchie",
     "saving": "Saving…",
     "notice": {
       "shared": "Added to the group: it now shows in its diary.",
       "unshared": "Removed from the group.",
-      "private": "Now private: it no longer shows in any Cerchia.",
-      "open": "Now visible in all your Cerchie.",
-      "logged": "Logged in your space, privately.",
+      "private": "Now only you see it: it no longer appears in any Cerchia.",
+      "open": "Now all your Cerchie see it.",
+      "logged": "Saved to your space: only you see it.",
       "deleted": "Viewing deleted."
     },
     "manageImports": "Manage imports",

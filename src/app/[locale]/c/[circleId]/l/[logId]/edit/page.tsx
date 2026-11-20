@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
 import { getLogInCircle, getMembers } from "@/lib/data";
 import { Poster } from "@/components/poster";
 import { ensureEpisodeLimits } from "@/lib/episode-info";
 import { EditLogForm } from "./edit-form";
+import { BackLink } from "@/components/back-link";
 
 export default async function EditLog({ params }: PageProps<"/[locale]/c/[circleId]/l/[logId]/edit">) {
   const { locale, circleId, logId } = await params;
@@ -18,7 +18,7 @@ export default async function EditLog({ params }: PageProps<"/[locale]/c/[circle
 
   return (
     <main className="grid gap-6 px-4 pb-8 pt-6">
-      <Link href={`/c/${circleId}/l/${logId}`} className="link inline-flex min-h-11 w-fit items-center text-sm">{tc("back")}</Link>
+      <BackLink href={`/c/${circleId}/l/${logId}`} label={tc("back")} />
       <h1 className="display">{t("editLog")}</h1>
       <div className="grid grid-cols-[128px_minmax(0,1fr)] gap-4">
         <Poster media={log.media} priority />

@@ -1,9 +1,8 @@
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
-import { THEME_COOKIE, parseTheme } from "@/lib/theme";
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
-import { getCircleForMember, getMembers, getMyCircles, getMyCircleSettings } from "@/lib/data";
+import { getCircleForMember, getMembers, getMyCircleSettings } from "@/lib/data";
 import { getDb } from "@/db";
 import { EXPIRY_CHOICES, MAX_USES_CHOICES, listInvites } from "@/lib/core/circles";
 import {
@@ -14,7 +13,7 @@ import { COVERS, COVER_GLYPH } from "@/lib/core/settings";
 import { Avatar } from "@/components/avatar";
 import { TmdbAttribution } from "@/components/tmdb-attribution";
 import { CopyInvite } from "./copy-invite";
-import { AccountControls } from "./account-controls";
+import { Ellipsis } from "lucide-react";
 
 // A settings row: the label and its help on the left, the control on the right.
 const row = "flex min-h-11 cursor-pointer items-center justify-between gap-4 py-3";
@@ -34,16 +33,16 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
   setRequestLocale(locale);
   const user = await requireUser();
   const now = new Date();
-  const [circle, members, myCircles, invites, t, tm, format, settings, ts] = await Promise.all([
+  const [circle, members, invites, t, tm, format, settings, ts, tt] = await Promise.all([
     getCircleForMember(circleId, user.id),
     getMembers(circleId),
-    getMyCircles(user.id),
     getDb().then((db) => listInvites(db, circleId, now)),
     getTranslations("circle"),
     getTranslations("manage"),
     getFormatter(),
     getMyCircleSettings(circleId, user.id),
     getTranslations("settings"),
+    getTranslations("tabs"),
   ]);
   const isAdmin = circle!.role === "admin";
   const active = invites.filter((i) => i.state === "active");
@@ -75,54 +74,11 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
           </details>
         )}
 
-        {myCircles.length > 1 && (
-          <nav aria-label={tm("switchCircle")} className="flex flex-wrap gap-2">
-            {myCircles.map((c) => (
-              <Link key={c.id} href={`/c/${c.id}`} aria-current={c.id === circleId ? "page" : undefined}
-                className={`inline-flex min-h-11 items-center border px-3 text-sm transition-colors duration-150 ${c.id === circleId ? "border-accent font-semibold text-ink" : "border-rule text-ink-2 hover:border-muted hover:text-ink"}`}>
-                {c.name}
-              </Link>
-            ))}
-          </nav>
-        )}
       </header>
 
       {error && <p role="alert" className="border border-error p-3 text-sm text-error">{t(`errors.${error}`)}</p>}
 
-      <section className="grid gap-3">
-        <h2 className="chapter flex items-baseline gap-3">{t("members")} <span className="figure text-muted">{members.length}</span></h2>
-        <ul className="stagger rows grid">
-          {members.map((m) => (
-            <li key={m.id} className="grid gap-2 py-3">
-              <div className="flex min-h-11 items-center gap-3">
-                <Avatar user={m} size={40} />
-                <Link href={`/c/${circleId}/p/${m.id}`} className="title inline-flex min-h-11 items-center text-xl transition-colors duration-150 hover:text-accent">{m.name}</Link>
-                {m.role === "admin" && <span className="tag ml-auto shrink-0">{t("admin")}</span>}
-              </div>
-              {isAdmin && m.id !== user.id && (
-                <div className="flex flex-wrap items-start gap-2 pl-[52px]">
-                  <form action={setMemberRoleAction}>
-                    {hidden}
-                    <input type="hidden" name="targetId" value={m.id} />
-                    <input type="hidden" name="role" value={m.role === "admin" ? "member" : "admin"} />
-                    <button className="btn btn-quiet btn-sm">{m.role === "admin" ? t("actions.makeMember") : t("actions.makeAdmin")}</button>
-                  </form>
-                  <details>
-                    <summary className="btn btn-quiet btn-sm w-fit list-none text-error marker:content-none">{t("actions.remove")}</summary>
-                    <form action={removeMemberAction} className="mt-2 flex items-center gap-2">
-                      {hidden}
-                      <input type="hidden" name="targetId" value={m.id} />
-                      <button className="btn btn-quiet btn-sm whitespace-normal py-2 text-left text-error">{t("actions.confirmRemove", { name: m.name })}</button>
-                    </form>
-                  </details>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* The invite: the one well on this screen. */}
+      {/* The invite comes first: bringing friends in is what this page is for. The one well on this screen. */}
       <section className="well grained grid gap-5 p-5">
         <div>
           <h2 className="title">{t("invites.title")}</h2>
@@ -181,6 +137,45 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
         )}
       </section>
 
+      <section className="grid gap-3">
+        <h2 className="chapter flex items-baseline gap-3">{t("members")} <span className="figure text-muted">{members.length}</span></h2>
+        <ul className="stagger rows grid">
+          {members.map((m) => (
+            <li key={m.id} className="grid gap-2 py-3">
+              <div className="flex min-h-11 items-center gap-3">
+                <Avatar user={m} size={40} />
+                <Link href={`/c/${circleId}/p/${m.id}`} className="title inline-flex min-h-11 items-center text-xl transition-colors duration-150 hover:text-accent">{m.name}</Link>
+                {m.role === "admin" && <span className="tag ml-auto shrink-0">{t("admin")}</span>}
+              </div>
+              {isAdmin && m.id !== user.id && (
+                <details className="group pl-[52px]">
+                  <summary aria-label={t("actions.manage", { name: m.name })} className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm text-muted transition-colors duration-150 marker:content-none hover:text-ink">
+                    <Ellipsis size={20} strokeWidth={1.6} aria-hidden="true" />
+                    <span>{t("actions.manageShort")}</span>
+                  </summary>
+                  <div className="mt-1 flex flex-wrap items-start gap-2">
+                    <form action={setMemberRoleAction}>
+                      {hidden}
+                      <input type="hidden" name="targetId" value={m.id} />
+                      <input type="hidden" name="role" value={m.role === "admin" ? "member" : "admin"} />
+                      <button className="btn btn-quiet btn-sm">{m.role === "admin" ? t("actions.makeMember") : t("actions.makeAdmin")}</button>
+                    </form>
+                    <details>
+                      <summary className="btn btn-quiet btn-sm w-fit list-none text-error marker:content-none">{t("actions.remove")}</summary>
+                      <form action={removeMemberAction} className="mt-2 flex items-center gap-2">
+                        {hidden}
+                        <input type="hidden" name="targetId" value={m.id} />
+                        <button className="btn btn-quiet btn-sm whitespace-normal py-2 text-left text-error">{t("actions.confirmRemove", { name: m.name })}</button>
+                      </form>
+                    </details>
+                  </div>
+                </details>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+
       <section id="settings" aria-labelledby="settings-title" className="grid gap-6">
         <div className="grid gap-2">
           <h2 id="settings-title" className="chapter">{ts("title")}</h2>
@@ -233,6 +228,10 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
       </section>
 
       <div className="rows grid">
+        <Link href={`/c/${circleId}/lists`} className={pageRow}>
+          <span className="title text-xl">{tt("lists")}</span>
+          <span className="text-sm text-muted">{t("listsBody")}</span>
+        </Link>
         <Link href={`/c/${circleId}/insights`} className={pageRow}>
           <span className="title text-xl">{t("insightsTitle")}</span>
           <span className="text-sm text-muted">{t("insightsBody")}</span>
@@ -246,8 +245,6 @@ export default async function Members({ params, searchParams }: PageProps<"/[loc
           <span className="text-sm text-muted">{tm("accountBody")}</span>
         </Link>
       </div>
-
-      <AccountControls initialTheme={parseTheme((await cookies()).get(THEME_COOKIE)?.value)} />
 
       {/* Leaving and deleting sit apart, at the end of the sheet. */}
       <div className="rows grid">

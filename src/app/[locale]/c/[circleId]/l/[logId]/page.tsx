@@ -9,6 +9,7 @@ import { ReportForm } from "@/components/report-form";
 import { Avatar } from "@/components/avatar";
 import { LogCard } from "@/components/log-card";
 import { Spoiler } from "@/components/spoiler";
+import { BackLink } from "@/components/back-link";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -37,7 +38,7 @@ export default async function LogThread({ params }: PageProps<"/[locale]/c/[circ
 
   return (
     <main className="grid gap-6 px-4 pb-8 pt-6">
-      <Link href={`/c/${circleId}`} className="link inline-flex min-h-11 w-fit items-center text-sm">{tc("back")}</Link>
+      <BackLink href={`/c/${circleId}`} label={tc("back")} />
 
       <h1 className="sr-only">{log.media.title}</h1>
       <LogCard log={log} now={now} circleId={circleId} onThread />

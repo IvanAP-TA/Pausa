@@ -17,7 +17,8 @@
     "log": "Registrar lo que viste",
     "lists": "Listas",
     "ranking": "Ranking",
-    "circle": "Círculo"
+    "circle": "Círculo",
+    "logShort": "Registrar"
   },
   "kind": {
     "movie": "Película",
@@ -87,11 +88,20 @@
     "openTitle": "Abrir la ficha de {title}",
     "commentCta": "Comentar",
     "commentSpoiler": "Comentario con spoilers: ábrelo para leerlo",
-    "commentsMore": "{count, plural, one {y otro comentario} other {y otros # comentarios}}"
+    "commentsMore": "{count, plural, one {y otro comentario} other {y otros # comentarios}}",
+    "onAir": "Viendo ahora",
+    "reactCount": "{name}: {count, plural, =0 {ninguna reacción} one {# reacción} other {# reacciones}}",
+    "reactionName": {
+      "moved": "Emocionado",
+      "popcorn": "De palomitas",
+      "love": "Me encanta",
+      "laugh": "Qué risa",
+      "mindblown": "Me voló la cabeza"
+    }
   },
   "log": {
     "title": "¿Qué viste?",
-    "search": "Busca una película, una serie, un anime",
+    "search": "Busca una película, una serie, un anime…",
     "searchCta": "Buscar",
     "noResults": "No se encontró ningún título.",
     "tmdbOff": "La búsqueda en TMDB no está activa: solo busco entre los títulos que ya están en Pausa.",
@@ -122,7 +132,19 @@
     "noOverview": "No hay sinopsis disponible para este título.",
     "loadingOverview": "Buscando la sinopsis…",
     "privateOnly": "Solo en mi espacio",
-    "privateHelp": "Ninguna Cerchia lo ve hasta que lo añadas tú."
+    "privateHelp": "Ninguna Cerchia lo ve hasta que lo añadas tú.",
+    "searching": "Buscando…",
+    "resultsCount": "{count, plural, =0 {Ningún título encontrado} one {# título encontrado} other {# títulos encontrados}}",
+    "more": "Más",
+    "modeLabel": "Visto o viendo",
+    "details": "Añadir detalles",
+    "detailsHint": "Fecha, dónde, episodio, spoilers, con quién",
+    "who": "Quién lo ve",
+    "whoCircles": "Mis Cerchie",
+    "whoCirclesHint": "Lo ven {circle} y tus otras Cerchie.",
+    "whoMe": "Solo yo",
+    "whoMeHint": "Se queda en tu espacio. Compártelo cuando quieras.",
+    "submitPrivate": "Guardar en mi espacio"
   },
   "lists": {
     "title": "Listas",
@@ -183,7 +205,9 @@
       "makeAdmin": "Hacer admin",
       "makeMember": "Quitar admin",
       "remove": "Quitar",
-      "confirmRemove": "Sí, quitar a {name}"
+      "confirmRemove": "Sí, quitar a {name}",
+      "manage": "Gestionar a {name}",
+      "manageShort": "Gestionar"
     },
     "leave": {
       "title": "Salir del Círculo",
@@ -197,11 +221,12 @@
       "confirm": "El nombre no coincide. No se eliminó nada."
     },
     "importTitle": "Importa tu historial",
-    "importBody": "Desde Letterboxd, AniList o MyAnimeList."
+    "importBody": "Desde Letterboxd, IMDb, Trakt, AniList o MyAnimeList.",
+    "listsBody": "Watchlists y listas del grupo."
   },
   "serata": {
     "title": "Esta noche vemos",
-    "lede": "Una lista de 2–8 títulos, cada uno vota desde su móvil, resultado en menos de dos minutos. Sin cuenta: basta un nombre.",
+    "lede": "De 2 a 8 títulos, se vota desde el móvil, el resultado llega en menos de dos minutos. Sin cuenta: basta un nombre.",
     "modeLabel": "Modo",
     "mode": {
       "bracket": "Torneo relámpago",
@@ -211,7 +236,7 @@
       "bracket": "Duelos, uno a la vez. 30 segundos cada uno.",
       "table": "3 votos cada uno y un veto. Un minuto."
     },
-    "pickTitle": "La lista",
+    "pickTitle": "Los candidatos",
     "picked": "{count} de {max}",
     "search": "Añadir un título",
     "emptyPool": "Busca un título, o llenad antes la watchlist del grupo.",
@@ -288,11 +313,11 @@
       "error": "No pude dejarte entrar. Inténtalo de nuevo.",
       "avatar": "Elige una imagen"
     },
-    "suggest": "Llenad la lista por nosotros",
+    "suggest": "Elige por nosotros",
     "suggesting": "Eligiendo…",
     "suggestHint": "Parte de la watchlist y de los títulos que el grupo amaría, y quita los que la mitad ya ha visto.",
     "servicesCommon": "Servicios que tenéis todos: {names} ({setBy} de {members} los han indicado).",
-    "servicesNone": "Nadie ha indicado aún sus servicios de streaming (se hace en la página Cuenta).",
+    "servicesNone": "Nadie ha indicado aún sus servicios de streaming.",
     "suggestEmpty": "No encuentro suficientes títulos nuevos para todos. Añade algunos tú.",
     "invite": {
       "headline": "{host} te invita a una Serata",
@@ -301,7 +326,11 @@
       "title": "Te han invitado a una Serata",
       "titleDone": "Esto es lo que vemos esta noche",
       "description": "Pausa: elegid juntos qué ver, en dos minutos. Solo un nombre."
-    }
+    },
+    "pickHint": "Toca los pósteres para elegir de 2 a 8, o deja que Pausa lo haga.",
+    "createWith": "{count, plural, other {Abrir la noche con # títulos}}",
+    "needTwo": "{count, plural, =0 {Elige al menos 2 títulos} one {Elige uno más} other {Elige al menos 2 títulos}}",
+    "servicesLink": "Añádelos en tu Cuenta."
   },
   "join": {
     "title": "Te han invitado a {name}",
@@ -813,7 +842,9 @@
     "loggingOut": "Saliendo…",
     "profile": "Tu perfil",
     "brought": "{count, plural, one {Has traído a una persona a Pausa.} other {Has traído a # personas a Pausa.}}",
-    "founder": "Fundador"
+    "founder": "Fundador",
+    "theme": "Apariencia",
+    "themeHint": "Oscuro o claro: elige el que prefieras."
   },
   "errors": {
     "notFoundTitle": "Aquí no hay nada",
@@ -832,7 +863,8 @@
     "stepSerata": "Haced la primera Serata",
     "memoriesTitle": "Hace un año… y más",
     "yearsAgo": "{count, plural, one {Hace un año} other {Hace # años}}",
-    "saw": "vio"
+    "saw": "vio",
+    "stepsDone": "{done} de {total}"
   },
   "services": {
     "title": "Tus servicios de streaming",
@@ -868,7 +900,7 @@
     "enable": "Activar notificaciones",
     "disable": "Desactivar",
     "enabled": "Notificaciones activas en este dispositivo.",
-    "blocked": "Las notificaciones están bloqueadas en los ajustes del navegador.",
+    "blocked": "Las notificaciones están bloqueadas para este sitio. Para reactivarlas toca el candado junto a la dirección, abre Permisos (o Configuración del sitio), permite las Notificaciones y recarga la página.",
     "unsupported": "Este navegador no admite notificaciones.",
     "iosHint": "En iPhone, primero añade Pausa a la pantalla de inicio (Compartir → Añadir a pantalla de inicio), luego ábrela desde ahí y activa las notificaciones.",
     "off": "Las notificaciones no están configuradas en este servidor.",
@@ -978,32 +1010,32 @@
     "personal": "Mi espacio",
     "circles": "Cerchie",
     "title": "Mi espacio",
-    "lede": "Todo lo que has visto, en un lugar solo tuyo. Lo que importas llega aquí: es privado, salvo que elijas una Cerchia como destino.",
-    "add": "Registrar en privado",
+    "lede": "Todo lo que has visto, en un lugar solo tuyo. Cada visionado dice quién lo ve: tus Cerchie, o solo tú. Lo que importas queda solo para ti, salvo que elijas una Cerchia. Con la papelera borras un visionado.",
+    "add": "Registrar solo para mí",
     "import": "Importar",
     "account": "Cuenta",
     "show": "Qué mostrar",
     "all": "Todo ({count})",
-    "onlyPrivate": "Solo privados ({count})",
+    "onlyPrivate": "Solo míos ({count})",
     "emptyTitle": "Aquí todavía no hay nada.",
-    "emptyPrivateTitle": "Ningún visionado privado.",
+    "emptyPrivateTitle": "Nada solo tuyo todavía.",
     "emptyBody": "Importa tu historial de Letterboxd, IMDb, Trakt, AniList o MyAnimeList, o registra un visionado.",
-    "inAllCircles": "Visible en todas tus Cerchie",
-    "makePrivate": "Hacer privado",
-    "onlyYou": "Privado: solo lo ves tú",
-    "sharedWith": "Privado, añadido a:",
+    "inAllCircles": "Quién lo ve: tus Cerchie",
+    "makePrivate": "Solo para mí",
+    "onlyYou": "Quién lo ve: solo tú",
+    "sharedWith": "Quién lo ve: tú, y",
     "removeFrom": "Quitar de {circle}",
     "addTo": "Añadir a {circle}",
     "addToGroup": "Añadir a un grupo",
     "addShort": "Añadir",
-    "openToAll": "Mostrar en todas mis Cerchie",
+    "openToAll": "Mostrar a todas mis Cerchie",
     "saving": "Guardando…",
     "notice": {
       "shared": "Añadido al grupo: ahora aparece en su diario.",
       "unshared": "Quitado del grupo.",
-      "private": "Ahora es privado: ya no aparece en ninguna Cerchia.",
-      "open": "Ahora es visible en todas tus Cerchie.",
-      "logged": "Registrado en tu espacio, en privado.",
+      "private": "Ahora solo lo ves tú: ya no aparece en ninguna Cerchia.",
+      "open": "Ahora lo ven todas tus Cerchie.",
+      "logged": "Guardado en tu espacio: solo lo ves tú.",
       "deleted": "Visionado eliminado."
     },
     "manageImports": "Gestionar importaciones",

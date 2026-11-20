@@ -150,7 +150,7 @@ export default async function MySpace({ params, searchParams }: PageProps<"/[loc
                                 {hidden(log.id)}
                                 <input type="hidden" name="circleId" value={cid} />
                                 <span className="px-2.5 text-sm">{nameOf.get(cid) ?? "…"}</span>
-                                <button aria-label={t("removeFrom", { circle: nameOf.get(cid) ?? "" })} className="grid size-9 place-items-center border-l border-rule text-muted transition-colors duration-150 hover:bg-paper-2 hover:text-ink">
+                                <button aria-label={t("removeFrom", { circle: nameOf.get(cid) ?? "" })} className="grid size-11 place-items-center border-l border-rule text-muted transition-colors duration-150 hover:bg-paper-2 hover:text-ink">
                                   <X size={16} strokeWidth={1.8} aria-hidden="true" />
                                 </button>
                               </form>

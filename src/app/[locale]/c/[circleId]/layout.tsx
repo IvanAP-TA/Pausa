@@ -1,11 +1,9 @@
 import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { requireUser } from "@/lib/session";
-import { getCircleForMember, getMyCircles } from "@/lib/data";
+import { getCircleForMember, getMyCircles, getUnreadCount } from "@/lib/data";
 import { TabBar } from "@/components/tab-bar";
 import { CircleMemory } from "@/components/circle-memory";
-import { Wordmark } from "@/components/brand";
-import { Link } from "@/i18n/navigation";
 import { SpaceSwitch } from "@/components/space-switch";
 
 export default async function CircleLayout({ children, params }: LayoutProps<"/[locale]/c/[circleId]">) {
@@ -15,20 +13,18 @@ export default async function CircleLayout({ children, params }: LayoutProps<"/[
   // Non-members get a 404, not a 403: a Cerchia's existence is private too.
   const circle = await getCircleForMember(circleId, user.id);
   if (!circle) notFound();
-  const circles = await getMyCircles(user.id);
+  const [circles, unread] = await Promise.all([getMyCircles(user.id), getUnreadCount(user.id)]);
+  const me = { id: user.id, name: user.name, image: user.image };
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col lg:max-w-[62rem] lg:flex-row lg:gap-8">
       <CircleMemory circleId={circleId} />
-      {/* On a phone every page opens under the mast (the rail carries the wordmark from 64rem), so a page starts close to it. */}
-      <div className="projector flex-1 max-lg:[&>main]:pt-2 lg:order-2 lg:max-w-[40rem]">
-        <SpaceSwitch current="circle" circle={circle} circles={circles} />
-        <div className="flex h-14 items-center px-4 lg:hidden">
-          <Link href={`/c/${circleId}`} aria-label="Pausa" className="inline-flex min-h-11 items-center"><Wordmark /></Link>
-        </div>
+      {/* One bar on top (where am I, the bell, me), the page, and the tabs under the thumb (a rail from 64rem). */}
+      <div className="projector flex-1 lg:order-2 lg:max-w-[40rem]">
+        <SpaceSwitch current="circle" circle={circle} circles={circles} me={me} unread={unread} />
         {children}
       </div>
-      <TabBar circleId={circleId} me={{ id: user.id, name: user.name, image: user.image }} />
+      <TabBar circleId={circleId} me={me} />
     </div>
   );
 }

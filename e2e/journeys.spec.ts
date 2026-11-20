@@ -46,7 +46,6 @@ test("a stranger cannot read a Cerchia (404, not 403)", async ({ page }) => {
 test("log a film, then edit and delete it", async ({ page }) => {
   await signInAs(page, "sofi", `/it/c/${CIRCLE}/log`);
   await page.getByRole("searchbox").or(page.getByPlaceholder("Cerca un film, una serie, un anime")).first().fill("Inception");
-  await page.getByRole("button", { name: "Cerca" }).click();
   await page.getByRole("button", { name: /Inception/ }).first().click();
   await page.getByLabel("Due righe (facoltative)").fill("Il finale mi tormenta ancora (e2e)");
   await page.getByRole("button", { name: "Registra" }).click();
@@ -80,7 +79,7 @@ test("comment on a log and report someone else's comment", async ({ page }) => {
 
 test("Serata for two: a member opens it, a guest joins by link, both vote, both see the result", async ({ page, browser }) => {
   await signInAs(page, "giulia", `/it/c/${CIRCLE}/serata`);
-  await page.getByRole("button", { name: /Tavolo/ }).click();
+  await page.getByRole("radio", { name: /Tavolo/ }).click();
 
   // Pick three titles from the Cerchia's lists.
   const picks = page.locator("ul.grid li button[aria-pressed]");
@@ -168,11 +167,12 @@ test("the space bar leads to the page of my Cerchie, where a pasted invite link 
 test("log a film in private, then delete it from my space", async ({ page }) => {
   await signInAs(page, "luca", `/it/c/${CIRCLE}/log?private=1`);
   await page.getByRole("searchbox").or(page.getByPlaceholder("Cerca un film, una serie, un anime")).first().fill("Inception");
-  await page.getByRole("button", { name: "Cerca" }).click();
   await page.getByRole("button", { name: /Inception/ }).first().click();
-  await page.getByRole("button", { name: "Registra" }).click();
+  // ?private=1 preselects "Solo io", and the button says where the viewing goes.
+  await expect(page.getByRole("radio", { name: /Solo io/ })).toBeChecked();
+  await page.getByRole("button", { name: "Salva nel mio spazio" }).click();
   await expect(page).toHaveURL(/\/it\/me\?ok=logged/);
-  const row = page.locator("li[id^='l-']").filter({ hasText: "Privato: lo vedi solo tu" }).filter({ hasText: "Inception" });
+  const row = page.locator("li[id^='l-']").filter({ hasText: "Chi lo vede: solo tu" }).filter({ hasText: "Inception" });
   await expect(row).toHaveCount(1);
 
   await row.getByRole("button", { name: /Elimina la visione di/ }).click();

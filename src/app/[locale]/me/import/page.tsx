@@ -1,9 +1,9 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/session";
 import { getMyCircles } from "@/lib/data";
 import { tmdbEnabled } from "@/lib/tmdb";
 import { ImportClient } from "./import-client";
+import { BackLink } from "@/components/back-link";
 
 export const metadata = { robots: { index: false } };
 
@@ -17,7 +17,7 @@ export default async function ImportPage({ params }: PageProps<"/[locale]/me/imp
   return (
     <main className="grid gap-6 px-4 pb-10 pt-2">
       <div className="grid gap-3">
-        <Link href="/me" className="link inline-flex min-h-11 w-fit items-center text-sm">{tc("back")}</Link>
+        <BackLink href={"/me"} label={tc("back")} />
         <h1 className="display">{t("title")}</h1>
         <p className="max-w-prose text-ink-2">{t("lede")}</p>
         <p className="text-sm text-muted">{t("visibility")}</p>

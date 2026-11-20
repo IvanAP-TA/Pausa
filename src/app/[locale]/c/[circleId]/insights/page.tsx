@@ -12,6 +12,7 @@ import { personalPicks } from "@/lib/discover";
 import { ShareYear } from "./share-year";
 import { Poster } from "@/components/poster";
 import { Stars } from "@/components/stars";
+import { BackLink } from "@/components/back-link";
 
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -70,7 +71,7 @@ export default async function Insights({ params, searchParams }: PageProps<"/[lo
   return (
     <main className="grid gap-12 px-4 pb-10 pt-4">
       <div className="grid gap-4">
-        <Link href={`/c/${circleId}/members`} className="inline-flex min-h-11 w-fit items-center text-sm text-muted underline-offset-4 transition-colors duration-150 hover:text-ink hover:underline">{tc("back")}</Link>
+        <BackLink href={`/c/${circleId}/members`} label={tc("back")} />
         <h1 className="display">{t("title")}</h1>
         {years.length > 1 && (
           <nav aria-label={t("yearLabel")} className="flex flex-wrap gap-2">

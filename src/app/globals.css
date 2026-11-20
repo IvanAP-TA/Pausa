@@ -59,6 +59,8 @@
   .btn-quiet { border-color: var(--color-rule); color: var(--color-ink-2); }
   .btn-quiet:hover { border-color: var(--color-muted); color: var(--color-ink); background: transparent; }
   .btn-sm { min-height: 36px; padding: 0 var(--space-sm); font-size: var(--text-md); }
+  /* Under a finger every control is at least 44px tall. */
+  @media (pointer: coarse) { .btn-sm { min-height: 44px; } }
   .btn-lg { min-height: 52px; padding: 0 var(--space-xl); font-size: var(--text-xl); }
 
   /* Text link inside prose or a row: ink, a rule underline that turns amber on hover. */
@@ -75,6 +77,8 @@
   .field::placeholder { color: var(--color-muted); }
   .field:disabled { opacity: 0.5; cursor: not-allowed; }
   .field[aria-invalid="true"] { border-color: var(--color-error); }
+  /* Focus: the ring sits on the edge itself (one 2px amber edge), not a second box floating outside it. */
+  .field:focus-visible { outline-offset: -1px; border-color: var(--color-focus); }
   .field-label { display: grid; gap: var(--space-2xs); font-size: var(--text-sm); color: var(--color-ink-2); }
 
   /* A row that leads to another page: a chevron at its far end, drawn from two hairlines. */
