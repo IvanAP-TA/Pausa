@@ -67,7 +67,7 @@ export function Landing() {
       <RevealOnScroll />
 
       {/* ───────── header: a solid bar on the ground, no glass ───────── */}
-      <header className="sticky top-0 z-30 border-b border-rule bg-paper">
+      <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 border-b border-rule bg-paper">
         {/* How far down the page the reader is: a 2px amber line under the nav, scaled by Lenis. */}
         <span data-progress aria-hidden="true" className="absolute inset-x-0 -bottom-px block h-0.5 origin-left scale-x-0 bg-accent" />
         <div className={`${wrap} flex h-16 items-center gap-4`}>

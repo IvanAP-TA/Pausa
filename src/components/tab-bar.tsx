@@ -17,8 +17,9 @@ const icons: Record<"diary" | "serata" | "lists" | "ranking" | "circle", LucideI
 
 /**
  * The navigation of the shell: a solid bar under the thumb on phones, a rail on the left from 64rem.
- * On phones the bar is three tracks, `2fr auto 3fr`, so every tab is the same width: Diario and Serata, then "Registra"
- * (the +), then Classifica, Cerchia and Profilo (my picture, round). The lists live in the diary
+ * On phones the bar is three tracks, `1fr auto 1fr`, so "Registra" (the +) sits on the centre line of the screen: Diario
+ * and Serata on one side, Cerchia and Profilo (my picture, round) on the other. Classifica and Liste are buttons at the
+ * top of the diary on a phone, and rows of the rail from 64rem. The lists live in the diary
  * and in the Cerchia page on a phone, and get their own row on the rail.
  * Pages reached from the diary (a title, an entry, a person, the notifications) keep the Diario tab lit, so the bar
  * always says where you are. The current tab lights a stretch of the hairline it sits against.
@@ -54,7 +55,8 @@ export function TabBar({ circleId, me }: { circleId: string; me: { id: string; n
   return (
     <nav
       aria-label="Pausa"
-      className="sticky bottom-0 z-[200] grid grid-cols-[minmax(0,2fr)_auto_minmax(0,3fr)] items-center gap-x-1 border-t border-rule bg-paper px-1 pb-[max(env(safe-area-inset-bottom),8px)] lg:bg-transparent pt-2 lg:top-0 lg:order-1 lg:h-dvh lg:w-56 lg:shrink-0 lg:grid-cols-1 lg:content-start lg:gap-1 lg:border-r lg:border-t-0 lg:px-3 lg:pb-6 lg:pt-8"
+      data-tabbar
+      className="sticky bottom-0 z-[200] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1 border-t border-rule bg-paper px-1 pb-[max(env(safe-area-inset-bottom),8px)] lg:bg-transparent pt-2 lg:top-0 lg:order-1 lg:h-dvh lg:w-56 lg:shrink-0 lg:grid-cols-1 lg:content-start lg:gap-1 lg:border-r lg:border-t-0 lg:px-3 lg:pb-6 lg:pt-8"
     >
       <Link href={base} aria-label="Pausa" className="hidden lg:-order-2 lg:mb-6 lg:flex lg:min-h-11 lg:items-center lg:px-3">
         <Wordmark size="text-3xl" />
@@ -76,8 +78,8 @@ export function TabBar({ circleId, me }: { circleId: string; me: { id: string; n
         <span aria-hidden="true" className="lg:hidden">{t("logShort")}</span>
         <span aria-hidden="true" className="hidden lg:inline">{t("log")}</span>
       </Link>
-      <div className="grid grid-cols-3 lg:contents">
-        {tab("ranking", `${base}/ranking`)}
+      <div className="grid grid-cols-2 lg:contents">
+        {tab("ranking", `${base}/ranking`, true)}
         {tab("lists", `${base}/lists`, true)}
         {tab("circle", `${base}/members`)}
         {/* Me: my picture, round, as the last tab; everything that is only mine lives behind it. */}

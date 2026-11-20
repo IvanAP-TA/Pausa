@@ -6,6 +6,13 @@ html { scrollbar-color: var(--color-muted) var(--color-paper); scroll-padding-to
 button, a, [role="button"], [role="radio"], summary, label { touch-action: manipulation; }
 button, [role="button"], [role="radio"], summary { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 input, textarea, select { font-size: max(16px, 1em); }
+/* Under the phone's clock: with viewport-fit=cover (installed PWA, the Android shell when it does not pad for us) every page
+   starts below the status bar, a solid strip covers that band while the page scrolls under it, and sticky bars stop below it.
+   env() is 0 everywhere else (a normal browser tab, a shell that already padded), so nothing moves there. */
+body { padding-top: env(safe-area-inset-top, 0px); }
+/* The gesture bar: pages with the tab bar pad inside the bar; every other page leaves the room at its end. */
+body:not(:has([data-tabbar])) { padding-bottom: env(safe-area-inset-bottom, 0px); }
+body::before { content: ""; position: fixed; inset: 0 0 auto 0; height: env(safe-area-inset-top, 0px); background: var(--color-paper); z-index: 400; pointer-events: none; }
 body { margin: 0; background: var(--color-paper); color: var(--color-ink); font-family: var(--font-body); font-size: var(--text-md); line-height: 1.55; -webkit-font-smoothing: antialiased; caret-color: var(--color-accent); }
 ::selection { background: color-mix(in oklab, var(--color-accent) 35%, transparent); }
 :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }

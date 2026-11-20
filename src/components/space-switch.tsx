@@ -14,7 +14,7 @@ type Circle = { id: string; name: string };
 export async function SpaceSwitch({ circle, circles = [], unread = 0 }: { circle: Circle | null; circles?: Circle[]; unread?: number }) {
   const [t, tf] = await Promise.all([getTranslations("space"), getTranslations("feed")]);
   return (
-    <header className="sticky top-0 z-[250] flex h-[calc(3.5rem+env(safe-area-inset-top,0px))] items-center gap-1 border-b border-rule bg-paper pl-[max(0.5rem,env(safe-area-inset-left,0px))] pr-[max(0.25rem,env(safe-area-inset-right,0px))] pt-[env(safe-area-inset-top,0px)]">
+    <header className="sticky top-[env(safe-area-inset-top,0px)] z-[250] flex h-14 items-center gap-1 border-b border-rule bg-paper pl-[max(0.5rem,env(safe-area-inset-left,0px))] pr-[max(0.25rem,env(safe-area-inset-right,0px))]">
       <Link href={circle ? `/c/${circle.id}` : "/me/circles"} aria-label="Pausa" className="grid size-11 shrink-0 place-items-center lg:hidden">
         <PauseMark className="h-6" />
       </Link>

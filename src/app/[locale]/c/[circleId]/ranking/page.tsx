@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/session";
 import { loadCircleFacts } from "@/lib/core/insights";
 import { PAGE_SIZE, RANK_SORTS, rankTitles, yearSpan, type RankFilters, type RankSort } from "@/lib/core/ranking";
 import { Poster } from "@/components/poster";
+import { BackLink } from "@/components/back-link";
 import { ChevronDown, Search } from "lucide-react";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -26,9 +27,9 @@ export default async function Ranking({ params, searchParams }: PageProps<"/[loc
   const me = await requireUser();
   const one = (k: string) => { const v = sp[k]; return (Array.isArray(v) ? v[0] : v) || undefined; };
 
-  const [{ people, facts }, t, tk] = await Promise.all([
+  const [{ people, facts }, t, tk, tt] = await Promise.all([
     getDb().then((db) => loadCircleFacts(db, circleId, locale)),
-    getTranslations("ranking"), getTranslations("kind"),
+    getTranslations("ranking"), getTranslations("kind"), getTranslations("tabs"),
   ]);
 
   const kind = (["movie", "tv", "anime"] as const).find((k) => k === one("kind"));
@@ -60,7 +61,9 @@ export default async function Ranking({ params, searchParams }: PageProps<"/[loc
   const first = (name: string) => name.split(/\s+/)[0] ?? name;
 
   return (
-    <main className="grid gap-6 px-4 pb-10 pt-8">
+    <main className="grid gap-6 px-4 pb-10 pt-4 lg:pt-8">
+      {/* On a phone the ranking is reached from the diary (no tab of its own): the way back to it. */}
+      <div className="-mb-4 lg:hidden"><BackLink href={`/c/${circleId}`} label={tt("diary")} /></div>
       <header className="grid gap-2">
         <h1 className="display">{t("title")}</h1>
         <p className="max-w-prose text-ink-2">{t("lede")}</p>

@@ -13,7 +13,7 @@ import { Avatar } from "@/components/avatar";
 import { PauseMark } from "@/components/brand";
 import { LogCard } from "@/components/log-card";
 import { Poster } from "@/components/poster";
-import { ChevronRight, List } from "lucide-react";
+import { ChevronRight, List, Trophy } from "lucide-react";
 import { Fragment } from "react";
 
 const PAGE = 20;
@@ -82,10 +82,17 @@ export default async function Feed({ params, searchParams }: PageProps<"/[locale
                 {t("members", { count: members.length })}, {t("logsThisYear", { count: stats.logsThisYear })}
               </span>
             </Link>
-            <Link href={`/c/${circleId}/lists`} className="btn btn-sm">
-              <List size={18} strokeWidth={1.6} aria-hidden="true" />
-              {tt("lists")}
-            </Link>
+            {/* On a phone the ranking and the lists start from here (the tab bar keeps four tabs and the + in the middle); from 64rem both are rows of the rail. */}
+            <div className="flex gap-2 lg:hidden">
+              <Link href={`/c/${circleId}/ranking`} className="btn btn-sm">
+                <Trophy size={18} strokeWidth={1.6} aria-hidden="true" />
+                {tt("ranking")}
+              </Link>
+              <Link href={`/c/${circleId}/lists`} className="btn btn-sm">
+                <List size={18} strokeWidth={1.6} aria-hidden="true" />
+                {tt("lists")}
+              </Link>
+            </div>
           </div>
         </div>
       </header>
