@@ -2,6 +2,7 @@ import { PauseMark } from "@/components/brand";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { ORG_ID, orgNode, websiteNode } from "@/lib/jsonld";
 import { siteUrl } from "@/lib/site";
 import { TmdbAttribution } from "@/components/tmdb-attribution";
 import { DEMO_FILMS } from "./demo-data";
@@ -11,7 +12,7 @@ import { RevealOnScroll } from "./reveal";
 import { SmoothScroll } from "./smooth-scroll";
 import { InstallApp } from "./install-app";
 import { GoogleButton } from "@/components/google-button";
-import { googleEnabled } from "@/lib/auth";
+import { SignedInRedirect } from "./signed-in-redirect";
 import { StickyCta } from "./sticky-cta";
 import { TrySerata } from "./try-serata";
 import { Plus } from "lucide-react";
@@ -44,14 +45,20 @@ export function Landing() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
+      orgNode(),
+      websiteNode(),
       {
         "@type": "WebApplication",
+        "@id": `${siteUrl()}/#app`,
         name: "Pausa",
         url: `${siteUrl()}/${locale}`,
         description: t("meta.description"),
         applicationCategory: "EntertainmentApplication",
         operatingSystem: "Any",
         inLanguage: routing.locales,
+        isAccessibleForFree: true,
+        offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+        publisher: { "@id": ORG_ID() },
       },
       {
         "@type": "FAQPage",
@@ -62,6 +69,7 @@ export function Landing() {
 
   return (
     <div className="bg-paper text-ink">
+      <SignedInRedirect />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <SmoothScroll />
       <RevealOnScroll />
@@ -109,7 +117,7 @@ export function Landing() {
               <p className={`rise mt-5 max-w-[62ch] ${lead}`} style={{ ["--d" as string]: "120ms" }}>{t("hero.lede")}</p>
               <div className="rise mt-7 flex flex-wrap items-center gap-3" style={{ ["--d" as string]: "200ms" }}>
                 <a href={signIn} className="btn btn-primary btn-lg w-full sm:w-fit">{t("hero.cta")}</a>
-                <GoogleButton callbackURL={`/${locale}`} enabled={googleEnabled()} hint={false}
+                <GoogleButton callbackURL={`/${locale}/home`} enabled="check" hint={false}
                   className="min-h-[52px]! rounded-none! border-rule! bg-transparent! px-6! font-display text-xl font-normal! text-ink-2 transition-colors duration-150 hover:border-muted! hover:bg-transparent! hover:text-ink active:translate-y-px" />
                 <InstallApp className="btn btn-quiet btn-lg px-6" />
               </div>

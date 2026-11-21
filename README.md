@@ -162,6 +162,15 @@ The "where to watch" filter needs the TMDB token (see "TMDB token").
 - **Ranking** (`/<locale>/c/<circle>/ranking`, its own entry, "Classifica", a button at the top of the diary on phones, beside Liste, and a row of the left rail on desktop): every title anyone in the Cerchia logged, with each member's latest rating, the group's average and the number of votes. Filters: search, type, who watched it, release year (from / to), minimum votes (starts at 2 from three members up, so one lonely 5★ does not top the list), "only what everyone watched"; sort by average, most rated, release year, recently watched or title; 40 per page, all in the URL. Genre is not filtered: the app does not store it. Logic and tests: `src/lib/core/ranking.ts`.
 - **Letterboxd lists and watchlist.** The Letterboxd tab also reads `watchlist.csv` and the `lists/` folder of the export ZIP (or a list CSV picked on its own, from a list's ··· menu → *Export list as CSV*). They go where the import goes: personal lists for the private space, group lists for a Cerchia. Importing again fills the same list (found by owner, Cerchia and name) and adds only what is missing. Code: `letterboxdList` / `letterboxdWatchlist` in `import-parsers.ts`, `importList` in `import.ts` (shares `resolveMedia` with the diary import), `importListChunk` in `src/lib/import/actions.ts`. Letterboxd does not export the *likes*, only links, so those are not imported.
 
+## Public pages are static
+
+The landing, the guides, privacy, terms, the sitemap and robots.txt are prerendered at build time and served from Workers static assets (OpenNext `staticAssetsIncrementalCache` in `open-next.config.ts`): no rendering and no CPU per visit. Rendering them on every request used to push the Worker over its CPU limit (Cloudflare error 1102 on 20-40% of crawler and visitor requests). To keep them static:
+- the root layout reads no cookie: the theme is applied by an inline script in `<head>` before the first paint;
+- the landing reads no session: signed-in people start at `/{locale}/home` (sign-in default, PWA `start_url` "/?app=1", Google callback), and a small client check (`SignedInRedirect`) sends a signed-in visitor of the landing there;
+- what only the Worker knows at run time (is Google configured?) comes from `/api/config`;
+- the origin used in canonical links, hreflang, JSON-LD and the sitemap is fixed at build time: `NEXT_PUBLIC_SITE_URL` in the deploy workflow.
+Built files under `/_next/static` are cached for a year (`public/_headers`). The SEO audit of 21 Nov 2026 and its action plan are outside the repository (Desktop\Pausa-seo).
+
 ## Speed
 
 `npm run dev` is much slower than the real thing (every route compiles the first time, React ships debug data: a page can be 300+ KB). Judge speed with `npm run preview` or, better, on the deployed Worker. What the code does to stay fast:

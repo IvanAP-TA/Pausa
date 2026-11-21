@@ -122,6 +122,13 @@ Google Play non può ricevere il link via email. Con `REVIEW_EMAIL` e `REVIEW_PA
 
 Nella Play Console (Contenuti dell'app → Accesso all'app) scrivi, in inglese: *Open https://pausa.gnagno.org/en/review, enter the password, tap "Open the demo".* e metti la password nel campo password.
 
+### Impostazioni Cloudflare per la ricerca (dall'audit SEO del 21 novembre 2026)
+
+- **Security > Bots: Bot Fight Mode spento.** Blocca gli IP dei datacenter di Google: PageSpeed Insights e Lighthouse ricevono un 403 e misurano la pagina di blocco invece del sito. Googlebot e Bingbot verificati passano comunque.
+- **SSL/TLS > Edge Certificates: Always Use HTTPS acceso.** Oggi `http://pausa.gnagno.org` risponde 200 invece di reindirizzare.
+- **AI Crawl Control / "Block AI bots":** decidere se i crawler di addestramento (GPTBot, ClaudeBot, CCBot) possono leggere le pagine pubbliche, e dirlo anche in `src/app/robots.ts`. I crawler di ricerca e citazione (OAI-SearchBot, ChatGPT-User, Claude-SearchBot, PerplexityBot) devono restare ammessi.
+- **Search Console e Bing Webmaster Tools:** aggiungere il dominio e inviare `https://pausa.gnagno.org/sitemap.xml`.
+
 ## 4. Dominio
 
 Cloudflare → Workers & Pages → `pausa` → Settings → **Domains & routes** → Add → Custom domain → `pausa.gnagno.org`. Il DNS si configura da solo se il dominio è su Cloudflare. Il dominio collegato è anche dichiarato in `wrangler.jsonc` con `"routes": [{ "pattern": "pausa.gnagno.org", "custom_domain": true }]`: mantieni coerenti dashboard e configurazione se lo cambi. Poi:

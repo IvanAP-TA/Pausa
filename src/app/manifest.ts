@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Pausa",
     short_name: "Pausa",
     description: "Il diario privato della tua Cerchia: film, serie, anime.",
-    start_url: "/",
+    start_url: "/?app=1", // the installed app opens on /home (my Cerchia), not on the public landing
     scope: "/",
     display: "standalone",
     orientation: "portrait",

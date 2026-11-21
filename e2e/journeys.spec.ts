@@ -130,7 +130,7 @@ test("the invite link of an open Serata previews as an invitation (no vote is re
 });
 
 test("operator pages are closed to everyone else", async ({ page }) => {
-  await signInAs(page, "marco", "/it");
+  await signInAs(page, "marco", "/it/home");
   const res = await page.goto("/it/admin/metrics");
   expect(res?.status()).toBe(404);
   await signInAs(page, "giulia", "/it/admin/metrics");

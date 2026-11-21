@@ -29,3 +29,5 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+          # The public pages are prerendered at build time: their canonical links, hreflang and the sitemap need the real origin.
+          NEXT_PUBLIC_SITE_URL: https://pausa.gnagno.org

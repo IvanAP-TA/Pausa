@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { routing, type Locale } from "@/i18n/routing";
 import { siteUrl } from "@/lib/site";
 import { GUIDES_UPDATED, GUIDE_SLUGS, guideFor, guideStrings, isGuideSlug } from "@/lib/guides";
+import { ORG_ID, SITE_ID, isoDateTime, orgNode, websiteNode } from "@/lib/jsonld";
 
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) => GUIDE_SLUGS.map((slug) => ({ locale, slug })));
@@ -37,9 +38,14 @@ export default async function GuidePage({ params }: PageProps<"/[locale]/guide/[
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
+      orgNode(),
+      websiteNode(),
       {
-        "@type": "Article", headline: g.title, description: g.description, inLanguage: locale, datePublished: GUIDES_UPDATED, dateModified: GUIDES_UPDATED,
-        mainEntityOfPage: url, author: { "@type": "Organization", name: "Pausa" }, publisher: { "@type": "Organization", name: "Pausa", url: siteUrl() },
+        "@type": "Article", headline: g.title, description: g.description, inLanguage: locale,
+        datePublished: isoDateTime(GUIDES_UPDATED), dateModified: isoDateTime(GUIDES_UPDATED),
+        image: { "@type": "ImageObject", url: `${siteUrl()}/api/og/guide/${slug}?locale=${locale}`, width: 1200, height: 630 },
+        mainEntityOfPage: { "@type": "WebPage", "@id": url, isPartOf: { "@id": SITE_ID() } },
+        author: { "@id": ORG_ID() }, publisher: { "@id": ORG_ID() },
       },
       {
         "@type": "BreadcrumbList",

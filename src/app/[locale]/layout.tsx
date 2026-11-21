@@ -1,11 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { Barlow, Sofia_Sans_Extra_Condensed } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing } from "@/i18n/routing";
-import { THEME_COLOR, THEME_COOKIE, parseTheme } from "@/lib/theme";
+import { THEME_COLOR, THEME_COOKIE, THEMES } from "@/lib/theme";
 import { siteUrl } from "@/lib/site";
 import { splashLinks } from "@/lib/splash";
 import { RegisterSw } from "@/components/register-sw";
@@ -15,12 +14,16 @@ import "../globals.css";
 const sofia = Sofia_Sans_Extra_Condensed({ subsets: ["latin"], variable: "--font-sofia", weight: ["200", "400"] });
 const barlow = Barlow({ subsets: ["latin"], variable: "--font-barlow", weight: ["300", "400", "600"] });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl()),
-  title: { default: "Pausa", template: "%s · Pausa" },
-  description: "Il diario privato della tua Cerchia.",
-  appleWebApp: { capable: true, title: "Pausa", statusBarStyle: "default", startupImage: splashLinks },
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "landing.meta" });
+  return {
+    metadataBase: new URL(siteUrl()),
+    title: { default: "Pausa", template: "%s · Pausa" },
+    description: t("siteDescription"),
+    appleWebApp: { capable: true, title: "Pausa", statusBarStyle: "default", startupImage: splashLinks },
+  };
+}
 
 export const viewport: Viewport = {
   // The app opens dark unless someone pinned a theme: the browser bar takes the dark ground.
@@ -32,6 +35,9 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-content",
 };
 
+/** Reads the theme cookie and sets data-theme on <html> before anything is painted. Dark when there is none. */
+const THEME_SCRIPT = `(function(){try{var m=document.cookie.match(/(?:^|; )${THEME_COOKIE}=([^;]+)/);var v=m&&decodeURIComponent(m[1]);if(${JSON.stringify([...THEMES])}.indexOf(v)>-1)document.documentElement.dataset.theme=v;}catch(e){}})();`;
+
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
@@ -41,14 +47,19 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
   const skip = ({ it: "Vai al contenuto", en: "Skip to content", es: "Saltar al contenido" } as Record<string, string>)[locale] ?? "Skip to content";
-  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
 
   return (
+    // The theme is applied by the inline script in <head> before the first paint (no flash), not read here on the server:
+    // reading a cookie in the root layout would make every page dynamic, so no public page could be prerendered and cached.
     <html
       lang={locale}
-      data-theme={theme}
+      data-theme="dark"
+      suppressHydrationWarning
       className={`${sofia.variable} ${barlow.variable}`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-dvh">
         <NextIntlClientProvider>
           <a href="#main" className="skip-link">{skip}</a>

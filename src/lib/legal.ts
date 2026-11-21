@@ -151,3 +151,17 @@ const terms: Record<Locale, LegalDoc> = {
 };
 
 export const legalDoc = (kind: "privacy" | "terms", locale: Locale) => (kind === "privacy" ? privacy : terms)[locale];
+
+/** The search-result description of each legal page, in its language. */
+export const LEGAL_DESCRIPTION: Record<"privacy" | "terms", Record<Locale, string>> = {
+  privacy: {
+    it: "Quali dati tratta Pausa, chi vede i tuoi contenuti, quali cookie usa e come scaricare o cancellare i tuoi dati.",
+    en: "What data Pausa handles, who sees what you post, which cookies it uses, and how to download or delete your data.",
+    es: "Qué datos trata Pausa, quién ve tus contenidos, qué cookies usa y cómo descargar o borrar tus datos.",
+  },
+  terms: {
+    it: "Le regole per usare Pausa: account, contenuti, uso corretto e chiusura dell'account.",
+    en: "The rules for using Pausa: your account, your content, fair use and closing your account.",
+    es: "Las normas para usar Pausa: cuenta, contenidos, uso correcto y cierre de la cuenta.",
+  },
+};

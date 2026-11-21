@@ -123,7 +123,7 @@ export async function leaveCircleAction(formData: FormData) {
   const { circleId } = circleFields.parse({ circleId: formData.get("circleId") });
   const res = await leaveCircle(await getDb(), { circleId, userId: user.id });
   if ("error" in res) backToMembers(formData, circleId, res.error);
-  redirect(`/${localeFrom(formData.get("locale"))}`);
+  redirect(`/${localeFrom(formData.get("locale"))}/home`);
 }
 
 /* ───────────── Diario ───────────── */

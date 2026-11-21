@@ -10,7 +10,7 @@ export default async function SignIn({ params, searchParams }: PageProps<"/[loca
   setRequestLocale(locale);
   const { next } = await searchParams;
   // Only same-app relative paths are allowed as a post-login destination.
-  const callbackURL = typeof next === "string" && next.startsWith(`/${locale}/`) ? next : `/${locale}`;
+  const callbackURL = typeof next === "string" && next.startsWith(`/${locale}/`) ? next : `/${locale}/home`;
   // Guests (anonymous sessions) stay here: signing in upgrades them to a real account.
   const session = await getSession();
   if (session && !(session.user as { isAnonymous?: boolean | null }).isAnonymous) redirect(callbackURL);

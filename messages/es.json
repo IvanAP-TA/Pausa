@@ -449,8 +449,9 @@
   },
   "landing": {
     "meta": {
-      "title": "Pausa · El diario privado para grupos de amigos, con la noche de cine que decide por ti",
-      "description": "Películas, series y anime que veis juntos, con las notas de todos y sin público. Y cuando llega la noche, una noche de cine de dos minutos elige qué ver."
+      "title": "Pausa · Diario de películas con amigos y qué ver esta noche",
+      "description": "App gratuita para llevar un diario privado de películas, series y anime con tus amigos. Y cuando no sabéis qué ver esta noche, votad y decidid en 2 minutos.",
+      "siteDescription": "El diario privado de películas, series y anime para tu grupo de amigos."
     },
     "og": {
       "tagline": "El diario privado de tu grupo de amigos."

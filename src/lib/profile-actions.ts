@@ -56,7 +56,7 @@ export async function removeMyLogsFromCircleAction(formData: FormData) {
   const user = await requireUser();
   const locale = localeFrom(formData.get("locale"));
   const circleId = id.parse(formData.get("circleId"));
-  if (!(await getCircleForMember(circleId, user.id))) redirect(`/${locale}`);
+  if (!(await getCircleForMember(circleId, user.id))) redirect(`/${locale}/home`);
   if (!confirms(formData.get("word"))) redirect(`/${locale}/c/${circleId}/members?e=word#mine`);
   const { removed } = await removeMyLogsFromCircle(await getDb(), { userId: user.id, circleId });
   revalidatePath(`/[locale]/c/[circleId]`, "layout");

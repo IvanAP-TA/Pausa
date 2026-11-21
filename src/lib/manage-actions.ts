@@ -197,7 +197,7 @@ export async function deleteCircleAction(formData: FormData) {
   if (String(formData.get("name") ?? "").trim() !== circle.name) redirect(`/${locale}/c/${circleId}/members?e=confirm`);
   await deleteCircle(await getDb(), { circleId, actorId: user.id });
   revalidatePath("/", "layout");
-  redirect(`/${locale}`);
+  redirect(`/${locale}/home`);
 }
 
 /* ───────────── Settings: Cerchia and notifications ───────────── */

@@ -449,8 +449,9 @@
   },
   "landing": {
     "meta": {
-      "title": "Pausa · Il diario privato per gruppi di amici, con la Serata che sceglie il film",
-      "description": "Film, serie e anime visti insieme, con i voti di tutti e nessun pubblico. E quando arriva la sera, una Serata di due minuti decide cosa guardare."
+      "title": "Pausa · Diario dei film con gli amici e cosa guardare stasera",
+      "description": "App gratuita per tenere un diario privato di film, serie e anime con gli amici. E quando non sapete cosa guardare stasera, votate e decidete in 2 minuti.",
+      "siteDescription": "Il diario privato di film, serie e anime per il tuo gruppo di amici."
     },
     "og": {
       "tagline": "Il diario privato del vostro gruppo."

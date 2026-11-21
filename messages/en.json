@@ -449,8 +449,9 @@
   },
   "landing": {
     "meta": {
-      "title": "Pausa · The private diary for friend groups, with a movie night that decides for you",
-      "description": "Films, series and anime you watch together, with everyone's ratings and no audience. And when evening comes, a two-minute movie night picks what to watch."
+      "title": "Pausa · A film diary with friends, and what to watch tonight",
+      "description": "A free app to keep a private diary of films, series and anime with your friends. And when nobody knows what to watch tonight, vote and decide in 2 minutes.",
+      "siteDescription": "The private diary of films, series and anime for your group of friends."
     },
     "og": {
       "tagline": "The private diary for your friend group."

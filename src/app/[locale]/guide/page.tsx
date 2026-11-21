@@ -2,6 +2,8 @@ import { setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { routing, type Locale } from "@/i18n/routing";
 import { GUIDE_SLUGS, guideFor, guideStrings } from "@/lib/guides";
+import { SITE_ID, ldJson, orgNode, websiteNode } from "@/lib/jsonld";
+import { siteUrl } from "@/lib/site";
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/guide">) {
   const { locale } = await params;
@@ -22,8 +24,28 @@ export default async function GuideIndex({ params }: PageProps<"/[locale]/guide"
   setRequestLocale(raw);
   const locale = raw as Locale;
   const s = guideStrings[locale];
+  const url = `${siteUrl()}/${locale}/guide`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      orgNode(),
+      websiteNode(),
+      {
+        "@type": "CollectionPage", "@id": url, url, name: s.indexTitle, description: s.indexLede, inLanguage: locale, isPartOf: { "@id": SITE_ID() },
+        mainEntity: { "@type": "ItemList", itemListElement: GUIDE_SLUGS.map((slug, i) => ({ "@type": "ListItem", position: i + 1, url: `${url}/${slug}`, name: guideFor(locale, slug).title })) },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Pausa", item: `${siteUrl()}/${locale}` },
+          { "@type": "ListItem", position: 2, name: s.index, item: url },
+        ],
+      },
+    ],
+  };
   return (
     <main className="projector mx-auto grid w-full max-w-[72rem] gap-10 px-4 pb-16 pt-6 lg:px-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(jsonLd) }} />
       <Link href="/" className="inline-flex min-h-11 w-fit items-center font-display text-2xl text-ink">Pausa</Link>
       <header className="grid min-w-0 gap-4">
         <h1 className="display text-poster">{s.indexTitle}</h1>

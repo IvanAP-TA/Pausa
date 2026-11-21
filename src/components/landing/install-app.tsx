@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Download } from "lucide-react";
 
@@ -21,6 +21,7 @@ const detect = (): Platform => {
 export function InstallApp({ className = "" }: { className?: string }) {
   const t = useTranslations("landing.install");
   const dialog = useRef<HTMLDialogElement>(null);
+  const titleId = useId(); // the button is on the page twice (hero and download section): each dialog needs its own id
   const deferred = useRef<InstallEvent | null>(null);
   const [platform, setPlatform] = useState<Platform>("desktop");
   const [installed, setInstalled] = useState(false);
@@ -58,10 +59,10 @@ export function InstallApp({ className = "" }: { className?: string }) {
         <Download size={18} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />
         {t("button")}
       </button>
-      <dialog ref={dialog} aria-labelledby="install-title"
+      <dialog ref={dialog} aria-labelledby={titleId}
         className="fixed inset-0 m-auto h-fit w-[min(92vw,32rem)] border border-rule bg-paper p-0 text-left text-ink backdrop:bg-scrim">
         <form method="dialog" className="grid gap-5 p-6">
-          <h2 id="install-title" className="title">{t("title")}</h2>
+          <h2 id={titleId} className="title">{t("title")}</h2>
           <p className="text-ink-2">{t("intro")}</p>
           {/* The device in hand comes first, marked by the amber edge of a current selection. */}
           <ol className="rows">

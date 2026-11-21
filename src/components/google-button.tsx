@@ -1,12 +1,26 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth-client";
 import { isEmbeddedBrowser } from "@/lib/embedded-browser";
 import { isNativeShell, nativeStartUrl } from "@/lib/native-shell";
 
 const noop = () => () => {};
+
+// One question per page load, shared by every button: is Google configured on this deployment? (see app/api/config)
+let googleConfig: Promise<boolean> | null = null;
+function useGoogleConfig(ask: boolean): boolean | null {
+  const [value, setValue] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!ask) return;
+    googleConfig ??= fetch("/api/config").then((r) => r.json() as Promise<{ google: boolean }>).then((c) => c.google).catch(() => true);
+    let live = true;
+    googleConfig.then((g) => { if (live) setValue(g); });
+    return () => { live = false; };
+  }, [ask]);
+  return value;
+}
 
 /**
  * True inside WhatsApp, Instagram and similar in-app browsers, where Google refuses sign-in. Read on the client only.
@@ -20,9 +34,12 @@ export function useEmbedded() {
  * "Continue with Google". Shown only where it can work: the page decides whether Google is configured (`enabled`),
  * and it hides itself in in-app browsers. For a guest of a Serata it upgrades the guest to a real account, keeping their votes.
  */
-export function GoogleButton({ callbackURL, enabled, className = "", hint = true }: { callbackURL: string; enabled: boolean; className?: string; hint?: boolean }) {
+export function GoogleButton({ callbackURL, enabled: given, className = "", hint = true }: { callbackURL: string; enabled: boolean | "check"; className?: string; hint?: boolean }) {
   const t = useTranslations("auth");
   const embedded = useEmbedded();
+  const checked = useGoogleConfig(given === "check");
+  // "check" (prerendered pages): shown at once, hidden only if the server says Google is not configured, so nothing jumps.
+  const enabled = given === "check" ? checked !== false : given;
   if (embedded) return null;
   // Development without Google keys: show where the button will be, so the layout can be judged. It does nothing until the keys exist.
   if (!enabled) {
