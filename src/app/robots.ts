@@ -5,7 +5,24 @@ import { siteUrl } from "@/lib/site";
 export default function robots(): MetadataRoute.Robots {
   return {
     // /api/og/ stays open: the guides' social images live there, and X's crawler follows robots.txt.
-    rules: [{ userAgent: "*", allow: ["/", "/api/og/"], disallow: ["/api/", "/*/c/", "/*/s/", "/*/join/", "/*/sign-in", "/*/home", "/*/me", "/*/account", "/*/review"] }],
+    rules: [
+      { userAgent: ["GPTBot", "ClaudeBot", "CCBot"], disallow: "/" },
+      {
+        userAgent: "*",
+        allow: ["/", "/api/og/"],
+        disallow: [
+          "/api/",
+          "/*/c/",
+          "/*/s/",
+          "/*/join/",
+          "/*/sign-in",
+          "/*/home",
+          "/*/me",
+          "/*/account",
+          "/*/review",
+        ],
+      },
+    ],
     sitemap: `${siteUrl()}/sitemap.xml`,
   };
 }
