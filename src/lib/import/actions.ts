@@ -21,7 +21,7 @@ import { allow, enforce } from "../limit-guard";
  * of their choosing or attach a title to the wrong database entry.
  */
 const row = z.object({
-  source: z.enum(["letterboxd", "anilist", "mal", "imdb", "trakt"]),
+  source: z.enum(["letterboxd", "anilist", "mal", "imdb", "trakt", "cinemaniac"]),
   kind: z.enum(["movie", "tv", "anime"]),
   title: z.string().trim().min(1).max(300),
   year: z.number().int().min(1870).max(2200).nullable(),
@@ -33,11 +33,11 @@ const row = z.object({
   anilistId: z.number().int().positive().nullish(),
   malId: z.number().int().positive().nullish(),
   imdbId: z.string().regex(/^tt\d{1,10}$/).nullish(),
-  // A Trakt id is only ever used to look the title up on TMDB, which then supplies everything shown.
+  // A Trakt or Cinemaniac TMDB id is only ever used to look the title up on TMDB, which then supplies everything shown.
   tmdbId: z.number().int().positive().nullish(),
 });
 
-const source = z.enum(["letterboxd", "anilist", "mal", "imdb", "trakt"]);
+const source = z.enum(["letterboxd", "anilist", "mal", "imdb", "trakt", "cinemaniac"]);
 const batchId = z.string().min(1).max(64);
 
 const payload = z.object({
@@ -126,7 +126,7 @@ export async function importListChunk(input: unknown): Promise<ListChunkResult> 
   if (!batch || batch.left) return { ok: false, error: "invalid" };
   const circleId = batch.circleId;
   const locale = hasLocale(routing.locales, rawLocale) ? rawLocale : routing.defaultLocale;
-  const clean: ImportRow[] = rows.map((r) => ({ ...r, letterboxdUri: r.letterboxdUri ?? null, anilistId: null, malId: null, imdbId: null, tmdbId: null }));
+  const clean: ImportRow[] = rows.map((r) => ({ ...r, letterboxdUri: r.letterboxdUri ?? null, anilistId: null, malId: null, imdbId: r.imdbId ?? null, tmdbId: r.tmdbId ?? null }));
   try {
     const result = await importList(await getDb(), user.id, { name, description, kind, circleId, rows: clean, offset, batchId: batch.id }, {
       enrich: async (unknown) => (unknown.length ? enrichMovies(unknown, locale) : []),

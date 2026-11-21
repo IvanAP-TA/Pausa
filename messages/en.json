@@ -668,7 +668,8 @@
       "anilist": "AniList",
       "mal": "MyAnimeList",
       "imdb": "IMDb",
-      "trakt": "Trakt"
+      "trakt": "Trakt",
+      "cinemaniac": "Cinemaniac"
     },
     "letterboxd": {
       "title": "Films from Letterboxd",
@@ -746,7 +747,8 @@
       "imdbZip": "This is a ZIP file. IMDb gives you a .csv file: upload that one.",
       "traktFormat": "I find neither viewings nor ratings from Trakt in these files. Upload the \"Export Data\" ZIP as it is, or the files watched-movies.json, watched-shows.json and ratings-….json.",
       "traktJson": "I cannot read these files: they are not valid JSON. Download the ZIP from Trakt again and upload it unopened.",
-      "letterboxdFormat": "I find no Letterboxd file here (diary.csv, ratings.csv, reviews.csv, watched.csv or a list). Upload the \"Export your data\" ZIP as it is."
+      "letterboxdFormat": "I find no Letterboxd file here (diary.csv, ratings.csv, reviews.csv, watched.csv or a list). Upload the \"Export your data\" ZIP as it is.",
+      "cinemaniacFormat": "This file is not a Cinemaniac backup. In the app go to Settings → Backup and upload the .bak file without opening or renaming it."
     },
     "imdb": {
       "title": "Films and series from IMDb",
@@ -765,6 +767,16 @@
         "Upload the whole ZIP here, unopened. Or pick the .json files from the watched and ratings folders."
       ],
       "pick": "Choose the ZIP or the .json files"
+    },
+    "cinemaniac": {
+      "title": "Films and series from Cinemaniac",
+      "steps": [
+        "In the Cinemaniac app (Android) open the menu and go to Settings → Backup.",
+        "Make a backup and save it where you can find it (Drive, Downloads…): it is the file \"Cinemaniac.bak\".",
+        "Upload it here as it is. Films you've seen and series you've started become viewings with your ratings; the ones still to watch go to your watchlist."
+      ],
+      "pick": "Choose the Cinemaniac.bak file",
+      "dates": "Cinemaniac doesn't save when you watched a title, only when you added it to the app: that is the date used. Some old versions of the app broke it, and those titles come in without a date."
     },
     "lists": {
       "include": "{count, plural, one {Also import # list} other {Also import # lists}} ({items} films)",

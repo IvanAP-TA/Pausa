@@ -5,20 +5,20 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { CHUNK_LIMIT } from "@/lib/core/import";
 import {
-  ANILIST_LIST_QUERY, anilistRows, imdbRows, jikanRows, letterboxdList, letterboxdRows, letterboxdWatchlist, malRows, traktJsonRows,
+  ANILIST_LIST_QUERY, anilistRows, cinemaniacBackup, imdbRows, jikanRows, letterboxdList, letterboxdRows, letterboxdWatchlist, malRows, traktJsonRows,
   type AniListResponse, type ImdbSkipped, type ImportList, type ImportRow, type JikanPage, type LetterboxdFiles, type MalSkipped,
 } from "@/lib/core/import-parsers";
 import { importChunk, importListChunk, startImport } from "@/lib/import/actions";
 
-type Source = "letterboxd" | "imdb" | "trakt" | "anilist" | "mal";
+type Source = "letterboxd" | "imdb" | "trakt" | "cinemaniac" | "anilist" | "mal";
 type Parsed = { rows: ImportRow[]; lists?: ImportList[]; undated: number; films?: number; skipped?: MalSkipped; imdbSkipped?: ImdbSkipped; titles?: boolean };
 type Totals = { imported: number; alreadyHad: number; addedToCircle: number; newTitles: number; undatedSkipped: number; failed: number; lists: number; listItems: number };
 /** Where an import goes: the person's own space, or one of their Cerchie (its id). */
 const PRIVATE = "private";
 /** Problems the screen can name. Anything else thrown while reading a file is "read". */
-const KNOWN_ERRORS = ["not_found", "down", "imdbFormat", "imdbZip", "traktFormat", "traktJson", "letterboxdFormat"];
+const KNOWN_ERRORS = ["not_found", "down", "imdbFormat", "imdbZip", "traktFormat", "traktJson", "letterboxdFormat", "cinemaniacFormat"];
 
-const SOURCES: Source[] = ["letterboxd", "imdb", "trakt", "anilist", "mal"];
+const SOURCES: Source[] = ["letterboxd", "imdb", "trakt", "cinemaniac", "anilist", "mal"];
 const decoder = new TextDecoder("utf-8");
 
 /** Which Letterboxd export file is this? By name, or by its header line if the file was renamed. */
@@ -186,6 +186,11 @@ export function ImportClient({ circles, tmdb }: { circles: { id: string; name: s
     if (!recognized) throw new Error(broken > 0 ? "traktJson" : "traktFormat");
     return { rows, undated, titles: true };
   });
+  const onCinemaniac = (files: FileList | null) => files?.[0] && load(async () => {
+    const { rows, watchlist, undated, recognized } = cinemaniacBackup(decoder.decode(new Uint8Array(await files[0].arrayBuffer())));
+    if (!recognized) throw new Error("cinemaniacFormat");
+    return { rows, undated, lists: watchlist ? [watchlist] : [], titles: true };
+  });
   const onJikan = () => username.trim() && load(async () => {
     const { rows, undated } = jikanRows(await fetchJikan(username.trim()));
     return { rows, undated };
@@ -244,7 +249,7 @@ export function ImportClient({ circles, tmdb }: { circles: { id: string; name: s
       let ok = true;
       for (let i = 0; i < l.rows.length && !stop.current; i += 20) {
         const part = l.rows.slice(i, i + 20).map((r) => ({
-          source: r.source, kind: r.kind, title: r.title, year: r.year, rating: null, watchedOn: null, rewatch: false, review: null, letterboxdUri: r.letterboxdUri ?? null,
+          source: r.source, kind: r.kind, title: r.title, year: r.year, rating: null, watchedOn: null, rewatch: false, review: null, letterboxdUri: r.letterboxdUri ?? null, imdbId: r.imdbId ?? null, tmdbId: r.tmdbId ?? null,
         }));
         const payload = { name: l.name, description: l.description, kind: l.kind, batchId, offset: i, rows: part, locale };
         let res = await importListChunk(payload).catch(() => null);
@@ -291,7 +296,7 @@ export function ImportClient({ circles, tmdb }: { circles: { id: string; name: s
 
   return (
     <div className="grid gap-8">
-      <div role="tablist" aria-label={t("title")} className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+      <div role="tablist" aria-label={t("title")} className="grid grid-cols-3 gap-2 sm:grid-cols-6">
         {SOURCES.map((s) => (
           <button key={s} type="button" role="tab" aria-selected={source === s} disabled={busy} onClick={() => choose(s)} className={cell(source === s)}>
             {t(`tabs.${s}`)}
@@ -331,6 +336,14 @@ export function ImportClient({ circles, tmdb }: { circles: { id: string; name: s
             <label className={drop}>{t("trakt.pick")}
               <input type="file" accept=".zip,.json,application/zip,application/json" multiple disabled={busy} className={file} onChange={(e) => onTrakt(e.target.files)} />
             </label>
+          )}
+          {source === "cinemaniac" && (
+            <>
+              <p className="text-sm text-muted">{t("cinemaniac.dates")}</p>
+              <label className={drop}>{t("cinemaniac.pick")}
+                <input type="file" accept=".bak,.json,application/json,application/octet-stream" disabled={busy} className={file} onChange={(e) => onCinemaniac(e.target.files)} />
+              </label>
+            </>
           )}
           {source === "mal" && malMode === "user" && (
             <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); onJikan(); }}>

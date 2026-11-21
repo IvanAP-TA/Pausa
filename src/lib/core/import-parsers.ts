@@ -2,9 +2,10 @@
  *   - Letterboxd: the CSV files of "Settings → Data → Export your data" (diary, ratings, reviews, watched).
  *   - MyAnimeList: the XML export ("animelist_….xml", optionally .gz, unzipped by the caller).
  *   - AniList: the response of its public GraphQL API for a username (see ANILIST_LIST_QUERY).
+ *   - IMDb (ratings.csv), Trakt (its JSON export) and Cinemaniac (its .bak backup, JSON).
  * Ratings come out on the app's scale: half-stars 1..10 (10 = 5 stars). Dates are YYYY-MM-DD, or null when unknown. */
 
-export type ImportSource = "letterboxd" | "anilist" | "mal" | "imdb" | "trakt";
+export type ImportSource = "letterboxd" | "anilist" | "mal" | "imdb" | "trakt" | "cinemaniac";
 
 export type ImportRow = {
   source: ImportSource;
@@ -480,4 +481,68 @@ export function letterboxdList(csv: string): ImportList | null {
   const name = (head?.["Name"] ?? "").trim();
   if (!name || rows.length === 0) return null;
   return { name: name.slice(0, 80), description: head?.["Description"] ? head["Description"].slice(0, 500) : null, kind: "list", rows };
+}
+
+/* ───────────── Cinemaniac (Android) ───────────── */
+
+type CineMovie = { id_movie?: unknown; title?: unknown; year?: unknown; date?: unknown; seen?: unknown; note?: unknown };
+type CineShow = { id_tv?: unknown; title?: unknown; first_air_date?: unknown; date?: unknown; episodes_seen?: unknown; note?: unknown };
+
+/** Cinemaniac started in the 2010s: an earlier "date" is one of the timestamps an old version of the app broke (they read as 1969-1970). */
+const CINEMANIAC_FIRST = Date.UTC(2010, 0, 1);
+
+/**
+ * Cinemaniac's backup (Menu → Impostazioni → Backup → "Cinemaniac.bak"): one JSON file with the app's settings, `movies`,
+ * `shows` and `ratings`. Films and series carry their TMDB id, so the titles are found without guessing.
+ *  - a film with `seen: 1` is a viewing; `seen: 0` goes to the watchlist;
+ *  - a series with at least one episode seen is a viewing; one with none goes to the watchlist;
+ *  - `ratings` holds the person's votes on films, 1..10 in half points: rounded to the app's half-stars (6.5 → 7);
+ *  - `date` is when the title was added to the app, the nearest thing to a viewing date it keeps (as Letterboxd's watched.csv).
+ *    Dates before 2010 or in the future are broken and left out: those titles come in undated;
+ *  - `note` is the person's own note on the title: it comes in as the review (the page lets them leave reviews out).
+ * `recognized` is false when the file is not a Cinemaniac backup.
+ */
+export function cinemaniacBackup(text: string, now = Date.now()): { rows: ImportRow[]; watchlist: ImportList | null; undated: number; recognized: boolean } {
+  let data: { app?: unknown; movies?: unknown; shows?: unknown; ratings?: unknown };
+  try { data = JSON.parse(text.replace(/^﻿/, "")); } catch { return { rows: [], watchlist: null, undated: 0, recognized: false }; }
+  const movies = Array.isArray(data?.movies) ? (data.movies as CineMovie[]).filter((m) => m && typeof m === "object") : null;
+  const shows = Array.isArray(data?.shows) ? (data.shows as CineShow[]).filter((s) => s && typeof s === "object") : [];
+  if (!movies || (typeof data.app === "string" && data.app.toLowerCase() !== "cinemaniac")) return { rows: [], watchlist: null, undated: 0, recognized: false };
+
+  const votes = new Map<number, number>();
+  for (const v of Array.isArray(data.ratings) ? data.ratings as { id?: unknown; r?: unknown }[] : []) {
+    const id = positiveInt(v?.id);
+    const r = Number(v?.r);
+    if (id && r >= 0.5 && r <= 10) votes.set(id, Math.min(10, Math.max(1, Math.round(r))));
+  }
+  const day = (v: unknown) => (typeof v === "number" && v >= CINEMANIAC_FIRST && v <= now ? new Date(v).toISOString().slice(0, 10) : null);
+  const text300 = (v: unknown) => (typeof v === "string" ? v.trim().slice(0, 300) : "");
+  const note = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim().slice(0, 20000) : null);
+  const yearOk = (y: number | null) => (y && y >= 1870 && y <= 2200 ? y : null);
+
+  const rows: ImportRow[] = [];
+  const later: ImportRow[] = [];
+  for (const m of movies) {
+    const tmdbId = positiveInt(m.id_movie);
+    const title = text300(m.title);
+    if (!tmdbId || !title) continue;
+    const base = { source: "cinemaniac" as const, kind: "movie" as const, title, year: yearOk(positiveInt(m.year)), rewatch: false, tmdbId };
+    if (Number(m.seen) === 1) rows.push({ ...base, rating: votes.get(tmdbId) ?? null, watchedOn: day(m.date), review: note(m.note) });
+    else later.push({ ...base, rating: null, watchedOn: null, review: null });
+  }
+  for (const s of shows) {
+    const tmdbId = positiveInt(s.id_tv);
+    const title = text300(s.title);
+    if (!tmdbId || !title) continue;
+    const first = typeof s.first_air_date === "number" && s.first_air_date > 0 ? new Date(s.first_air_date).getUTCFullYear() : null;
+    const base = { source: "cinemaniac" as const, kind: "tv" as const, title, year: yearOk(first), rewatch: false, tmdbId };
+    if (Number(s.episodes_seen) > 0) rows.push({ ...base, rating: null, watchedOn: day(s.date), review: note(s.note) });
+    else later.push({ ...base, rating: null, watchedOn: null, review: null });
+  }
+  return {
+    rows,
+    watchlist: later.length ? { name: "Watchlist", description: null, kind: "watchlist", rows: later } : null,
+    undated: rows.filter((r) => r.watchedOn === null).length,
+    recognized: true,
+  };
 }

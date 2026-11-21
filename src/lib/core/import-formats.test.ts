@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { imdbRows, traktJsonRows } from "./import-parsers";
+import { cinemaniacBackup, imdbRows, traktJsonRows } from "./import-parsers";
 
 /* The shapes the real exports arrive in, beyond the tidy cases of import-sources.test.ts. */
 
@@ -103,5 +103,51 @@ describe("the import screen's own texts", () => {
         expect(m[source].steps.every((s: unknown) => typeof s === "string" && s.length > 0)).toBe(true);
       }
     }
+  });
+});
+
+describe("Cinemaniac: the .bak backup of the Android app", () => {
+  const now = Date.UTC(2026, 10, 21);
+  const movie = (id: number, title: string, seen: 0 | 1, date: number, extra = {}) => ({
+    id_movie: id, title, year: 2015, rating: 7.1, duration: 120, genres: "35,18", overview: "…", date, backdrop: "x.jpg", seen, note: "", categories: "", ...extra,
+  });
+  const show = (id: number, title: string, seen: number, date: number) => ({
+    id_tv: id, title, first_air_date: Date.UTC(2007, 8, 24), last_air_date: 0, rating: 7.7, duration: 43, genres: "35", overview: "…", date,
+    backdrop: "/y.jpg", watching: 1, episodes: 10, episodes_seen: seen, seasons: "[[1,1]]", note: "", categories: "",
+  });
+  const backup = (body: object) => JSON.stringify({ app: "Cinemaniac", appVersion: 172, backupVersion: 11, settings: {}, categories: [], ...body });
+
+  it("turns seen films and started series into viewings, with their votes, and the rest into the watchlist", () => {
+    const { rows, watchlist, undated, recognized } = cinemaniacBackup(backup({
+      ratings: [{ id: 1, r: 6.5 }, { id: 2, r: 8 }, { id: 3, r: 7.5 }],
+      movies: [movie(1, "Seen And Rated", 1, Date.UTC(2023, 4, 2, 21)), movie(2, "Seen, Broken Date", 1, 824355210), movie(3, "Not Seen", 0, Date.UTC(2024, 0, 1))],
+      shows: [show(10, "Started Show", 4, Date.UTC(2022, 7, 29)), show(11, "Show For Later", 0, Date.UTC(2025, 0, 1))],
+    }), now);
+    expect(recognized).toBe(true);
+    expect(rows).toEqual([
+      expect.objectContaining({ source: "cinemaniac", kind: "movie", title: "Seen And Rated", tmdbId: 1, rating: 7, watchedOn: "2023-05-02", review: null }),
+      expect.objectContaining({ kind: "movie", title: "Seen, Broken Date", tmdbId: 2, rating: 8, watchedOn: null }), // 1970: an old bug of the app
+      expect.objectContaining({ kind: "tv", title: "Started Show", tmdbId: 10, year: 2007, rating: null, watchedOn: "2022-08-29" }),
+    ]);
+    expect(undated).toBe(1);
+    expect(watchlist).toMatchObject({ name: "Watchlist", kind: "watchlist" });
+    expect(watchlist!.rows.map((r) => [r.kind, r.tmdbId, r.rating, r.watchedOn])).toEqual([["movie", 3, null, null], ["tv", 11, null, null]]); // a vote on an unseen film is not a viewing
+  });
+
+  it("keeps a note as the review, and skips entries without an id or a title", () => {
+    const { rows, watchlist } = cinemaniacBackup(backup({
+      ratings: [],
+      movies: [movie(5, "With A Note", 1, Date.UTC(2024, 1, 1), { note: "  Visto al cinema  " }), movie(0, "No Id", 1, 0), { title: "Broken" }, null],
+      shows: [],
+    }), now);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].review).toBe("Visto al cinema");
+    expect(watchlist).toBeNull();
+  });
+
+  it("says when a file is not a Cinemaniac backup", () => {
+    expect(cinemaniacBackup("not json").recognized).toBe(false);
+    expect(cinemaniacBackup(JSON.stringify([{ movie: { title: "Trakt" } }])).recognized).toBe(false);
+    expect(cinemaniacBackup(JSON.stringify({ app: "Other", movies: [] })).recognized).toBe(false);
   });
 });

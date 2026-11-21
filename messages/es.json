@@ -668,7 +668,8 @@
       "anilist": "AniList",
       "mal": "MyAnimeList",
       "imdb": "IMDb",
-      "trakt": "Trakt"
+      "trakt": "Trakt",
+      "cinemaniac": "Cinemaniac"
     },
     "letterboxd": {
       "title": "Películas de Letterboxd",
@@ -746,7 +747,8 @@
       "imdbZip": "Esto es un archivo ZIP. IMDb te da un archivo .csv: sube ese.",
       "traktFormat": "En estos archivos no encuentro ni visionados ni votos de Trakt. Sube el ZIP de «Export Data» tal cual, o los archivos watched-movies.json, watched-shows.json y ratings-….json.",
       "traktJson": "No consigo leer estos archivos: no son JSON válidos. Vuelve a descargar el ZIP de Trakt y súbelo sin abrirlo.",
-      "letterboxdFormat": "Aquí no encuentro ningún archivo de Letterboxd (diary.csv, ratings.csv, reviews.csv, watched.csv o una lista). Sube el ZIP de «Export your data» tal cual."
+      "letterboxdFormat": "Aquí no encuentro ningún archivo de Letterboxd (diary.csv, ratings.csv, reviews.csv, watched.csv o una lista). Sube el ZIP de «Export your data» tal cual.",
+      "cinemaniacFormat": "Este archivo no es una copia de seguridad de Cinemaniac. En la app ve a Ajustes → Copia de seguridad y sube el archivo .bak sin abrirlo ni cambiarle el nombre."
     },
     "imdb": {
       "title": "Películas y series de IMDb",
@@ -765,6 +767,16 @@
         "Sube aquí el ZIP entero, sin abrirlo. O elige los archivos .json de las carpetas watched y ratings."
       ],
       "pick": "Elige el ZIP o los archivos .json"
+    },
+    "cinemaniac": {
+      "title": "Películas y series de Cinemaniac",
+      "steps": [
+        "En la app Cinemaniac (Android) abre el menú y ve a Ajustes → Copia de seguridad.",
+        "Crea la copia y guárdala donde puedas encontrarla (Drive, Descargas…): es el archivo «Cinemaniac.bak».",
+        "Súbela aquí tal cual. Las películas vistas y las series empezadas se convierten en visionados con tus notas; las que aún no has visto van a tu watchlist."
+      ],
+      "pick": "Elige el archivo Cinemaniac.bak",
+      "dates": "Cinemaniac no guarda cuándo viste un título, sino cuándo lo añadiste a la app: se usa esa fecha. Algunas versiones antiguas de la app la estropearon, y esos títulos llegan sin fecha."
     },
     "lists": {
       "include": "{count, plural, one {Importar también # lista} other {Importar también # listas}} ({items} películas)",

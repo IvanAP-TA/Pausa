@@ -213,7 +213,7 @@ export const mediaAvailabilityCheck = sqliteTable("media_availability_check", {
 export const importBatch = sqliteTable("import_batch", {
   id: id(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  source: text("source", { enum: ["letterboxd", "anilist", "mal", "imdb", "trakt"] }).notNull(),
+  source: text("source", { enum: ["letterboxd", "anilist", "mal", "imdb", "trakt", "cinemaniac"] }).notNull(),
   circleId: text("circle_id").references(() => circle.id, { onDelete: "set null" }),
   createdAt: createdAt(),
 }, (t) => [index("import_batch_user_idx").on(t.userId, t.createdAt)]);

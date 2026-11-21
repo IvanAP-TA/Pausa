@@ -668,7 +668,8 @@
       "anilist": "AniList",
       "mal": "MyAnimeList",
       "imdb": "IMDb",
-      "trakt": "Trakt"
+      "trakt": "Trakt",
+      "cinemaniac": "Cinemaniac"
     },
     "letterboxd": {
       "title": "Film da Letterboxd",
@@ -746,7 +747,8 @@
       "imdbZip": "Questo è un file ZIP. IMDb ti dà un file .csv: carica quello.",
       "traktFormat": "In questi file non trovo né visioni né voti di Trakt. Carica lo ZIP di «Export Data» così com'è, oppure i file watched-movies.json, watched-shows.json e ratings-….json.",
       "traktJson": "Non riesco a leggere questi file: non sono JSON validi. Riscarica lo ZIP da Trakt e caricalo senza aprirlo.",
-      "letterboxdFormat": "Qui non trovo nessun file di Letterboxd (diary.csv, ratings.csv, reviews.csv, watched.csv o una lista). Carica lo ZIP di «Export your data» così com'è."
+      "letterboxdFormat": "Qui non trovo nessun file di Letterboxd (diary.csv, ratings.csv, reviews.csv, watched.csv o una lista). Carica lo ZIP di «Export your data» così com'è.",
+      "cinemaniacFormat": "Questo file non è un backup di Cinemaniac. Dall'app vai in Impostazioni → Backup e carica il file .bak senza aprirlo né rinominarlo."
     },
     "imdb": {
       "title": "Film e serie da IMDb",
@@ -765,6 +767,16 @@
         "Carica qui lo ZIP intero, senza aprirlo. In alternativa scegli i file .json delle cartelle watched e ratings."
       ],
       "pick": "Scegli lo ZIP o i file .json"
+    },
+    "cinemaniac": {
+      "title": "Film e serie da Cinemaniac",
+      "steps": [
+        "Nell'app Cinemaniac (Android) apri il menu e vai in Impostazioni → Backup.",
+        "Crea il backup e salvalo dove lo ritrovi (Drive, Download…): è il file «Cinemaniac.bak».",
+        "Caricalo qui così com'è. I film visti e le serie iniziate diventano visioni con i tuoi voti; quelli ancora da vedere finiscono nella watchlist."
+      ],
+      "pick": "Scegli il file Cinemaniac.bak",
+      "dates": "Cinemaniac non salva quando hai visto un titolo, ma quando l'hai aggiunto all'app: uso quella data. Alcune vecchie versioni dell'app l'hanno rovinata, e quei titoli arrivano senza data."
     },
     "lists": {
       "include": "{count, plural, one {Importa anche # lista} other {Importa anche # liste}} ({items} film)",
