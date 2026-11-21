@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Download } from "lucide-react";
+import { isNativeShell } from "@/lib/native-shell";
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 type Platform = "ios" | "android" | "desktop";
@@ -30,8 +31,17 @@ export function InstallApp({ className = "" }: { className?: string }) {
     // Browser-only facts (user agent, display mode): they cannot be known during server rendering.
     /* eslint-disable react-hooks/set-state-in-effect */
     setPlatform(detect());
-    setInstalled(window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true);
+    // Already the app: an installed PWA window, Pausa's native shell, or any Android WebView (the shell is one; nothing can be installed from inside one anyway).
+    setInstalled(
+      window.matchMedia("(display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui)").matches
+      || (navigator as { standalone?: boolean }).standalone === true
+      || isNativeShell()
+      || /; wv\)/.test(navigator.userAgent),
+    );
     /* eslint-enable react-hooks/set-state-in-effect */
+    // A browser tab on a phone that already has Pausa installed (Chrome on Android tells us; the manifest lists the app itself).
+    const related = (navigator as { getInstalledRelatedApps?: () => Promise<unknown[]> }).getInstalledRelatedApps;
+    if (related) related.call(navigator).then((apps) => { if (apps.length > 0) setInstalled(true); }).catch(() => {});
     const onPrompt = (e: Event) => { e.preventDefault(); deferred.current = e as InstallEvent; };
     const onInstalled = () => setInstalled(true);
     window.addEventListener("beforeinstallprompt", onPrompt);

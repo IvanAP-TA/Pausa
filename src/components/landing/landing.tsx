@@ -101,7 +101,7 @@ export function Landing() {
               ))}
             </ul>
             <ThemeToggle className="max-sm:w-9" />
-            <a href={signIn} className={`${navLink} hidden px-1 text-sm text-muted sm:inline-flex`}>{t("nav.login")}</a>
+            <a href={signIn} className={`${navLink} px-1 text-sm text-muted max-sm:hidden`}>{t("nav.login")}</a>
             <a href={signIn} className="btn px-4">{t("nav.start")}</a>
           </div>
         </div>
@@ -109,7 +109,8 @@ export function Landing() {
 
       <main>
         {/* ───────── hero: a poster. The headline, one sentence, the actions; the app's own plates beside it ───────── */}
-        <section id="hero" className="relative grid overflow-x-clip py-8 lg:min-h-[calc(100svh-4rem)] lg:content-center">
+        {/* The same curtain folds and safelight that open every app screen: `isolate` keeps them above the page ground. */}
+        <section id="hero" className="projector isolate grid overflow-x-clip py-8 lg:min-h-[calc(100svh-4rem)] lg:content-center">
           <div className={`${wrap} ${cols} items-center gap-y-12`}>
             <div data-scrub="leave" className="min-w-0 lg:col-span-8">
               {/* The hero size, held to the height of the screen so the action stays above the fold. */}
