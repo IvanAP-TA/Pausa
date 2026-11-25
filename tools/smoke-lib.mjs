@@ -43,7 +43,8 @@ export async function call(method, url, { cookie, body, redirect = "manual", hea
   const res = await fetch(base + url, {
     method,
     redirect,
-    headers: { ...(body ? { "content-type": "application/json" } : {}), ...(cookie ? { cookie } : {}), ...headers },
+    // Synchronous D1 CLI calls between requests can outlive Wrangler's idle keep-alive sockets.
+    headers: { connection: "close", ...(body ? { "content-type": "application/json" } : {}), ...(cookie ? { cookie } : {}), ...headers },
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
