@@ -57,3 +57,11 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 seed/load.sql
+
+# Rebuild (Rust + Expo)
+/target/
+/crates/api/build/
+/crates/api/.wrangler/
+
+# Local dev stack state (tools/dev-stack.mjs)
+/.dev/

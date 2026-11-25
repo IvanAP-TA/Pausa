@@ -1,0 +1,32 @@
+{
+	// Pausa v2 API. Deliberately a different Worker name than production ("pausa"), with NO custom domain and NO routes:
+	// nothing here can touch pausa.gnagno.org. The cutover (T11) switches the name and the route, after the owner confirms.
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	"name": "pausa-v2",
+	"main": "build/worker/shim.mjs",
+	"compatibility_date": "2026-11-01",
+	"build": { "command": "worker-build --release" },
+	// Daily housekeeping (03:17 UTC): expired sessions and tokens, stale rate-limit counters, old guest accounts. See src/cleanup.rs.
+	"triggers": { "crons": ["* * * * *", "0 17 * * *", "17 3 * * *"] },
+	// The Serata room: one Durable Object per room code, SQLite-backed (the only kind on the Workers free plan).
+	"durable_objects": { "bindings": [{ "name": "SERATA", "class_name": "SerataRoom" }] },
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["SerataRoom"] }],
+	// The web client (static export of apps/mobile). Public pages and shells with a file of their own are served by the asset host
+	// without waking the Worker; the dynamic private routes below are not files, so the Worker maps them to their shell
+	// (src/lib.rs `serve_client`, pausa_core::shell). Unknown paths get the real 404 page, not a soft 200.
+	"assets": {
+		"directory": "../../apps/mobile/dist",
+		"binding": "ASSETS",
+		"not_found_handling": "404-page",
+		"run_worker_first": ["/api/*", "/*/c/*", "/*/join/*", "/*/log/*", "/*/t/*", "/*/s/*", "/*/lists/*"]
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "pausa-v2",
+			// Placeholder: only used by `wrangler dev --local`. The real id is created at T0(D3)/T11 with the owner's OK.
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "../../migrations"
+		}
+	]
+}

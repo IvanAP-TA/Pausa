@@ -1,0 +1,10 @@
+[package]
+name = "pausa-engine"
+version = "0.2.0"
+edition.workspace = true
+publish.workspace = true
+description = "Pausa's recommendation engine: pure functions on compact, index-based input (no JSON on the hot path)"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }

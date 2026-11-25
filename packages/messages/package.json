@@ -1,0 +1,6 @@
+{
+  "name": "@pausa/messages",
+  "private": true,
+  "version": "0.0.0",
+  "description": "UI strings, one JSON per locale. Italian is authoritative; keys are identical across locales (apps/mobile/tests/i18n.test.ts enforces it)."
+}

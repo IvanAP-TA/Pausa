@@ -1,0 +1,44 @@
+# Cloudflare Workers static assets: https://developers.cloudflare.com/workers/static-assets/headers/
+# This is the TEMPLATE. scripts/postexport.mjs fills the two placeholders and writes dist/_headers:
+#   __SCRIPT_HASHES__  'sha256-...' of every inline script of the export (today: Expo's one-line `__EXPO_ROUTER_HYDRATE__` flag)
+#   __SITE_WSS__       wss://<host of SITE_URL>, the Serata WebSocket (same origin; spelled out because older Safari does not
+#                      let 'self' cover wss:)
+# Rules are merged top to bottom, and a header that two rules set is JOINED, so the long-lived rules below first detach
+# (`! Cache-Control`) what `/*` gave them. scripts/serve-dist.mjs applies this file the same way, so the e2e run under the real policy.
+#
+# CSP, what each source is for (derived from the export; see docs/rebuild/A11Y.md and the postexport checks):
+#   script-src   'self' + the hash above. No 'unsafe-inline', no 'unsafe-eval'.
+#   style-src    'unsafe-inline' is unavoidable: react-native-web writes inline style="" attributes into the static HTML and its own
+#                <style> whose content differs per page. Styles cannot run code; the script policy is what stops XSS.
+#   img-src      TMDB posters, AniList covers, Google avatars; data: and blob: for the result-card preview.
+#   connect-src  the API (same origin), the Serata socket, and the two public APIs the browser calls for the AniList / MAL imports.
+#   font-src     the self-hosted woff2 files only.
+
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Content-Security-Policy: default-src 'self'; script-src 'self' __SCRIPT_HASHES__; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://image.tmdb.org https://s4.anilist.co https://lh3.googleusercontent.com; font-src 'self'; connect-src 'self' __SITE_WSS__ https://graphql.anilist.co https://api.jikan.moe; worker-src 'self'; manifest-src 'self'; media-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), interest-cohort=()
+  Cache-Control: no-cache
+
+# Content-hashed build output: never changes under the same name.
+/_expo/static/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+# Not hashed (the name stays when the file changes): a day, then revalidate in the background.
+/fonts/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/icons/*
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# sw.js, the manifests, offline.html and every HTML page keep the `no-cache` of the first rule: revalidated on every use, so an update arrives.

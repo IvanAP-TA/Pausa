@@ -1,0 +1,1491 @@
+{
+  "common": {
+    "signOut": "Salir",
+    "back": "Atrás",
+    "language": "Idioma",
+    "change": "Cambiar",
+    "theme": "Tema",
+    "themes": {
+      "system": "Automático",
+      "light": "Claro",
+      "dark": "Oscuro"
+    }
+  },
+  "tabs": {
+    "diary": "Diario",
+    "serata": "Noche",
+    "log": "Registrar lo que viste",
+    "lists": "Listas",
+    "ranking": "Ranking",
+    "circle": "Círculo",
+    "logShort": "Registrar",
+    "profile": "Perfil"
+  },
+  "kind": {
+    "movie": "Película",
+    "tv": "Serie",
+    "anime": "Anime"
+  },
+  "auth": {
+    "title": "La sala está abierta.",
+    "lede": "El diario privado de tu grupo: qué visteis, qué os pareció, qué ver esta noche.",
+    "email": "Email",
+    "sendLink": "Envíame el enlace",
+    "sending": "Enviando…",
+    "linkSent": "Revisa tu correo: te enviamos un enlace para entrar. Caduca en 15 minutos.",
+    "google": "Continuar con Google",
+    "or": "o",
+    "error": "Algo falló. Inténtalo de nuevo en un momento.",
+    "embeddedHint": "Google no funciona dentro de WhatsApp o Instagram. Usa el email de abajo, o abre esta página en el navegador del móvil."
+  },
+  "home": {
+    "noCircleTitle": "Aún no tienes Círculo.",
+    "noCircleBody": "Crea el tuyo y envía el enlace a tus amigos, o entra con un código de invitación.",
+    "createLabel": "Nombre del Círculo",
+    "createPlaceholder": "Club del Sofá",
+    "createCta": "Crear el Círculo",
+    "joinLabel": "Código de invitación",
+    "joinCta": "Entrar"
+  },
+  "feed": {
+    "members": "{count, plural, one {# miembro} other {# miembros}}",
+    "logsThisYear": "{count, plural, one {# visionado} other {# visionados}} este año",
+    "isWatching": "está viendo",
+    "watched": "vio",
+    "rewatched": "volvió a ver",
+    "with": "Visto con",
+    "on": "en {platform}",
+    "spoiler": "Contiene spoilers · toca para leer",
+    "comments": "{count, plural, =0 {Sin comentarios} one {# comentario} other {# comentarios}}",
+    "react": "Reaccionar con {emoji}",
+    "emptyTitle": "El diario sigue vacío.",
+    "emptyBody": "Registra lo primero que veas: aparecerá aquí para todo el Círculo.",
+    "emptyCta": "Registrar lo que viste",
+    "rating": "{stars} de 5 estrellas",
+    "stopWatching": "Terminado o abandonado",
+    "notifications": "Notificaciones",
+    "unread": "{count, plural, one {# notificación sin leer} other {# notificaciones sin leer}}",
+    "older": "Mostrar anteriores",
+    "endOfFeed": "No hay nada más atrás.",
+    "nextEpisode": "+1 episodio",
+    "nextSeason": "Nueva temporada",
+    "season": "Temporada {n}",
+    "filter": {
+      "title": "Buscar y filtrar",
+      "q": "Título",
+      "kind": "Tipo",
+      "by": "Visto por",
+      "everyone": "Todos",
+      "year": "Año",
+      "rating": "Nota",
+      "any": "Cualquiera",
+      "atLeast": "{stars} estrellas o más",
+      "apply": "Buscar",
+      "clear": "Quitar filtros",
+      "none": "Ningún registro coincide.",
+      "with": "Visto con",
+      "anyone": "Cualquiera"
+    },
+    "openTitle": "Abrir la ficha de {title}",
+    "commentCta": "Comentar",
+    "commentSpoiler": "Comentario con spoilers: ábrelo para leerlo",
+    "commentsMore": "{count, plural, one {y otro comentario} other {y otros # comentarios}}",
+    "onAir": "Viendo ahora",
+    "reactCount": "{name}: {count, plural, =0 {ninguna reacción} one {# reacción} other {# reacciones}}",
+    "reactionName": {
+      "moved": "Emocionado",
+      "popcorn": "De palomitas",
+      "love": "Me encanta",
+      "laugh": "Qué risa",
+      "mindblown": "Me voló la cabeza"
+    }
+  },
+  "log": {
+    "title": "¿Qué viste?",
+    "search": "Busca una película, una serie, un anime…",
+    "searchCta": "Buscar",
+    "noResults": "No se encontró ningún título.",
+    "tmdbOff": "La búsqueda en TMDB no está activa: solo busco entre los títulos que ya están en Pausa.",
+    "rating": "Nota",
+    "noRating": "Sin nota",
+    "watchedOn": "Visto el",
+    "platform": "Dónde",
+    "platformPlaceholder": "Netflix, cine, Filmin…",
+    "review": "Unas líneas (opcional)",
+    "spoilers": "Contiene spoilers",
+    "rewatch": "Ya la había visto",
+    "with": "Con quién",
+    "submit": "Registrar",
+    "saving": "Guardando…",
+    "modeWatched": "Vi",
+    "modeWatching": "Estoy viendo",
+    "progress": "Por dónde vas",
+    "progressPlaceholder": "T1·E3",
+    "setWatching": "Marcar como en curso",
+    "season": "Temporada",
+    "episode": "Episodio",
+    "seasonLogged": "Temporada (opcional)",
+    "wholeShow": "Toda",
+    "episodeLogged": "Temporada y episodio (opcional)",
+    "seasonOf": "Temporada {n} ({count} ep.)",
+    "overview": "De qué trata (opcional)",
+    "overviewPlaceholder": "Un par de líneas de trama, sin spoilers",
+    "noOverview": "No hay sinopsis disponible para este título.",
+    "loadingOverview": "Buscando la sinopsis…",
+    "privateOnly": "Solo en mi espacio",
+    "privateHelp": "Ninguna Cerchia lo ve hasta que lo añadas tú.",
+    "searching": "Buscando…",
+    "resultsCount": "{count, plural, =0 {Ningún título encontrado} one {# título encontrado} other {# títulos encontrados}}",
+    "more": "Más",
+    "modeLabel": "Visto o viendo",
+    "details": "Añadir detalles",
+    "detailsHint": "Fecha, dónde, episodio, spoilers, con quién",
+    "who": "Quién lo ve",
+    "whoCircles": "Mis Cerchie",
+    "whoCirclesHint": "Lo ven {circle} y tus otras Cerchie.",
+    "whoMe": "Solo yo",
+    "whoMeHint": "Se queda en tu espacio. Compártelo cuando quieras.",
+    "submitPrivate": "Guardar en mi espacio"
+  },
+  "lists": {
+    "title": "Listas",
+    "empty": "Aún no hay listas. Empezad por la watchlist del grupo.",
+    "items": "{count, plural, one {# título} other {# títulos}}",
+    "by": "de {name}",
+    "kind": {
+      "watchlist": "Watchlist",
+      "list": "Lista",
+      "ranking": "Ranking"
+    },
+    "newTitle": "Nueva lista",
+    "name": "Nombre",
+    "create": "Crear",
+    "addTo": "Añadir a una lista",
+    "add": "Añadir",
+    "personal": "personal",
+    "mine": "Mis listas",
+    "group": "Del Círculo",
+    "scopeCircle": "Para el Círculo",
+    "scopePersonal": "Solo para mí",
+    "emptyPersonal": "Aún no tienes listas personales.",
+    "mineLede": "Watchlists y listas solo tuyas: ninguna Cerchia las ve. Las listas del grupo están en la página Listas de cada Cerchia.",
+    "mineMoved": "Tus listas personales y tu watchlist ahora están en tu perfil.",
+    "mineLink": "Abrir mis listas"
+  },
+  "circle": {
+    "members": "Miembros",
+    "admin": "admin",
+    "inviteTitle": "Invitar",
+    "inviteBody": "Envía este enlace a quien quieras en el Círculo. Solo entra quien lo tenga.",
+    "copy": "Copiar enlace",
+    "copied": "Copiado",
+    "code": "Código",
+    "insightsTitle": "Insights del Círculo",
+    "insightsBody": "Vuestro año, cuánto os parecéis, qué ver juntos.",
+    "invites": {
+      "title": "Invitaciones",
+      "body": "Quien tenga un enlace activo puede entrar. Caduca solo y puedes revocarlo cuando quieras.",
+      "none": "No hay ninguna invitación activa. Crea una nueva.",
+      "noneMember": "No hay ninguna invitación activa: pide a un admin que cree una.",
+      "expires": "Caduca el {date}",
+      "never": "No caduca",
+      "uses": "{used, plural, =0 {Sin usar} one {Usada # vez} other {Usada # veces}}",
+      "usesOf": "{used} de {max} usos",
+      "revoke": "Revocar",
+      "new": "Nueva invitación",
+      "expiry": "Caducidad",
+      "expiryChoices": {
+        "1d": "24 horas",
+        "7d": "7 días",
+        "30d": "30 días",
+        "never": "Nunca"
+      },
+      "maxUses": "Cuántas personas",
+      "unlimited": "Sin límite",
+      "people": "{count, plural, one {Solo # persona} other {Como máximo # personas}}",
+      "create": "Crear invitación"
+    },
+    "actions": {
+      "makeAdmin": "Hacer admin",
+      "makeMember": "Quitar admin",
+      "remove": "Quitar",
+      "confirmRemove": "Sí, quitar a {name}",
+      "manage": "Gestionar a {name}",
+      "manageShort": "Gestionar"
+    },
+    "leave": {
+      "title": "Salir del Círculo",
+      "body": "Dejarás de ver el diario de este Círculo. Para volver necesitarás una invitación nueva.",
+      "confirm": "Salir del Círculo"
+    },
+    "errors": {
+      "forbidden": "Solo un admin puede hacerlo.",
+      "last_admin": "Eres el único admin: nombra antes a otro admin.",
+      "not_member": "Esa persona ya no está en el Círculo.",
+      "confirm": "El nombre no coincide. No se eliminó nada."
+    },
+    "importTitle": "Importa tu historial",
+    "importBody": "Desde Letterboxd, IMDb, Trakt, AniList o MyAnimeList.",
+    "listsBody": "Watchlists y listas del grupo."
+  },
+  "serata": {
+    "title": "Esta noche vemos",
+    "lede": "De 2 a 8 títulos, se vota desde el móvil, el resultado llega en menos de dos minutos. Sin cuenta: basta un nombre.",
+    "modeLabel": "Modo",
+    "mode": {
+      "bracket": "Torneo relámpago",
+      "table": "Mesa"
+    },
+    "modeHint": {
+      "bracket": "Duelos, uno a la vez. 30 segundos cada uno.",
+      "table": "3 votos cada uno y un veto. Un minuto."
+    },
+    "pickTitle": "Los candidatos",
+    "picked": "{count} de {max}",
+    "search": "Añadir un título",
+    "emptyPool": "Busca un título, o llenad antes la watchlist del grupo.",
+    "create": "Abrir la noche",
+    "recent": "Noches recientes",
+    "status": {
+      "lobby": "Esperando para empezar",
+      "voting": "Votando"
+    },
+    "statusDone": "Elegida: {title}",
+    "round": {
+      "final": "Final",
+      "semi": "Semifinal",
+      "quarter": "Cuartos"
+    },
+    "match": "Duelo {n} de {total}",
+    "pick": "Elige uno.",
+    "pickedWait": "Hecho. Puedes cambiar de idea mientras el duelo siga abierto.",
+    "vs": "vs",
+    "advance": "Siguiente",
+    "inRoom": "En la sala · {count}",
+    "guest": "invitado",
+    "voted": "votó",
+    "choosing": "eligiendo…",
+    "lobby": {
+      "invite": "Envía el enlace a quien vea contigo. Solo necesita un nombre.",
+      "share": "Enviar el enlace",
+      "copied": "Enlace copiado",
+      "shareText": "Esta noche elegimos en Pausa. Entra aquí:",
+      "rosa": "{count, plural, one {# título en juego} other {# títulos en juego}}",
+      "start": "Empezamos",
+      "wait": "Esperando a que {name} empiece."
+    },
+    "table": {
+      "hint": "Reparte {dots} votos como quieras, incluso todos en uno. Un veto, si hay algo que ni hablar.",
+      "left": "{count, plural, =0 {Votos repartidos.} one {Te queda # voto} other {Te quedan # votos}}",
+      "add": "Un voto más para {title}",
+      "remove": "Un voto menos para {title}",
+      "veto": "Veto",
+      "submit": "Confirmar",
+      "done": "Hecho. Esperando a los demás.",
+      "change": "Cambiar votos"
+    },
+    "result": {
+      "kicker": "LA NOCHE ELIGIÓ",
+      "rounds": "{count, plural, one {# ronda} other {# rondas}}",
+      "people": "{count, plural, one {# persona} other {# personas}}",
+      "share": "Compartir",
+      "shareText": "Esta noche: {title}. Decidido en Pausa.",
+      "copied": "Enlace copiado",
+      "log": "Registrar en el diario",
+      "open": "Abrir la Card",
+      "scores": "Cómo fue",
+      "dots": "{count, plural, one {# voto} other {# votos}}",
+      "vetoed": "veto",
+      "saveTitle": "Guarda esta noche",
+      "saveBody": "Guarda tu cuenta con tu email: volverás a encontrar esta noche y podrás entrar en el Círculo.",
+      "saveCta": "Guardar",
+      "saveSent": "Revisa tu correo: el enlace guarda tu cuenta.",
+      "joinCircle": "Entrar en {name}",
+      "backToCircle": "Volver al Círculo",
+      "cta": "Pausa es el diario privado de los grupos de amigos, con una forma rápida de decidir qué ver.",
+      "ctaButton": "Probar Pausa",
+      "subtitle": "Esta noche, esta.",
+      "qr": "Escanea para hacer tu propia Serata",
+      "qrAlt": "Código QR que abre Pausa"
+    },
+    "join": {
+      "title": "Esta noche elegimos.",
+      "bodyGuest": "Entra con un nombre: sin cuenta, sin contraseña.",
+      "bodyMember": "Tu Círculo está eligiendo qué ver.",
+      "name": "Tu nombre",
+      "cta": "Entrar en la sala",
+      "error": "No pude dejarte entrar. Inténtalo de nuevo.",
+      "avatar": "Elige una imagen"
+    },
+    "suggest": "Elige por nosotros",
+    "suggesting": "Eligiendo…",
+    "suggestHint": "Parte de la watchlist y de los títulos que el grupo amaría, y quita los que la mitad ya ha visto.",
+    "servicesCommon": "Servicios que tenéis todos: {names} ({setBy} de {members} los han indicado).",
+    "servicesNone": "Nadie ha indicado aún sus servicios de streaming.",
+    "suggestEmpty": "No encuentro suficientes títulos nuevos para todos. Añade algunos tú.",
+    "invite": {
+      "headline": "{host} te invita a una Serata",
+      "sub": "{mode}, {count} títulos en juego. Se decide en dos minutos.",
+      "cta": "Entra solo con un nombre, sin cuenta",
+      "title": "Te han invitado a una Serata",
+      "titleDone": "Esto es lo que vemos esta noche",
+      "description": "Pausa: elegid juntos qué ver, en dos minutos. Solo un nombre."
+    },
+    "pickHint": "Toca los pósteres para elegir de 2 a 8, o deja que Pausa lo haga.",
+    "createWith": "{count, plural, other {Abrir la noche con # títulos}}",
+    "needTwo": "{count, plural, =0 {Elige al menos 2 títulos} one {Elige uno más} other {Elige al menos 2 títulos}}",
+    "servicesLink": "Añádelos en tu Cuenta."
+  },
+  "join": {
+    "title": "Te han invitado a {name}",
+    "body": "Entra para ver el diario del Círculo y añadir el tuyo.",
+    "cta": "Entrar en el Círculo",
+    "invalid": {
+      "not_found": {
+        "title": "Esta invitación no existe.",
+        "body": "Comprueba que copiaste todo el enlace, o pide una invitación nueva."
+      },
+      "expired": {
+        "title": "Esta invitación ha caducado.",
+        "body": "Pide a quien te invitó que te envíe otra: duran poco a propósito."
+      },
+      "revoked": {
+        "title": "Esta invitación fue revocada.",
+        "body": "Pide a un admin del Círculo que te envíe una nueva."
+      },
+      "exhausted": {
+        "title": "Esta invitación ya se usó.",
+        "body": "Tenía un número limitado de plazas. Pide una invitación nueva."
+      }
+    }
+  },
+  "tmdb": {
+    "attribution": "Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica."
+  },
+  "comments": {
+    "title": "Comentarios",
+    "placeholder": "Escribe al Círculo…",
+    "spoiler": "Contiene spoilers",
+    "send": "Enviar",
+    "empty": "Aún no hay comentarios. Rompe el hielo."
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "Nada nuevo.",
+    "log": "<b>{name}</b> vio {title}",
+    "comment": "<b>{name}</b> comentó {title}",
+    "reaction": "<b>{name}</b> reaccionó a {title}",
+    "now_watching": "<b>{name}</b> empezó a ver {title} en {circle}",
+    "circle_join": "<b>{name}</b> entró en {circle}",
+    "serata_invite": "<b>{name}</b> abrió una noche de cine en {circle}"
+  },
+  "email": {
+    "subject": "Tu enlace para entrar en Pausa",
+    "body": "Toca el enlace para entrar. Caduca en 15 minutos.",
+    "ignore": "Si no lo pediste tú, ignora este correo.",
+    "digest": {
+      "subject": "Lo que te perdiste en Pausa",
+      "intro": "Desde la última vez en tus Cerchie:",
+      "more": "…y {count} más.",
+      "open": "Abrir Pausa",
+      "settings": "Puedes desactivar este email en la página Cuenta."
+    }
+  },
+  "insights": {
+    "title": "Insights",
+    "yearLabel": "Año",
+    "yearTitle": "Vuestro {year}",
+    "yearEmpty": "Todavía nada en {year}. Registrad algo y volved.",
+    "stats": {
+      "logs": "{count, plural, one {visionado} other {visionados}}",
+      "titles": "títulos distintos",
+      "hours": "horas de cine",
+      "avg": "estrellas de nota media"
+    },
+    "titleOfYear": "El título del año",
+    "raters": "{count, plural, one {Puntuado por una persona} other {Puntuado por # personas}}",
+    "starsLabel": "{stars} de 5 estrellas",
+    "ratingLabel": "{name}: {stars} de 5 estrellas",
+    "facts": {
+      "mostActive": "Quien más ha registrado: {name} ({count, plural, one {# visionado} other {# visionados}}).",
+      "busiest": "El mes más lleno: {month} ({count, plural, one {# visionado} other {# visionados}}).",
+      "platform": "La plataforma más usada: {name}.",
+      "together": "Ven más cosas juntos: {a} y {b} ({count, plural, one {# vez} other {# veces}})."
+    },
+    "taste": {
+      "title": "Cuánto os parecéis",
+      "body": "Comparado en los títulos que habéis puntuado los dos. Hacen falta al menos {min} títulos en común, si no el número no dice nada.",
+      "onTitles": "en {count} títulos",
+      "unknown": "Aún no comparables",
+      "needMore": "{count} títulos en común de {min}: puntuad alguno más."
+    },
+    "agree": {
+      "title": "En esto coincidís"
+    },
+    "split": {
+      "title": "En esto os dividís"
+    },
+    "recs": {
+      "title": "Para ver juntos",
+      "body": "Títulos que alguien amó y que otros aún no han visto, ponderados por el gusto de quien los vería. Salen solo de vuestras notas.",
+      "lovedBy": "Les gustó a {names}.",
+      "unseenBy": "Aún no lo han visto: {names}.",
+      "forecast": "Previsión",
+      "empty": "Hacen falta más notas para recomendar algo: seguid registrando y puntuando."
+    },
+    "yearCard": {
+      "kicker": "Vuestro {year}",
+      "logs": "{count, plural, one {# visionado} other {# visionados}}",
+      "titles": "{count, plural, one {# título distinto} other {# títulos distintos}}",
+      "hours": "{count} horas de cine",
+      "best": "El título del año",
+      "share": "Compartir la card",
+      "preparing": "Preparando…",
+      "failed": "No pude preparar la imagen. Inténtalo de nuevo.",
+      "shareText": "Nuestro {year} en Pausa",
+      "avg": "{stars} estrellas de media",
+      "month": "El mes más intenso: {month}"
+    }
+  },
+  "landing": {
+    "meta": {
+      "title": "Pausa · Diario de películas con amigos y qué ver esta noche",
+      "description": "App gratuita para llevar un diario privado de películas, series y anime con tus amigos. Y cuando no sabéis qué ver esta noche, votad y decidid en 2 minutos.",
+      "siteDescription": "El diario privado de películas, series y anime para tu grupo de amigos."
+    },
+    "og": {
+      "tagline": "El diario privado de tu grupo de amigos."
+    },
+    "nav": {
+      "how": "Cómo funciona",
+      "try": "Pruébala",
+      "privacy": "Privacidad",
+      "faq": "Preguntas",
+      "login": "Entrar",
+      "start": "Empezar",
+      "menu": "Secciones",
+      "language": "Idioma"
+    },
+    "hero": {
+      "title": "¿Qué vemos esta noche? Decidido en dos minutos.",
+      "lede": "El diario privado de películas, series y anime para tu grupo de amigos: las notas de todos en un solo sitio, y una noche de cine que elige por vosotros.",
+      "cta": "Crea tu Círculo",
+      "secondary": "Prueba la noche de cine",
+      "note": "Solo necesitas tu email, sin contraseña. Tus amigos pueden votar sin cuenta."
+    },
+    "mock": {
+      "who": "Giulia",
+      "action": "vio",
+      "title": "Chernobyl",
+      "meta": "Serie · 2019",
+      "review": "Cinco capítulos, cinco nudos en el estómago. Marco dejó de respirar en el tercero.",
+      "with": "Visto con",
+      "serataTitle": "Esta noche vemos",
+      "round": "Final",
+      "pick": "Elige uno.",
+      "rating": "4,5 de 5 estrellas",
+      "invite": "Invitación",
+      "inviteCode": "Código",
+      "inviteExpires": "Caduca en 14 días",
+      "copy": "Copiar enlace",
+      "cardKicker": "LA NOCHE ELIGIÓ",
+      "cardSubtitle": "Esta noche, esta.",
+      "cardLine1": "Club del Sofá · 16 nov",
+      "cardLine2": "Torneo relámpago · 2 rondas · 4 personas"
+    },
+    "problem": {
+      "title": "Media hora de mensajes para elegir una película. Y tres meses después nadie recuerda qué visteis.",
+      "body": "Pasa en todos los grupos. Pausa te da dos cosas: un sitio donde guardar lo que veis juntos y una forma rápida de decidir qué ver después."
+    },
+    "how": {
+      "title": "Tres pasos y la noche está resuelta",
+      "steps": [
+        {
+          "title": "Crea el Círculo",
+          "body": "Ponle nombre al grupo y envía el enlace de invitación. Quien entra ve solo vuestro diario, nada más. El enlace caduca solo y lo revocas cuando quieras."
+        },
+        {
+          "title": "Registra lo que ves",
+          "body": "Nota con medias estrellas, un par de líneas que se leen como subtítulos, quién estaba contigo. Los spoilers quedan ocultos hasta que alguien decide leerlos."
+        },
+        {
+          "title": "Decidid esa noche",
+          "body": "Abre una noche de cine con una lista de títulos y envía el enlace. Se vota desde el móvil, incluso sin cuenta: en dos minutos hay ganador y una Card para compartir."
+        }
+      ]
+    },
+    "features": {
+      "title": "Todo lo que necesita un grupo, nada de lo que no",
+      "items": [
+        {
+          "title": "Un diario de todos",
+          "body": "Cada película, serie y anime, con la nota de cada uno, reacciones y comentarios. Con «visto con» sabes quién estaba."
+        },
+        {
+          "title": "La noche de cine",
+          "body": "Torneo relámpago o Mesa con 3 votos y un veto. Se acabó el «elige tú»."
+        },
+        {
+          "title": "Cuánto os parecéis",
+          "body": "Con las notas reales: quién tiene gustos parecidos, qué os divide, qué ver juntos. Vuestro año de un vistazo."
+        },
+        {
+          "title": "Listas y rankings",
+          "body": "Watchlist del grupo, rankings, listas personales. Añade un título con un toque."
+        },
+        {
+          "title": "Una Card para compartir",
+          "body": "El resultado de la noche en formato historia, con el título elegido. Nunca quién votó qué."
+        },
+        {
+          "title": "Hecha para el móvil",
+          "body": "Italiano, inglés y español, clara u oscura. Se instala desde la pantalla de inicio, sin tienda de apps."
+        }
+      ]
+    },
+    "try": {
+      "title": "Prueba una noche de cine, ahora",
+      "body": "Cuatro películas, dos duelos, una final. Es justo lo que haréis con vuestros amigos, solo que aquí decides tú.",
+      "pick": "Elige la que verías esta noche.",
+      "progress": "Duelo {n} de 3",
+      "rounds": {
+        "first": "Primer duelo",
+        "second": "Segundo duelo",
+        "final": "Final"
+      },
+      "vs": "vs",
+      "cardLine1": "Demo de Pausa",
+      "cardLine2": "Torneo relámpago · 3 duelos",
+      "again": "Empezar de nuevo",
+      "cta": "Hazlo con tus amigos",
+      "films": {
+        "spirited": "El viaje de Chihiro",
+        "matrix": "Matrix",
+        "shawshank": "Cadena perpetua",
+        "inception": "Origen"
+      }
+    },
+    "guest": {
+      "title": "Tus amigos no tienen que registrarse",
+      "body": "Para votar en una noche de cine basta abrir el enlace y escribir un nombre. Sin cuenta, sin contraseña, sin app. Funciona también dentro de WhatsApp e Instagram.",
+      "steps": [
+        "Envías el enlace",
+        "Escriben un nombre",
+        "Votan"
+      ]
+    },
+    "privacy": {
+      "title": "Privado de verdad",
+      "items": [
+        {
+          "title": "Solo quien invitáis",
+          "body": "El diario lo ven solo los miembros del Círculo. No hay perfiles públicos ni rankings globales."
+        },
+        {
+          "title": "Invitaciones que se cierran",
+          "body": "Los enlaces caducan, pueden tener plazas limitadas y se revocan con un toque."
+        },
+        {
+          "title": "La Card dice poco",
+          "body": "Lo único que sale del Círculo es la Card: el título elegido, nunca quién votó qué."
+        },
+        {
+          "title": "Sal cuando quieras",
+          "body": "Puedes dejar un Círculo en cualquier momento."
+        }
+      ]
+    },
+    "faq": {
+      "title": "Preguntas frecuentes",
+      "items": [
+        {
+          "q": "¿Cuánto cuesta?",
+          "a": "Ahora mismo Pausa no tiene planes de pago: creas un Círculo y listo."
+        },
+        {
+          "q": "¿Mis amigos necesitan cuenta?",
+          "a": "No para votar en una noche de cine: basta un nombre. Llevar el diario del Círculo sí requiere una cuenta, solo con email."
+        },
+        {
+          "q": "¿Tengo que instalar una app?",
+          "a": "No. Pausa funciona en el navegador y se puede añadir a la pantalla de inicio."
+        },
+        {
+          "q": "¿Quién ve lo que escribo?",
+          "a": "Solo los miembros de los Círculos en los que estás. Nada es público. Lo único que sale es la Card, si decides compartirla."
+        },
+        {
+          "q": "¿Sirve para series y anime?",
+          "a": "Sí: películas, series y anime en el mismo diario."
+        },
+        {
+          "q": "¿En qué idiomas está?",
+          "a": "Italiano, inglés y español. Cada persona ve Pausa en su idioma, incluso en el mismo Círculo."
+        },
+        {
+          "q": "¿De dónde salen los pósters y los datos?",
+          "a": "De TMDB. Pausa usa la API de TMDB, pero TMDB no la respalda ni la certifica."
+        }
+      ]
+    },
+    "final": {
+      "title": "Esta noche, se acabó discutir.",
+      "body": "Crea el Círculo, invita a tus amigos, decidid en dos minutos."
+    },
+    "footer": {
+      "tagline": "El diario privado para grupos de amigos.",
+      "language": "Idioma",
+      "privacy": "Privacidad",
+      "terms": "Términos",
+      "guides": "Guías"
+    },
+    "install": {
+      "button": "Descargar la app",
+      "title": "Lleva Pausa al móvil",
+      "intro": "Se instala desde el navegador, sin tienda: tiene su propio icono y se abre a pantalla completa.",
+      "yours": "el tuyo",
+      "close": "Cerrar",
+      "ios": {
+        "name": "iPhone y iPad (Safari)",
+        "steps": "Toca Compartir y luego «Añadir a pantalla de inicio»."
+      },
+      "android": {
+        "name": "Android (Chrome)",
+        "steps": "Toca el menú ⋮ y luego «Instalar app» o «Añadir a pantalla de inicio»."
+      },
+      "desktop": {
+        "name": "Ordenador (Chrome, Edge)",
+        "steps": "Haz clic en el icono de instalación de la barra de direcciones, o en el menú → «Instalar Pausa»."
+      }
+    }
+  },
+  "import": {
+    "title": "Importa tu historial",
+    "lede": "Trae lo que ya has visto. Puedes repetirlo cuando quieras: lo que ya está no se duplica.",
+    "visibility": "Tú eliges adónde va lo que importas: por defecto se queda en tu espacio personal, privado, con la fecha en que lo viste, y nadie recibe notificaciones. Las reseñas se incluyen solo si dejas la casilla marcada.",
+    "tabs": {
+      "letterboxd": "Letterboxd",
+      "anilist": "AniList",
+      "mal": "MyAnimeList",
+      "imdb": "IMDb",
+      "trakt": "Trakt",
+      "cinemaniac": "Cinemaniac"
+    },
+    "letterboxd": {
+      "title": "Películas de Letterboxd",
+      "steps": [
+        "En Letterboxd ve a Settings → Data → Export your data.",
+        "Descarga el ZIP que te llega.",
+        "Súbelo aquí abajo (también sirven diary.csv, ratings.csv, reviews.csv y watched.csv sueltos).",
+        "Para las listas: abre cada lista en Letterboxd → ··· → Export list as CSV, o usa el ZIP (watchlist y la carpeta lists/)."
+      ],
+      "pick": "Elige el ZIP o los archivos CSV",
+      "noCovers": "En este servidor la búsqueda en TMDB no está activa: las películas se importan igual, pero sin póster."
+    },
+    "anilist": {
+      "title": "Anime de AniList",
+      "body": "Basta tu nombre de usuario: leemos la lista pública de anime completados directamente de AniList. Si tu perfil es privado, hazlo público solo mientras dure la importación.",
+      "user": "Usuario de AniList",
+      "find": "Buscar la lista"
+    },
+    "mal": {
+      "title": "Anime de MyAnimeList",
+      "steps": [
+        "En MyAnimeList ve a Perfil → Export (myanimelist.net/panel.php?go=export).",
+        "Elige «Export My Anime List»: descargas un archivo .xml.gz.",
+        "Súbelo aquí sin descomprimirlo."
+      ],
+      "pick": "Elige el archivo .xml o .xml.gz",
+      "mode": "Cómo importar",
+      "mode_user": "Con el nombre de usuario",
+      "mode_file": "Con el archivo de exportación",
+      "userBody": "Escribe tu usuario de MyAnimeList (la lista debe ser pública). La leemos a través de Jikan, la API pública de MyAnimeList.",
+      "user": "Usuario de MyAnimeList"
+    },
+    "reading": "Leyendo el archivo…",
+    "found": {
+      "films": "{films, plural, one {# película} other {# películas}}, {views, plural, one {# visionado} other {# visionados}}.",
+      "anime": "{count, plural, one {# anime completado} other {# anime completados}}.",
+      "skipped": "Dejados fuera: {watching} viendo, {planned} pendientes, {onHold} en pausa, {dropped} abandonados.",
+      "titles": "{count, plural, one {Encontrado # título} other {Encontrados # títulos}}.",
+      "imdbSkipped": "Fuera: {episodes, plural, one {# episodio suelto} other {# episodios sueltos}} y {other, plural, one {# otro elemento} other {# otros elementos}} (videojuegos, pódcast…)."
+    },
+    "options": {
+      "reviews": "Importar también las reseñas",
+      "undated": "{count, plural, one {# elemento no tiene fecha} other {# elementos no tienen fecha}}: importarlos igualmente, con la fecha de hoy",
+      "undatedHint": "Si no, se quedan fuera. Con la fecha de hoy cuentan para este año."
+    },
+    "run": "{count, plural, one {Importar # visionado} other {Importar # visionados}}",
+    "progress": "{done} de {total}",
+    "done": {
+      "title": "{count, plural, =0 {Ningún visionado nuevo} one {# visionado añadido} other {# visionados añadidos}}",
+      "newTitles": "{count, plural, one {# título nuevo en Pausa} other {# títulos nuevos en Pausa}}",
+      "alreadyHad": "{count, plural, one {# ya estaba} other {# ya estaban}}",
+      "undated": "{count, plural, one {# sin fecha, dejado fuera} other {# sin fecha, dejados fuera}}",
+      "failed": "{count, plural, one {# fila no importada} other {# filas no importadas}}: repite la importación, lo que ya está hecho no se duplica.",
+      "toDiary": "Ir al diario",
+      "toInsights": "Ver los Insights",
+      "again": "Importar más",
+      "lists": "{count, plural, one {# lista} other {# listas}} con {items} películas añadidas",
+      "listsOnly": "Listas importadas",
+      "toLists": "Ver las listas",
+      "toSpace": "Ir a mi espacio",
+      "inCircle": "{count, plural, one {# visionado añadido} other {# visionados añadidos}} a la Cerchia «{circle}»",
+      "toCircle": "Ir a «{circle}»",
+      "undo": "¿Importado en el grupo equivocado? Quítalo de golpe desde <link>Gestionar importaciones</link>."
+    },
+    "errors": {
+      "read": "No puedo leer este archivo. Comprueba que sea la exportación correcta.",
+      "empty": "No he encontrado nada que importar aquí.",
+      "anilistNotFound": "No encuentro a este usuario, o el perfil es privado.",
+      "anilistDown": "AniList no responde. Inténtalo de nuevo en un momento.",
+      "chunk": "La importación se detuvo: revisa la conexión y vuelve a lanzarla. Lo que ya se importó no se duplica.",
+      "malNotFound": "No encuentro a este usuario, o la lista es privada.",
+      "malDown": "MyAnimeList (a través de Jikan) no responde. Inténtalo de nuevo en un momento.",
+      "limit": "Has importado muchísimo en poco tiempo: me paro aquí durante una hora. Vuelve a lanzar el mismo archivo más tarde, lo que ya está no se duplica.",
+      "imdbFormat": "Este archivo no es una exportación de IMDb: falta la columna «Const» con los códigos de los títulos (tt…). Descarga el .csv desde «Tus valoraciones» → Exportar y súbelo sin modificarlo (abrirlo y guardarlo con Excel puede estropearlo).",
+      "imdbZip": "Esto es un archivo ZIP. IMDb te da un archivo .csv: sube ese.",
+      "traktFormat": "En estos archivos no encuentro ni visionados ni votos de Trakt. Sube el ZIP de «Export Data» tal cual, o los archivos watched-movies.json, watched-shows.json y ratings-….json.",
+      "traktJson": "No consigo leer estos archivos: no son JSON válidos. Vuelve a descargar el ZIP de Trakt y súbelo sin abrirlo.",
+      "letterboxdFormat": "Aquí no encuentro ningún archivo de Letterboxd (diary.csv, ratings.csv, reviews.csv, watched.csv o una lista). Sube el ZIP de «Export your data» tal cual.",
+      "cinemaniacFormat": "Este archivo no es una copia de seguridad de Cinemaniac. En la app ve a Ajustes → Copia de seguridad y sube el archivo .bak sin abrirlo ni cambiarle el nombre."
+    },
+    "imdb": {
+      "title": "Películas y series de IMDb",
+      "steps": [
+        "En IMDb abre «Tus valoraciones» (imdb.com/user/me/ratings).",
+        "En el menú ⋮ de arriba a la derecha elige «Exportar»: al poco encuentras el archivo en «Tus exportaciones».",
+        "Descarga el archivo .csv y súbelo aquí tal cual. También sirven las exportaciones de una lista o de la watchlist."
+      ],
+      "pick": "Elige el archivo .csv de IMDb"
+    },
+    "trakt": {
+      "title": "Películas y series de Trakt",
+      "steps": [
+        "En Trakt ve a Ajustes → Datos (trakt.tv/settings/data).",
+        "Pulsa «Export Data»: recibes un ZIP con archivos JSON.",
+        "Sube aquí el ZIP entero, sin abrirlo. O elige los archivos .json de las carpetas watched y ratings."
+      ],
+      "pick": "Elige el ZIP o los archivos .json"
+    },
+    "cinemaniac": {
+      "title": "Películas y series de Cinemaniac",
+      "steps": [
+        "En la app Cinemaniac (Android) abre el menú y ve a Ajustes → Copia de seguridad.",
+        "Crea la copia y guárdala donde puedas encontrarla (Drive, Descargas…): es el archivo «Cinemaniac.bak».",
+        "Súbela aquí tal cual. Las películas vistas y las series empezadas se convierten en visionados con tus notas; las que aún no has visto van a tu watchlist."
+      ],
+      "pick": "Elige el archivo Cinemaniac.bak",
+      "dates": "Cinemaniac no guarda cuándo viste un título, sino cuándo lo añadiste a la app: se usa esa fecha. Algunas versiones antiguas de la app la estropearon, y esos títulos llegan sin fecha."
+    },
+    "lists": {
+      "include": "{count, plural, one {Importar también # lista} other {Importar también # listas}} ({items} películas)",
+      "scope": "Dónde ponerlas",
+      "scope_personal": "Van a tus listas personales: solo las ves tú.",
+      "scope_group": "Pasan a ser listas del grupo: las ve toda la Cerchia.",
+      "run": "{count, plural, one {Importar # película en las listas} other {Importar # películas en las listas}}"
+    },
+    "dest": {
+      "legend": "¿Dónde guardo lo que importas?",
+      "private": "En mi espacio privado (recomendado)",
+      "privateHint": "Solo lo ves tú. Después añades a un grupo los títulos que quieras, uno a uno.",
+      "circle": "En la Cerchia «{circle}»",
+      "circleHint": "Todo el grupo lo ve en el diario. Sin notificaciones.",
+      "warning": "{count, plural, one {# elemento aparecerá} other {Los # elementos aparecerán}} en la Cerchia «{circle}», cada uno en la fecha en que lo viste. Si cambias de idea los quitas de golpe desde «Gestionar importaciones», en tu espacio."
+    }
+  },
+  "manage": {
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleteConfirm": "Sí, eliminar",
+    "saveChanges": "Guardar cambios",
+    "editLog": "Editar el registro",
+    "deleteLogWarn": "Desaparece para todos, con sus comentarios y reacciones.",
+    "renameCircle": "Renombrar la Cerchia",
+    "rename": "Renombrar",
+    "switchCircle": "Tus Cerchie",
+    "manageList": "Gestionar la lista",
+    "addTitle": "Añadir un título",
+    "noResults": "No se encontró ningún título.",
+    "added": "Añadido",
+    "moveUp": "Subir {title}",
+    "moveDown": "Bajar {title}",
+    "removeItem": "Quitar {title}",
+    "deleteList": "Eliminar la lista",
+    "deleteListWarn": "La lista desaparece para todos.",
+    "accountTitle": "Tu cuenta",
+    "accountBody": "Nombre, tus datos, eliminación",
+    "legal": "Aviso legal",
+    "privacy": "Privacidad",
+    "terms": "Términos",
+    "deleteCircle": "Eliminar la Cerchia",
+    "deleteCircleWarn": "La Cerchia desaparece para todos, con sus miembros, invitaciones y listas de grupo. Los registros de cada uno siguen siendo de quien los escribió. No se puede deshacer.",
+    "deleteCircleConfirm": "Para confirmar, escribe el nombre de la Cerchia ({name}).",
+    "deleteCircleGo": "Eliminar para siempre",
+    "report": {
+      "button": "Denunciar",
+      "reason": "Motivo",
+      "note": "Nota (opcional)",
+      "send": "Enviar la denuncia",
+      "thanks": "Gracias, hemos recibido la denuncia.",
+      "reasons": {
+        "abuse": "Ofensivo o acoso",
+        "spam": "Spam",
+        "privacy": "Revela datos privados",
+        "other": "Otro"
+      }
+    },
+    "deleteListNamed": "Eliminar la lista {name}",
+    "deleteListWarnPersonal": "La lista y sus títulos desaparecen. No se puede deshacer."
+  },
+  "account": {
+    "back": "Volver",
+    "title": "Tu cuenta",
+    "name": "Tu nombre",
+    "save": "Guardar",
+    "saved": "Guardado.",
+    "circles": "Tus Cerchie",
+    "dataTitle": "Tus datos",
+    "dataBody": "Descarga todo lo que Pausa sabe de ti: perfil, registros, comentarios y listas, en JSON.",
+    "export": "Descargar mis datos",
+    "deleteTitle": "Eliminar la cuenta",
+    "deleteBody": "Borra al instante tu perfil, tus registros, comentarios, reacciones y tus listas personales. No se puede deshacer. Si creaste una Cerchia con más gente dentro, pasa a otro miembro, que se vuelve admin.",
+    "deleteOpen": "Quiero eliminar mi cuenta",
+    "deleteConfirm": "Para confirmar, escribe tu email ({email}).",
+    "deleteGo": "Eliminar para siempre",
+    "deleteMismatch": "El email no coincide. No se eliminó nada.",
+    "legal": "Aviso legal",
+    "privacy": "Privacidad",
+    "terms": "Términos",
+    "logout": "Cerrar sesión",
+    "loggingOut": "Saliendo…",
+    "profile": "Tu perfil",
+    "brought": "{count, plural, one {Has traído a una persona a Pausa.} other {Has traído a # personas a Pausa.}}",
+    "founder": "Fundador",
+    "theme": "Apariencia",
+    "themeHint": "Oscuro o claro: elige el que prefieras."
+  },
+  "errors": {
+    "notFoundTitle": "Aquí no hay nada",
+    "notFoundBody": "La página no existe, o no está en una Cerchia a la que perteneces.",
+    "home": "Volver al inicio",
+    "errorTitle": "Algo se atascó",
+    "errorBody": "No es culpa tuya. Inténtalo de nuevo: normalmente basta una vez.",
+    "retry": "Reintentar",
+    "slowTitle": "Con calma",
+    "slowBody": "Has hecho esto muchas veces en poco tiempo. Espera un poco e inténtalo de nuevo: así protegemos a todos del spam."
+  },
+  "retention": {
+    "firstStepsTitle": "Para empezar",
+    "stepLog": "Registra tu primer título",
+    "stepInvite": "Invita a alguien a la Cerchia",
+    "stepSerata": "Haced la primera Serata",
+    "memoriesTitle": "Hace un año… y más",
+    "yearsAgo": "{count, plural, one {Hace un año} other {Hace # años}}",
+    "saw": "vio",
+    "stepsDone": "{done} de {total}"
+  },
+  "services": {
+    "title": "Tus servicios de streaming",
+    "body": "Indica en qué servicios tienes suscripción: la Serata puede proponer solo títulos que podáis ver todos.",
+    "off": "Los datos de disponibilidad necesitan TMDB, que aquí no está activo.",
+    "country": "País",
+    "showServices": "Mostrar",
+    "save": "Guardar servicios",
+    "credit": "Datos de disponibilidad proporcionados por JustWatch, a través de TMDB."
+  },
+  "discover": {
+    "title": "Para ti",
+    "body": "Títulos nuevos, elegidos a partir de los que te encantaron.",
+    "off": "Las ideas personales necesitan TMDB, que aquí no está activo.",
+    "empty": "Da cuatro estrellas o más a algunas películas o series que TMDB conozca, y aquí aparecerán sugerencias.",
+    "because": "Porque te encantó {titles}",
+    "on": "En tus servicios: {services}",
+    "log": "Marcar como vista",
+    "credit": "Sugerencias de TMDB.",
+    "loading": "Buscando ideas para ti…"
+  },
+  "push": {
+    "log": "{name} vio {title}",
+    "comment": "{name} comentó {title}",
+    "reaction": "{name} reaccionó a {title}",
+    "now_watching": "{name} está viendo {title}",
+    "serata_invite": "{name} abrió una Serata: toca elegir qué ver",
+    "circle_join": "{name} se unió a {circle}"
+  },
+  "pushSettings": {
+    "title": "Notificaciones en el móvil",
+    "body": "Recibe un aviso cuando alguien registre una visión, comente o abra una Serata.",
+    "enable": "Activar notificaciones",
+    "disable": "Desactivar",
+    "enabled": "Notificaciones activas en este dispositivo.",
+    "blocked": "Las notificaciones están bloqueadas para este sitio. Para reactivarlas toca el candado junto a la dirección, abre Permisos (o Configuración del sitio), permite las Notificaciones y recarga la página.",
+    "unsupported": "Este navegador no admite notificaciones.",
+    "iosHint": "En iPhone, primero añade Pausa a la pantalla de inicio (Compartir → Añadir a pantalla de inicio), luego ábrela desde ahí y activa las notificaciones.",
+    "off": "Las notificaciones no están configuradas en este servidor.",
+    "failed": "No pude activarlas. Inténtalo de nuevo."
+  },
+  "settings": {
+    "title": "Ajustes de la Cerchia",
+    "saved": "Guardado.",
+    "mine": "Para ti",
+    "mute": "Silenciar esta Cerchia",
+    "muteHint": "Sin notificaciones ni push desde aquí.",
+    "hideWatching": "Ocultar quién está viendo qué",
+    "hideWatchingHint": "Ya no ves «fulano está viendo…» ni recibes avisos sobre eso.",
+    "group": "Para todo el grupo (solo admins)",
+    "live": "Mostrar quién está viendo qué, en directo",
+    "liveHint": "Si lo apagas, nadie en esta Cerchia ve «fulano está viendo el episodio N» y nadie recibe avisos.",
+    "description": "Descripción",
+    "cover": "Imagen",
+    "noCover": "Ninguna",
+    "save": "Guardar",
+    "covers": {
+      "popcorn": "Palomitas",
+      "clapper": "Claqueta",
+      "moon": "Luna",
+      "sofa": "Sofá",
+      "star": "Estrella",
+      "ghost": "Fantasma",
+      "rocket": "Cohete",
+      "heart": "Corazón"
+    },
+    "removeMineTitle": "Quitar mis películas de este grupo",
+    "removeMineHint": "Se quedan en tu perfil, nadie las pierde en otro sitio.",
+    "removeMineBody": "Todos tus visionados salen del diario de {circle} y de su Ranking. No se borra nada: se quedan en tu perfil y en las otras Cerchie que los veían. Comentarios y reacciones se quedan en los visionados.",
+    "removeMineType": "Para confirmar escribe {word}",
+    "removeMineWrong": "Tiene que ser la palabra {word}. No se ha quitado nada.",
+    "removeMineGo": "Quitar mis películas",
+    "removeMineDone": "{count, plural, =0 {No había nada tuyo en este grupo.} one {Hecho: # visionado quitado de este grupo.} other {Hecho: # visionados quitados de este grupo.}}"
+  },
+  "notifPrefs": {
+    "title": "Qué avisos quieres",
+    "body": "Valen para la bandeja de notificaciones y para el push.",
+    "save": "Guardar avisos",
+    "types": {
+      "log": "Alguien registra una visión",
+      "comment": "Un comentario en una conversación que sigo",
+      "reaction": "Una reacción a un registro mío",
+      "now_watching": "Alguien empieza a ver un título",
+      "serata_invite": "Se abre una Serata",
+      "circle_join": "Alguien entra en una Cerchia"
+    },
+    "digest": "Resumen diario por email",
+    "digestHint": "Un email al día con lo que te perdiste, solo si no tienes el push activo en ningún dispositivo."
+  },
+  "person": {
+    "title": "Persona",
+    "back": "La Cerchia",
+    "admin": "admin",
+    "since": "en la Cerchia desde {date}",
+    "watching": "Está viendo {title}",
+    "stats": "Números",
+    "logs": "registros",
+    "titles": "títulos",
+    "avg": "estrellas de media",
+    "taste": "Gustos en común contigo: {percent}% sobre {count} títulos que visteis los dos.",
+    "tasteNone": "Tenéis {count} títulos en común: hacen falta al menos 3 para comparar gustos.",
+    "loved": "Sus favoritos",
+    "recent": "Últimos registros",
+    "noLogs": "Aún no hay registros.",
+    "all": "Ver todos sus registros"
+  },
+  "ranking": {
+    "title": "Clasificación",
+    "lede": "Todos los títulos del grupo, con la nota de cada uno y la media.",
+    "count": "{count, plural, one {# título} other {# títulos}}",
+    "filters": {
+      "title": "Filtros",
+      "q": "Buscar un título",
+      "kind": "Tipo",
+      "any": "Todos",
+      "by": "Visto por",
+      "everyone": "Cualquiera",
+      "from": "Estrenado desde",
+      "to": "Estrenado hasta",
+      "votes": "Notas",
+      "anyVotes": "Incluso sin notas",
+      "atLeast": "Al menos {count}",
+      "sort": "Ordenar por",
+      "everyoneSaw": "Solo títulos vistos por todos",
+      "apply": "Aplicar",
+      "reset": "Quitar filtros"
+    },
+    "sort": {
+      "avg": "Nota media",
+      "votes": "Más votados",
+      "year": "Año de estreno",
+      "recent": "Vistos hace poco",
+      "title": "Título"
+    },
+    "position": "Posición {n}",
+    "who": "Notas del grupo",
+    "noRating": "visto, sin nota",
+    "rated": "{stars, plural, one {# estrella} other {# estrellas}}",
+    "notRated": "Sin notas",
+    "avgLabel": "Media {stars} estrellas de 5",
+    "votes": "{count, plural, one {# nota} other {# notas}}",
+    "pages": "Páginas",
+    "prev": "Anterior",
+    "next": "Siguiente",
+    "empty": "Ningún título coincide con estos filtros.",
+    "emptyAll": "Aún no hay nada que clasificar: registra una visión con nota."
+  },
+  "space": {
+    "switch": "Espacios",
+    "personal": "Mi espacio",
+    "circles": "Cerchie",
+    "title": "Mi espacio",
+    "lede": "Todo lo que has visto, en un lugar solo tuyo. Cada visionado dice quién lo ve: tus Cerchie, o solo tú. Lo que importas queda solo para ti, salvo que elijas una Cerchia. Con la papelera borras un visionado.",
+    "add": "Registrar solo para mí",
+    "import": "Importar",
+    "account": "Cuenta",
+    "show": "Qué mostrar",
+    "all": "Todo ({count})",
+    "onlyPrivate": "Solo míos ({count})",
+    "emptyTitle": "Aquí todavía no hay nada.",
+    "emptyPrivateTitle": "Nada solo tuyo todavía.",
+    "emptyBody": "Importa tu historial de Letterboxd, IMDb, Trakt, AniList o MyAnimeList, o registra un visionado.",
+    "inAllCircles": "Quién lo ve: tus Cerchie",
+    "makePrivate": "Solo para mí",
+    "onlyYou": "Quién lo ve: solo tú",
+    "sharedWith": "Quién lo ve: tú, y",
+    "removeFrom": "Quitar de {circle}",
+    "addTo": "Añadir a {circle}",
+    "addToGroup": "Añadir a un grupo",
+    "addShort": "Añadir",
+    "openToAll": "Mostrar a todas mis Cerchie",
+    "saving": "Guardando…",
+    "notice": {
+      "shared": "Añadido al grupo: ahora aparece en su diario.",
+      "unshared": "Quitado del grupo.",
+      "private": "Ahora solo lo ves tú: ya no aparece en ninguna Cerchia.",
+      "open": "Ahora lo ven todas tus Cerchie.",
+      "logged": "Guardado en tu espacio: solo lo ves tú.",
+      "deleted": "Visionado eliminado."
+    },
+    "manageImports": "Gestionar importaciones",
+    "switchOpen": "Cambiar de espacio: todas tus Cerchie, o entra en otra",
+    "switchTitle": "Espacio actual",
+    "here": "Estás aquí",
+    "moreCircles": "Únete o crea una Cerchia",
+    "delete": "Eliminar el visionado de {title}",
+    "deleteTitle": "¿Eliminar el visionado de «{title}»?",
+    "deleteBody": "Desaparece de tu espacio, con su nota y su reseña. No se puede deshacer.",
+    "deleteBodyShared": "Desaparece de tu espacio y de cada Cerchia donde aparece, con su nota, reseña, comentarios y reacciones. No se puede deshacer. Si solo quieres quitarlo de los grupos, usa «Solo para mí».",
+    "deleteCta": "Eliminar",
+    "deleting": "Eliminando…",
+    "cancel": "Cancelar",
+    "diaryTitle": "Mi diario"
+  },
+  "media": {
+    "runtime": "{m} min",
+    "runtimeLong": "{h} h {m} min",
+    "circleAverage": "{count, plural, one {media de la Cerchia, # voto} other {media de la Cerchia, # votos}}",
+    "logIt": "Registrar un visionado",
+    "about": "De qué trata",
+    "noOverview": "No hay sinopsis disponible para este título.",
+    "byMember": "Sinopsis escrita por un miembro.",
+    "cast": "Reparto principal",
+    "inCircle": "En la Cerchia",
+    "nobodyYet": "Nadie en la Cerchia lo ha registrado todavía."
+  },
+  "imports": {
+    "title": "Gestionar importaciones",
+    "lede": "Cada importación que has hecho y dónde acabó. Si mandaste una a una Cerchia por error, desde aquí la quitas entera, o la eliminas del todo.",
+    "emptyTitle": "No hay importaciones que gestionar.",
+    "emptyBody": "Aquí aparecen las importaciones que hagas, y los días en que añadiste muchos visionados de una vez.",
+    "toImport": "Importa tu historial",
+    "added": "{count, plural, =0 {ningún visionado nuevo} one {# visionado añadido} other {# visionados añadidos}}",
+    "inCircle": "En la Cerchia «{circle}»: {count, plural, one {# visionado} other {# visionados}}{lists, plural, =0 {} one {, # lista} other {, # listas}}",
+    "privateOnly": "Solo en tu espacio privado",
+    "takenOut": "Quitada de la Cerchia «{circle}»: sigue en tu espacio privado",
+    "remove": "Quitar de «{circle}»",
+    "confirmTitle": "¿Quitar esta importación de «{circle}»?",
+    "confirmBody": "{count, plural, one {# visionado desaparece} other {# visionados desaparecen}} del diario de la Cerchia «{circle}»{lists, plural, =0 {} one {, y # lista del grupo vuelve a ser personal} other {, y # listas del grupo vuelven a ser personales}}. Los comentarios y reacciones que el grupo dejó ya no se verán.",
+    "confirmKeep": "No se borra nada: todo sigue en tu espacio privado. Los visionados registrados a mano y los de otras importaciones no se tocan.",
+    "confirmCta": "Quitar del grupo",
+    "cancel": "Cancelar",
+    "removing": "Quitando…",
+    "removed": "{count, plural, =0 {Ningún visionado que quitar} one {# visionado quitado del grupo} other {# visionados quitados del grupo}}{lists, plural, =0 {} one {, # lista vuelve a ser personal} other {, # listas vuelven a ser personales}}. Todo sigue en tu espacio privado.",
+    "note": "Quitar de una Cerchia no borra nada: los visionados siguen en tu espacio privado. Eliminar es definitivo.",
+    "delete": "{count, plural, one {Eliminar # visionado} other {Eliminar # visionados}}",
+    "deleteTitle": "¿Eliminar estos visionados?",
+    "deleteBody": "{count, plural, one {# visionado se elimina} other {# visionados se eliminan}} de tu espacio y de cada Cerchia, con notas, reseñas, comentarios y reacciones. No se puede deshacer.",
+    "deleteKeep": "Los visionados que ya tenías antes de esta importación, y los registrados a mano, no se tocan. Las listas se quedan.",
+    "deleteCta": "Eliminar para siempre",
+    "deleting": "Eliminando…",
+    "deleted": "{count, plural, =0 {Ningún visionado que eliminar} one {# visionado eliminado} other {# visionados eliminados}}.",
+    "olderTitle": "Importaciones anteriores",
+    "olderLede": "Las importaciones hechas antes de que Pausa las separara no llevan etiqueta. Abajo están los días en que añadiste muchos visionados de una vez: casi siempre es una importación.",
+    "olderAdded": "{count, plural, one {# visionado añadido} other {# visionados añadidos}} ese día",
+    "olderInCircles": "{count, plural, one {# visible} other {# visibles}} en tus Cerchie",
+    "olderHide": "Quitar de las Cerchie",
+    "olderHideTitle": "¿Quitar de las Cerchie los visionados del {date}?",
+    "olderHideBody": "{count, plural, one {# visionado desaparece} other {# visionados desaparecen}} del diario de todas tus Cerchie y pasan a ser privados. No se borra nada: siguen en tu espacio, y puedes volver a añadirlos a un grupo uno a uno.",
+    "olderAll": "Vale para los {count} visionados añadidos ese día, también los que hubieras registrado a mano.",
+    "olderHideCta": "Quitar de las Cerchie",
+    "olderDeleteTitle": "¿Eliminar los visionados del {date}?"
+  },
+  "circles": {
+    "title": "Tus Cerchie",
+    "lede": "Los grupos de los que formas parte. Puedes estar en más de uno: entra en otro con una invitación, o crea uno nuevo.",
+    "none": "Aún no estás en ninguna Cerchia.",
+    "admin": "Admin",
+    "joinTitle": "Entra en otra Cerchia",
+    "joinBody": "Pide una invitación a alguien que ya esté dentro y pega aquí el código o el enlace entero.",
+    "joinLabel": "Código o enlace de invitación",
+    "joining": "Entrando…",
+    "createTitle": "Crea una Cerchia nueva",
+    "createBody": "Serás admin y recibirás un enlace para enviar a tus amigos.",
+    "creating": "Creando…"
+  },
+  "profile": {
+    "title": "Perfil",
+    "edit": "Editar perfil",
+    "saved": "Perfil actualizado.",
+    "logs": "{count, plural, =0 {Ningún visionado} one {# visionado} other {# visionados}}",
+    "noBio": "Aún sin biografía: escribe un par de líneas sobre ti con el botón de abajo.",
+    "genresTitle": "Géneros favoritos",
+    "favorites": "Películas favoritas",
+    "change": "Cambiar",
+    "favoritesEmpty": "Elige tus películas favoritas",
+    "favoritesHint": "Hasta 5 títulos, los que te representan. Los ven tus Cerchie.",
+    "mine": "Solo mío",
+    "diary": "Mi diario",
+    "diaryBody": "{count, plural, =0 {Aún vacío} one {# visionado} other {# visionados}}, {private, plural, =0 {ninguno solo tuyo} one {# solo tuyo} other {# solo tuyos}}",
+    "lists": "Watchlist y listas",
+    "listsBody": "Tus listas personales: solo las ves tú.",
+    "import": "Importar",
+    "importBody": "Desde Letterboxd, IMDb, Trakt, AniList o MyAnimeList.",
+    "settings": "Ajustes",
+    "settingsBody": "Cuenta, notificaciones, servicios de streaming, idioma y tema.",
+    "forYou": "Para ti",
+    "forYouBody": "Títulos parecidos a los que has valorado bien, que aún no has registrado.",
+    "name": "Nombre",
+    "avatar": "Imagen de perfil",
+    "avatarPhoto": "Tu foto actual",
+    "avatarInitial": "Tu inicial",
+    "avatarPick": "Imagen {glyph}",
+    "bio": "Un par de líneas sobre ti",
+    "bioPlaceholder": "Qué te encanta ver, qué no soportas, la última película que te alegró la noche…",
+    "genresPick": "Géneros favoritos (hasta {max})",
+    "save": "Guardar perfil",
+    "saving": "Guardando…",
+    "removeFavorite": "Quitar {title} de favoritos",
+    "addFavorite": "Añadir {title} a favoritos",
+    "searchFavorite": "Busca una película o una serie…",
+    "full": "Ya tienes {max} favoritos: quita uno para añadir otro.",
+    "count": "{count} de {max}",
+    "genres": {
+      "action": "Acción",
+      "adventure": "Aventura",
+      "animation": "Animación",
+      "anime": "Anime",
+      "comedy": "Comedia",
+      "crime": "Crimen",
+      "documentary": "Documental",
+      "drama": "Drama",
+      "family": "Familia",
+      "fantasy": "Fantasía",
+      "history": "Historia",
+      "horror": "Terror",
+      "musical": "Musical",
+      "mystery": "Misterio",
+      "romance": "Romance",
+      "scifi": "Ciencia ficción",
+      "thriller": "Thriller",
+      "war": "Bélica",
+      "western": "Western"
+    },
+    "editHint": "Nombre, imagen, biografía, géneros y películas favoritas."
+  },
+  "aside": {
+    "label": "En este grupo",
+    "why": "Por qué estos títulos",
+    "top": "Lo más alto del Ranking",
+    "topEmpty": "Hacen falta más notas para un ranking.",
+    "allRanking": "Todo el Ranking"
+  },
+  "app": {
+    "skip": "Saltar al contenido",
+    "loading": "Cargando…",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "languages": {
+      "it": "Italiano",
+      "en": "English",
+      "es": "Español"
+    },
+    "root": {
+      "title": "Pausa",
+      "lede": "El diario privado de películas, series y anime para tu grupo de amigos.",
+      "choose": "Elige tu idioma"
+    },
+    "nav": {
+      "label": "Navegación principal",
+      "circles": "Cerchie",
+      "soon": "{label}, disponible pronto",
+      "home": "Pausa, volver al inicio"
+    },
+    "role": {
+      "owner": "Propietario",
+      "admin": "Admin",
+      "member": "Miembro"
+    },
+    "signIn": {
+      "emailPlaceholder": "tu@ejemplo.com",
+      "invalidEmail": "Revisa la dirección de email.",
+      "devLink": "Abrir el enlace de desarrollo",
+      "devHint": "Solo en local: el email no se envió, el enlace está aquí.",
+      "nativeOpen": "Al abrir el enlace vuelves aquí directamente.",
+      "already": "Ya has entrado.",
+      "continue": "Ir a tus Cerchie"
+    },
+    "home": {
+      "unread": "{count, plural, one {# novedad} other {# novedades}}",
+      "createError": "No he podido crear la Cerchia.",
+      "joinHint": "El código tiene 8 caracteres. Si tienes un enlace, pégalo entero.",
+      "yourName": "Hola, {name}"
+    },
+    "circle": {
+      "back": "Tus Cerchie",
+      "settings": "Ajustes",
+      "people": "{count, plural, one {# persona} other {# personas}}",
+      "you": "tú",
+      "inviteLink": "Enlace de invitación",
+      "copyCode": "Copiar el código",
+      "invitesEmpty": "Ninguna invitación activa.",
+      "creating": "Creando…",
+      "revoked": "Invitación revocada.",
+      "memberActions": "Acciones sobre {name}",
+      "roleChanged": "Rol actualizado.",
+      "removed": "{name} ya no está en la Cerchia.",
+      "transferTitle": "Pasar la propiedad",
+      "transferBody": "Elige quién será el nuevo propietario. Tú sigues como admin. Solo el propietario puede eliminar la Cerchia o nombrar admins.",
+      "transferPick": "Nuevo propietario",
+      "transferGo": "Pasar la propiedad a {name}",
+      "transferred": "Hecho: {name} es el nuevo propietario.",
+      "transferNone": "No hay nadie más a quien pasársela.",
+      "ownerCannotLeave": "Eres el propietario: pasa antes la propiedad a otra persona, o elimina la Cerchia.",
+      "dangerTitle": "Zona delicada",
+      "deleteType": "Nombre de la Cerchia",
+      "deleted": "Cerchia eliminada.",
+      "left": "Has salido de la Cerchia.",
+      "diarySoon": "Aquí llegará el diario de la Cerchia: qué habéis visto, qué os ha parecido."
+    },
+    "account": {
+      "sessionsTitle": "Dispositivos conectados",
+      "sessionsBody": "Dónde has iniciado sesión. Si no reconoces un dispositivo, ciérrale la sesión.",
+      "current": "Este dispositivo",
+      "lastSeen": "Último uso {date}",
+      "kind": {
+        "web": "Navegador",
+        "native": "App"
+      },
+      "revoke": "Cerrar sesión",
+      "revokeNamed": "Cerrar la sesión de {name}",
+      "exporting": "Preparando el archivo…",
+      "exportDone": "Archivo listo.",
+      "deleteConfirmName": "Para confirmar escribe tu nombre ({name}).",
+      "deleteMismatchName": "El nombre no coincide. No se ha eliminado nada.",
+      "deleting": "Eliminando…",
+      "guest": "Estás usando una cuenta de invitado: tus datos se quedan en este dispositivo hasta que entres con el email."
+    },
+    "join": {
+      "title": "Tienes una invitación",
+      "body": "Entra para ver el diario de la Cerchia y añadir el tuyo. Código: {code}.",
+      "needSignIn": "Para entrar hace falta una cuenta: con el email te basta.",
+      "joined": "Ya estás dentro.",
+      "already": "Ya estabas en esta Cerchia."
+    },
+    "legal": {
+      "entityPlaceholder": "[Responsable del tratamiento: por indicar antes del lanzamiento]",
+      "contactPlaceholder": "[Email de contacto: por indicar antes del lanzamiento]",
+      "entityLabel": "Responsable",
+      "contactLabel": "Contacto"
+    },
+    "footer": {
+      "app": "Abrir la app"
+    },
+    "apiErrors": {
+      "unauthorized": "Tienes que entrar para hacerlo.",
+      "forbidden": "No tienes permiso para hacerlo.",
+      "not_found": "No hay nada aquí, o no está en una Cerchia a la que perteneces.",
+      "invalid": "Revisa los datos e inténtalo de nuevo.",
+      "rate_limited": "Demasiados intentos. Prueba de nuevo en {seconds, plural, one {# segundo} other {# segundos}}.",
+      "rate_limited_unknown": "Demasiados intentos. Espera un poco y prueba de nuevo.",
+      "conflict": "Algo ha cambiado mientras tanto. Recarga e inténtalo de nuevo.",
+      "invite_revoked": "Esta invitación se ha revocado. Pide a un admin que te mande otra.",
+      "invite_expired": "Esta invitación ha caducado. Pide a quien te invitó que te mande otra.",
+      "invite_exhausted": "Esta invitación ya se ha usado. Pide una nueva.",
+      "circle_full": "Esta Cerchia está completa: ya tiene 30 personas.",
+      "must_transfer": "Eres el propietario: pasa antes la propiedad a otra persona.",
+      "catalog_unavailable": "El catálogo de títulos no responde. Inténtalo de nuevo en un momento.",
+      "internal": "Algo se ha atascado. No es culpa tuya: inténtalo de nuevo en un momento.",
+      "network": "No consigo llegar al servidor. Revisa tu conexión e inténtalo de nuevo."
+    }
+  },
+  "legal": {
+    "updatedOn": "2026-11-17",
+    "privacy": {
+      "title": "Política de privacidad",
+      "updated": "Última actualización",
+      "intro": "Pausa es un diario privado para grupos de amigos. Aquí explicamos qué datos tratamos, por qué y cómo puedes controlarlos.",
+      "sections": [
+        {
+          "h": "Qué datos tratamos",
+          "p": [
+            "Cuenta: tu email y el nombre que elijas (con Google, también la imagen de perfil). Si entras en una Serata como invitado, solo el nombre que escribas.",
+            "Contenido: películas, series y anime que registras, valoraciones, reseñas, comentarios, reacciones, listas, el estado «estoy viendo», tus votos en las Serate.",
+            "Técnicos: dirección IP y user agent de las sesiones, para la seguridad del acceso y limitar abusos."
+          ]
+        },
+        {
+          "h": "Quién ve tu contenido",
+          "p": [
+            "Solo los miembros de las Cerchie a las que perteneces. Pausa no tiene perfiles ni feeds públicos. Lo único pensado para salir de la app es la Card de la Serata, que muestra el título elegido y no quién votó qué."
+          ]
+        },
+        {
+          "h": "Para qué los tratamos",
+          "p": [
+            "Para prestarte el servicio que pediste (ejecución del contrato) y para la seguridad y la prevención de abusos (interés legítimo). No hacemos perfiles publicitarios ni vendemos datos."
+          ]
+        },
+        {
+          "h": "Cookies",
+          "p": [
+            "Solo cookies técnicas: la sesión de acceso, el tema claro/oscuro y el idioma. No usamos cookies de analítica ni publicidad, así que no hace falta un banner de consentimiento."
+          ]
+        },
+        {
+          "h": "Terceros",
+          "p": [
+            "Cloudflare: alojamiento y base de datos. Resend: envío del email de acceso. Google: solo si eliges «Entrar con Google». TMDB y AniList: al buscar un título se les envía la búsqueda (no tu identidad); los pósteres se cargan desde sus servidores, que por tanto ven tu dirección IP. Si se activa, Cloudflare Web Analytics cuenta las visitas de forma agregada, sin cookies y sin identificarte. Los datos de los títulos vienen de TMDB (este producto usa la API de TMDB pero no está respaldado ni certificado por TMDB) y de AniList."
+          ]
+        },
+        {
+          "h": "Durante cuánto tiempo",
+          "p": [
+            "Hasta que elimines tu cuenta. Al borrar un registro o un comentario desaparece al instante. Si dejas una Cerchia, tu contenido sigue visible para sus miembros hasta que lo borres o elimines la cuenta."
+          ]
+        },
+        {
+          "h": "Tus derechos",
+          "p": [
+            "Desde la página Cuenta puedes ver tus datos, descargarlos en JSON, corregir tu nombre y eliminar la cuenta cuando quieras: la eliminación es inmediata y borra tus registros, comentarios, reacciones y listas personales. También puedes pedir la limitación u oponerte al tratamiento, y reclamar ante la autoridad de protección de datos."
+          ]
+        },
+        {
+          "h": "Contacto",
+          "p": [
+            "Para cualquier solicitud sobre tus datos escribe a la dirección que aparece al final de esta página."
+          ]
+        }
+      ],
+      "description": "Qué datos trata Pausa, quién ve tus contenidos, qué cookies usa y cómo descargar o borrar tus datos."
+    },
+    "terms": {
+      "title": "Términos del servicio",
+      "updated": "Última actualización",
+      "intro": "Al usar Pausa aceptas estas reglas sencillas.",
+      "sections": [
+        {
+          "h": "El servicio",
+          "p": [
+            "Pausa es un diario privado de grupo para películas, series y anime, con una herramienta para decidir juntos qué ver. Se ofrece tal cual, sin garantía de disponibilidad continua."
+          ]
+        },
+        {
+          "h": "Tu cuenta",
+          "p": [
+            "Eres responsable de lo que publicas en tus Cerchie. Debes tener al menos 14 años (o la edad mínima de consentimiento digital de tu país). Los administradores de una Cerchia pueden expulsar miembros y revocar invitaciones."
+          ]
+        },
+        {
+          "h": "Contenido",
+          "p": [
+            "Sigues siendo titular de lo que escribes. Solo nos das permiso para guardarlo y mostrarlo a los miembros de tus Cerchie para que el servicio funcione. No publiques nada ilegal, abusivo o que vulnere derechos ajenos."
+          ]
+        },
+        {
+          "h": "Datos de los títulos",
+          "p": [
+            "Los pósteres y la información de los títulos vienen de TMDB y AniList y siguen sujetos a sus términos. Este producto usa la API de TMDB pero no está respaldado ni certificado por TMDB."
+          ]
+        },
+        {
+          "h": "Uso correcto",
+          "p": [
+            "No abuses del servicio: nada de intentos de acceso no autorizado, envíos masivos de invitaciones o enlaces de acceso, ni uso automatizado que lo perjudique. Podemos suspender las cuentas que lo hagan."
+          ]
+        },
+        {
+          "h": "Cambios y cierre",
+          "p": [
+            "Puedes eliminar tu cuenta en cualquier momento desde la página Cuenta. Podemos actualizar estos términos; si cambian de forma relevante te lo diremos en la app."
+          ]
+        }
+      ],
+      "description": "Las normas para usar Pausa: cuenta, contenidos, uso correcto y cierre de la cuenta."
+    }
+  },
+  "guides": {
+    "index": "Guías",
+    "indexTitle": "Guías para elegir qué ver juntos",
+    "indexLede": "Métodos prácticos para decidir en grupo, sin discutir y sin perder la noche.",
+    "read": "Leer la guía",
+    "try": "Probar una Serata",
+    "updated": "Actualizado",
+    "back": "Todas las guías",
+    "more": "Más guías",
+    "updatedOn": "2026-11-17",
+    "items": {
+      "choose-a-movie-with-friends": {
+        "title": "Cómo elegir una película con amigos sin discutir",
+        "description": "Cinco métodos que funcionan de verdad para decidir qué ver en grupo, del más sencillo al más rápido, y cuándo usar cada uno.",
+        "intro": "Media hora desplazándose por el catálogo y luego no ver nada es el problema más común de las noches de cine. No depende de los gustos, depende del método. Aquí tienes cinco salidas, de la más rápida a la menos.",
+        "blocks": [
+          {
+            "h": "1. Limitad las opciones antes de votar",
+            "p": [
+              "El problema no son los gustos distintos, es la elección infinita. Con doscientos títulos en pantalla nadie se compromete. Antes de votar, cada uno propone un título y os quedáis con seis u ocho. Con menos de cuatro no hay elección real, con más de ocho vuelve la discusión."
+            ]
+          },
+          {
+            "h": "2. Una sola ronda de votos, con veto",
+            "p": [
+              "Cada uno tiene tres puntos para repartir y un veto para usar una vez. El veto quita un título sin dar explicaciones, y protege a quien de otro modo aguantaría dos horas de una película que odia. Gana quien tenga más puntos."
+            ]
+          },
+          {
+            "h": "3. Un torneo de eliminación para grupos indecisos",
+            "p": [
+              "Se enfrentan los títulos de dos en dos: en cada duelo todos eligen uno y pasa el más votado. Tres rondas bastan para ocho títulos. Funciona porque comparar dos cosas es fácil, mientras que ordenar ocho cansa."
+            ]
+          },
+          {
+            "h": "4. Quien eligió la última vez no elige hoy",
+            "p": [
+              "Una regla de turnos elimina la queja habitual, «siempre eliges tú». Con un diario compartido de lo que habéis visto se ve enseguida de quién fue la última elección."
+            ]
+          },
+          {
+            "h": "5. Quitad lo que demasiados ya han visto",
+            "p": [
+              "Una película que la mitad del grupo ya vio no es una opción neutra: alguien la ve de mala gana o la destripa. Descartadla antes de empezar."
+            ]
+          },
+          {
+            "h": "Cuánto debe durar",
+            "p": [
+              "Si decidir lleva más de dos minutos, el método es demasiado complicado. El objetivo no es encontrar la película perfecta, sino dejar de buscarla."
+            ]
+          }
+        ],
+        "cta": "Pausa hace todo esto en dos minutos: una lista de ocho títulos, torneo rápido o mesa con veto, y una invitación que se abre sin cuenta."
+      }
+    }
+  }
+}

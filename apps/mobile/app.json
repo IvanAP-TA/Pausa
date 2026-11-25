@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Pausa",
+    "slug": "pausa",
+    "version": "0.1.0",
+    "scheme": "pausa",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#001113",
+    "android": {
+      "package": "org.gnagno.pausa",
+      "predictiveBackGestureEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./public/favicon.ico"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      "expo-sharing"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
