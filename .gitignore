@@ -13,10 +13,6 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
-
 # production
 /build
 
@@ -33,35 +29,23 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# vercel
-.vercel
-
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
 # Cloudflare local state and secrets
 .wrangler/
 .dev.vars*
 !.dev.vars.example
-.open-next/
 !.env.example
 
-# tauri
-/src-tauri/target/
-/src-tauri/gen/
-/src-tauri/app-icon.png
-/engine/target/
-
-# playwright
-/test-results/
-/playwright-report/
-seed/load.sql
-
-# Rebuild (Rust + Expo)
+# Rust + Expo
 /target/
 /crates/api/build/
 /crates/api/.wrangler/
 
 # Local dev stack state (tools/dev-stack.mjs)
 /.dev/
+
+# Never commit signing material
+*.jks
+*.keystore

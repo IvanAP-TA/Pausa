@@ -1,5 +1,5 @@
 // OKLCH -> sRGB conversion (Bjorn Ottosson's matrices) and WCAG 2.x contrast. Pure functions: used at runtime to turn the
-// design tokens (written in OKLCH, exactly as in src/app/tokens.css) into hex, and by the unit tests to assert contrast.
+// design tokens (written in OKLCH, exactly as in design/tokens.css) into hex, and by the unit tests to assert contrast.
 
 export type Oklch = { l: number; c: number; h: number; alpha?: number };
 

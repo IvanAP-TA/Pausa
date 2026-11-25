@@ -1,4 +1,4 @@
-// Design tokens of "Pellicola" (petrol ground, coral signal), ported from src/app/tokens.css and src/app/base.css.
+// Design tokens of "Pellicola" (petrol ground, coral signal), ported from design/tokens.css and the v1 base.css (removed).
 // Colours are kept in OKLCH, character for character as in the CSS, and converted to sRGB at load time (oklch.ts).
 // tokens.css is the source of truth (DESIGN.md says its own token block lags): change both together.
 import { oklchToCss } from "./oklch";

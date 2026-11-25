@@ -1,8 +1,6 @@
 [workspace]
 resolver = "2"
 members = ["crates/engine", "crates/core", "crates/api"]
-# The old stack lives next to the rebuild until the very end: keep its Rust crates out of this workspace.
-exclude = ["engine", "src-tauri"]
 
 [workspace.package]
 edition = "2021"

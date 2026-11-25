@@ -1,185 +1,431 @@
-# Mettere Pausa online
+# Mettere Pausa online (v2: Rust Worker + Expo)
 
-Per chi riceve il progetto. Si parte dal repository e da un account Cloudflare. Tutto il resto è qui. Dopo ogni passo c'è un controllo: se non passa, fermati e correggi prima di andare avanti.
+Scritto il 25 novembre 2026, dopo la rimozione del vecchio codice Next.js. Tre parti:
 
-Per capire come è fatto il progetto: `docs/ARCHITETTURA.md`.
+- **A. Cloudflare: cose nuove** (database, segreti, Worker, dominio)
+- **B. Cloudflare e dintorni: cosa togliere** del vecchio sito
+- **C. Google Play: rilascio in test** (AAB firmato, test interno/chiuso)
 
-## 0. Prima di cominciare
+Dopo ogni passo c'è un **Controllo**: se non passa, fermati e correggi prima di andare avanti.
 
-- **Node 22** (`node -v`) e **npm**.
-- Un account **Cloudflare** e un dominio gestito lì (il progetto prevede `pausa.gnagno.org`).
-- Il piano **Workers a pagamento** (circa 5 $/mese): il piano gratuito dà 10 ms di CPU per richiesta e Next.js su Workers spesso ne richiede di più. Provalo prima sul gratuito; se vedi errori "exceeded CPU", passa al piano a pagamento.
-- Non serve installare Rust: il motore delle raccomandazioni è già compilato (`src/lib/engine/engine.wasm`).
+> Glossario minimo
+> - **Worker**: il programma che gira sui server Cloudflare e risponde alle richieste (qui: Rust compilato in WebAssembly, `crates/api`).
+> - **D1**: il database SQLite gestito da Cloudflare. **Migrazione** = file SQL che crea/modifica le tabelle (`migrations/`).
+> - **Segreto** (`wrangler secret put`): valore cifrato salvato sul Worker, mai nel repository. **Variabile** (`vars`): valore in chiaro in `wrangler.jsonc`.
+> - **Custom domain**: collegare `pausa.gnagno.org` direttamente a un Worker; Cloudflare crea da solo il record DNS e il certificato.
+> - **AAB** (Android App Bundle): il pacchetto che si carica su Google Play al posto dell'APK.
+
+---
+
+## Com'è fatto adesso
+
+| Pezzo | Dove | Cosa diventa su Cloudflare |
+|---|---|---|
+| API (Rust, `workers-rs`) | `crates/api` (+ `crates/core`, `crates/engine`) | Worker `pausa-v2` |
+| Client web (Expo, export statico) | `apps/mobile` → `apps/mobile/dist` | asset statici dello **stesso** Worker (binding `ASSETS`) |
+| Sala della Serata in tempo reale | `crates/api/src/serata_room.rs` | Durable Object `SerataRoom` (SQLite, gratis sul piano Free) |
+| Schema database | `migrations/0001_init.sql` | D1 `pausa-v2` |
+| Migrazione dati v1 → v2 | `tools/migrate-v1-to-v2/` | si usa una volta, in locale |
+| App Android | `apps/mobile` (Expo) | Google Play, parte C |
+
+Tutto sta nel **piano Free** di Cloudflare: non serve più il piano Workers a pagamento del vecchio sito.
+
+---
+
+# A. Cloudflare: cose nuove
+
+## A0. Strumenti sul PC
+
+- **Node 22 o 24** (`node -v`).
+- **Rust stable** con il target WebAssembly e `worker-build` (lo strumento che compila il Worker):
 
 ```bash
-npm ci
+rustup target add wasm32-unknown-unknown
+cargo install worker-build --version 0.9.0 --locked
+```
+
+- Dipendenze (dalla radice del repository):
+
+```bash
+npm ci                      # installa solo wrangler (radice)
+cd apps/mobile && npm ci    # il client ha il suo package.json
+cd ../..
 npx wrangler login
 ```
 
-Controllo: `npx wrangler whoami` mostra il tuo account.
+**Controllo:** `npx wrangler whoami` mostra il tuo account; `cargo --version` e `worker-build --version` rispondono.
 
-## 1. Database
+## A1. Database D1 nuovo
 
 ```bash
-npx wrangler d1 create pausa
+npx wrangler d1 create pausa-v2
 ```
 
-Copia il `database_id` stampato in `wrangler.jsonc` (al posto di `00000000-…`). Se Wrangler aggiunge automaticamente una seconda voce al file, conserva una sola voce per `pausa`, con `"binding": "DB"`, l'identificativo vero e `"migrations_dir": "drizzle"`.
+Copia il `database_id` stampato in `crates/api/wrangler.jsonc`, al posto di `00000000-0000-0000-0000-000000000000`. Se wrangler aggiunge da solo una seconda voce `d1_databases`, tienine **una sola**: `"binding": "DB"`, `"database_name": "pausa-v2"`, l'id vero e `"migrations_dir": "../../migrations"`.
 
-Poi crea le tabelle sul database vero:
+Ora hai due strade. Scegline **una sola**:
+
+### A1-a. Partire vuoti (nessun utente da portare)
 
 ```bash
-npm run db:migrate:remote
+cd crates/api
+npx wrangler d1 migrations apply pausa-v2 --remote
+cd ../..
 ```
 
-Controllo: `npx wrangler d1 execute pausa --remote --command "select name from sqlite_master where type='table' order by name"` elenca le tabelle (`user`, `circle`, `log`, `serata`, `rate_limit`, `report`…).
+### A1-b. Portare i dati del vecchio sito (consigliato se ci sono utenti veri)
 
-> **Mai** eseguire `db:seed:*` sul database vero: sono dati di prova per lo sviluppo.
-> Ogni nuova migrazione (cartella `drizzle/`) si applica con lo stesso comando.
+Il vecchio database si chiama `pausa`. Lo script lavora **su una copia locale**, il database vecchio non viene mai modificato.
 
-## 2. Variabili e segreti
+1. Esporta il vecchio D1 (contiene email e commenti veri: tieni i file **fuori dal repository**, per esempio in `C:\pausa-dati\`):
 
-Due tipi. I **segreti** non finiscono mai nel repository: si impostano con `npx wrangler secret put NOME` (chiede il valore). Le **variabili** non segrete vanno in `wrangler.jsonc` sotto `"vars"` oppure nel pannello Cloudflare (Workers → pausa → Settings → Variables). `wrangler.jsonc` ha `"keep_vars": true`, quindi le variabili scritte nel pannello non vengono cancellate dai deploy successivi (senza, ogni deploy le azzera: il segno tipico è il pulsante Google che sparisce, perché `GOOGLE_CLIENT_ID` è una variabile e `GOOGLE_CLIENT_SECRET` un segreto). Se il pulsante manca, controlla che **entrambi** esistano nel Worker; in alternativa imposta anche l'id come segreto con `npx wrangler secret put GOOGLE_CLIENT_ID`.
+   ```bash
+   npx wrangler d1 export pausa --remote --output C:/pausa-dati/pausa-v1.sql
+   sqlite3 C:/pausa-dati/pausa-v1.sqlite < C:/pausa-dati/pausa-v1.sql
+   ```
+   (`sqlite3` è il programma a riga di comando di SQLite: `winget install SQLite.SQLite`.)
 
-Anche i valori non segreti possono essere salvati con `wrangler secret put`: per `ADMIN_EMAILS`, `CONTACT_EMAIL` e `LEGAL_ENTITY` permette di non versionare gli indirizzi email e i dati del titolare. Non definire lo stesso nome anche in `"vars"`.
+2. Prova a secco (non scrive nulla, stampa il rapporto con i conteggi prima/dopo):
 
-| Nome | Tipo | A cosa serve | Dove si ottiene |
-|---|---|---|---|
-| `BETTER_AUTH_SECRET` | segreto | firma le sessioni | `openssl rand -base64 32` |
-| `BETTER_AUTH_URL` | variabile | indirizzo pubblico, es. `https://pausa.gnagno.org` | — |
-| `RESEND_API_KEY` | segreto | invio dei link di accesso | resend.com → API Keys. **Senza, nessuno può accedere.** |
-| `EMAIL_FROM` | variabile | mittente, es. `Pausa <accesso@pausa.gnagno.org>` | deve essere un dominio verificato su Resend (SPF e DKIM) |
-| `TMDB_API_TOKEN` | segreto | ricerca titoli, locandine, dove si guarda | themoviedb.org → Impostazioni → API → "API Read Access Token" (v4). Uso non commerciale. |
-| `GOOGLE_CLIENT_ID` | variabile | accesso con Google (facoltativo) | vedi sezione 5 |
-| `GOOGLE_CLIENT_SECRET` | segreto | idem | idem |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | **variabile di build** | notifiche push (chiave pubblica) | `node scripts/vapid.cjs` |
-| `VAPID_PRIVATE_KEY` | segreto | notifiche push (chiave privata) | stessa coppia di sopra |
-| `VAPID_SUBJECT` | variabile | contatto per i servizi push, es. `https://pausa.gnagno.org` | — |
-| `ADMIN_EMAILS` | variabile | chi può aprire `/it/admin/metrics` e `/it/admin/reports` (email separate da virgola) | — |
-| `CONTACT_EMAIL` | variabile | contatto mostrato in privacy e termini | — |
-| `LEGAL_ENTITY` | variabile | titolare del trattamento mostrato in privacy e termini | — |
-| `REVIEW_EMAIL` | variabile | solo per la revisione degli store: indirizzo dell'account di prova (anche inventato, es. `review@pausa.gnagno.org`; non riceve email) | scelto da te |
-| `REVIEW_PASSWORD` | **segreto** | password della pagina `/en/review` per i revisori Google Play | scegline una lunga e casuale |
-| `SENTRY_DSN` | segreto, facoltativo | segnalazione degli errori a Sentry | sentry.io → progetto → DSN |
-| `NEXT_PUBLIC_CF_ANALYTICS_TOKEN` | **variabile di build**, facoltativa | contatore visite senza cookie (Cloudflare Web Analytics) | Cloudflare → Web Analytics → aggiungi il sito → token del beacon. Serve per sapere quanti visitatori della landing si iscrivono. |
-| `NEXT_PUBLIC_SITE_URL` | variabile, facoltativo | se diverso da `BETTER_AUTH_URL` | — |
+   ```bash
+   node tools/migrate-v1-to-v2/migrate.mjs --from C:/pausa-dati/pausa-v1.sqlite --to C:/pausa-dati/pausa-v2.sqlite --dry-run
+   ```
+   Leggi soprattutto `droppedRows`, `notMigrated`, eventuali email duplicate (uscita 2: vanno sistemate a mano nella copia). Dettagli e regole: `tools/migrate-v1-to-v2/README.md`.
 
-Note: `RESEND_API_KEY` serve anche al riepilogo email giornaliero (opzionale per chi lo attiva dall'account). AniList e Jikan (MyAnimeList) sono API pubbliche e non vogliono chiavi. `wrangler.jsonc` ha **due cron**: `17 3 * * *` (pulizia) e `0 17 * * *` (riepilogo email); vengono creati dal deploy, non servono altri passaggi.
+3. Migrazione vera, con rapporto salvato:
 
-**Importante:** `NEXT_PUBLIC_VAPID_PUBLIC_KEY` entra nel codice **durante la build**, quindi deve esistere quando lanci `npm run deploy` (vedi sotto), non solo nel pannello Cloudflare. Le chiavi VAPID vanno **generate di nuovo** per la produzione (`node scripts/vapid.cjs`): quelle del computer di sviluppo non si riutilizzano.
+   ```bash
+   node tools/migrate-v1-to-v2/migrate.mjs --from C:/pausa-dati/pausa-v1.sqlite --to C:/pausa-dati/pausa-v2.sqlite --report C:/pausa-dati/report.json
+   ```
+   **Controllo:** uscita `0` e nel rapporto ogni tabella torna con `v1 - scartate + aggiunte = v2`.
 
-Esempio:
+4. Trasforma il file v2 in SQL caricabile su D1. D1 rifiuta le righe di transazione e i `PRAGMA`, quindi vanno tolte:
+
+   ```bash
+   sqlite3 C:/pausa-dati/pausa-v2.sqlite .dump | grep -v -E "^(BEGIN TRANSACTION|COMMIT|PRAGMA)" > C:/pausa-dati/pausa-v2.sql
+   ```
+
+5. Carica tutto (schema + dati) nel D1 nuovo **vuoto** (non lanciare prima `migrations apply`: le tabelle esistono già nel dump):
+
+   ```bash
+   cd crates/api
+   npx wrangler d1 execute pausa-v2 --remote --file C:/pausa-dati/pausa-v2.sql
+   ```
+
+6. Segna la migrazione come applicata, così i futuri `migrations apply` non provano a ricreare le tabelle:
+
+   ```bash
+   npx wrangler d1 execute pausa-v2 --remote --command "CREATE TABLE IF NOT EXISTS d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP); INSERT OR IGNORE INTO d1_migrations (name) VALUES ('0001_init.sql');"
+   npx wrangler d1 migrations list pausa-v2 --remote
+   cd ../..
+   ```
+   **Controllo:** `migrations list` dice che non c'è nulla da applicare.
+
+7. A prova finita **cancella** `C:\pausa-dati\` (dati personali veri).
+
+> Le **sessioni non vengono migrate**: tutti rientrano una volta con il link magico. Le iscrizioni alle notifiche push del vecchio sito non valgono più (chiavi VAPID nuove): gli utenti riattivano le notifiche dall'app.
+
+**Controllo (entrambe le strade):**
 
 ```bash
-npx wrangler secret put BETTER_AUTH_SECRET
+cd crates/api
+npx wrangler d1 execute pausa-v2 --remote --command "select name from sqlite_master where type='table' order by name"
+cd ../..
+```
+
+> **Mai** usare `tools/seed-dev.mjs` o le suite `tools/api-smoke*` contro il database remoto: sono dati di prova e girano solo con `--local`.
+
+## A2. Variabili (in `crates/api/wrangler.jsonc`)
+
+`crates/api/wrangler.jsonc` oggi non ha una sezione `vars`. Aggiungila (dopo `"compatibility_date"`):
+
+```jsonc
+"vars": {
+  "APP_URL": "https://pausa.gnagno.org",
+  "EMAIL_FROM": "Pausa <accesso@pausa.gnagno.org>",
+  "VAPID_SUBJECT": "https://pausa.gnagno.org",
+  "VAPID_PUBLIC_KEY": "<dal passo A3>"
+},
+```
+
+| Nome | Tipo | A cosa serve |
+|---|---|---|
+| `APP_URL` | variabile | indirizzo pubblico, usato nelle email di riepilogo |
+| `EMAIL_FROM` | variabile | mittente delle email; dominio verificato su Resend (SPF e DKIM) |
+| `VAPID_SUBJECT` | variabile | contatto per i servizi push (`https:` o `mailto:`) |
+| `VAPID_PUBLIC_KEY` | variabile | chiave pubblica Web Push |
+| `RESEND_API_KEY` | **segreto** | invio dei link di accesso. **Senza, nessuno può entrare** (in produzione la richiesta fallisce) |
+| `TMDB_API_TOKEN` | **segreto** | ricerca titoli, locandine, "dove guardarlo" (themoviedb.org → API → *API Read Access Token* v4) |
+| `VAPID_PRIVATE_JWK` | **segreto** | chiave privata Web Push (formato JWK) |
+| `OPERATOR_EMAILS` | segreto (consigliato) | email separate da virgola che vedono le metriche e le segnalazioni operatore |
+
+Da **non** impostare in produzione (servono solo ai test locali): `CORS_ORIGINS`, `VAPID_DEV_LOOPBACK`, `TMDB_BASE_URL`, `ANILIST_URL`, `EXPO_PUSH_URL`, `SERATA_MATCH_MS`, `SERATA_TABLE_MS`, `SERATA_LOBBY_TTL_MS`.
+
+> A differenza del vecchio `wrangler.jsonc`, qui **non** c'è `keep_vars`: ogni deploy riscrive le variabili con quelle del file. Quindi le variabili si scrivono **solo** in `wrangler.jsonc`, mai nel pannello (verrebbero cancellate al deploy successivo). I segreti invece restano.
+
+## A3. Segreti
+
+Genera una coppia VAPID **nuova** (non riusare quella del vecchio sito, ha un altro formato):
+
+```bash
+npm run vapid
+```
+
+Stampa `VAPID_PUBLIC_KEY=...` (va in `vars`, passo A2) e `VAPID_PRIVATE_JWK={...}` (segreto). Poi:
+
+```bash
+cd crates/api
 npx wrangler secret put RESEND_API_KEY
 npx wrangler secret put TMDB_API_TOKEN
-npx wrangler secret put VAPID_PRIVATE_KEY
+npx wrangler secret put VAPID_PRIVATE_JWK     # incolla tutto il JSON, graffe comprese
+npx wrangler secret put OPERATOR_EMAILS
+cd ../..
 ```
 
-## 2b. Resend: cosa fare, passo per passo
+> Se il Worker `pausa-v2` non esiste ancora, `secret put` chiede di crearlo: rispondi sì. Va bene anche fare prima il deploy (A4) e poi i segreti.
 
-Resend è il servizio che spedisce le email di accesso (e il riepilogo giornaliero). Senza, in produzione nessuno entra.
+**Resend:** crea una chiave **nuova** dedicata a v2 (resend.com → API Keys, permesso *Sending access*, solo il dominio `pausa.gnagno.org`). La vecchia la elimini nella parte B. Il dominio verificato resta quello: niente da rifare su SPF/DKIM. Piano gratuito: 100 email al giorno, 3.000 al mese.
 
-1. Crea l'account su resend.com (il piano gratuito basta per cominciare).
-2. **Domains → Add Domain**: aggiungi `pausa.gnagno.org` (o `gnagno.org`). Resend mostra 3-4 record DNS (SPF, DKIM, e uno MX per i rimbalzi). Aggiungili dove è gestito il DNS (Cloudflare → DNS → Records, con la nuvola **grigia**, "solo DNS") e premi **Verify**. Di solito servono pochi minuti.
-3. **API Keys → Create API Key**, permesso "Sending access", dominio quello verificato. Copia la chiave (si vede una volta sola).
-4. `npx wrangler secret put RESEND_API_KEY` e incolla la chiave.
-5. `EMAIL_FROM` (variabile in `wrangler.jsonc`): un indirizzo del dominio verificato, es. `Pausa <accesso@pausa.gnagno.org>`.
-6. Prova: registrati dal sito con la tua email, il link deve arrivare entro un minuto (guarda anche in spam la prima volta).
+## A4. Costruire e pubblicare (prima senza dominio)
 
-## 2c. Segreti di GitHub (solo se il deploy parte da GitHub Actions)
-
-Il file `.github/workflows/deploy.yml` si avvia a mano (Actions → Deploy → Run workflow). Settings → Secrets and variables → Actions, meglio dentro l'*environment* **production** (Settings → Environments), perché il workflow lo usa:
-
-| Nome | Tipo | Valore | Quando |
-|---|---|---|---|
-| `CLOUDFLARE_API_TOKEN` | secret | token Cloudflare con i permessi *Workers Scripts: Edit*, *D1: Edit*, *Workers Routes: Edit* (dash.cloudflare.com → My Profile → API Tokens → Create Token → "Edit Cloudflare Workers" + D1) | dopo aver creato l'account Cloudflare |
-| `CLOUDFLARE_ACCOUNT_ID` | secret | l'id dell'account (barra laterale destra della dashboard) | idem |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | **variable** (non secret) | la chiave pubblica di `node scripts/vapid.cjs` | si può già mettere: generala una volta e tieni la privata per il passo successivo |
-
-Gli altri segreti (`BETTER_AUTH_SECRET`, `RESEND_API_KEY`, `TMDB_API_TOKEN`, `VAPID_PRIVATE_KEY`, `GOOGLE_CLIENT_SECRET`) **non vanno su GitHub**: vivono dentro Cloudflare, impostati con `wrangler secret put`, e il deploy non li tocca.
-
-## 3. Primo deploy
+Il Worker serve anche il client web, quindi **prima** si costruisce il client, **poi** il Worker.
 
 ```bash
-export NEXT_PUBLIC_VAPID_PUBLIC_KEY='la_chiave_pubblica'
-npm run deploy
+cd apps/mobile
+# Titolare e contatto mostrati in privacy e termini: letti al momento della build.
+# PowerShell:  $env:LEGAL_ENTITY="..."; $env:CONTACT_EMAIL="..."
+LEGAL_ENTITY="Nome Cognome" CONTACT_EMAIL="contatto@esempio.it" npm run build:web
+npm run budget
+cd ../../crates/api
+npx wrangler deploy
+cd ../..
 ```
 
-(su PowerShell: `$env:NEXT_PUBLIC_VAPID_PUBLIC_KEY="..."; npm run deploy`). Ripeti l'impostazione della chiave pubblica se apri un nuovo terminale, prima di ogni build o deploy. La build impiega alcuni minuti. Alla fine wrangler stampa un indirizzo `https://pausa.<tuo-account>.workers.dev`.
+`wrangler deploy` lancia da solo `worker-build --release` (Rust → WebAssembly), carica `apps/mobile/dist` come asset, crea il Durable Object `SerataRoom` e i tre cron (`* * * * *` push, `0 17 * * *` riepilogo email, `17 3 * * *` pulizia).
 
-Controlli, in quest'ordine:
+**Controllo:** il comando stampa un indirizzo `https://pausa-v2.<tuo-sottodominio>.workers.dev`. Aprilo:
+- `/it` mostra la landing; `/it/privacy` mostra titolare e contatto (non il segnaposto);
+- `/api/push/key` risponde con la chiave pubblica (se 404: manca `VAPID_PUBLIC_KEY` o `VAPID_PRIVATE_JWK`);
+- accedi con il link magico (deve arrivare l'email), registra una visione cercando un film (TMDB), apri una Serata da due dispositivi;
+- `npx wrangler tail pausa-v2` mentre navighi: guarda la **CPU per richiesta** (limite Free: 10 ms). È l'unico numero mai misurato davvero: se vedi errori `exceeded CPU` / 1102, fermati prima del passaggio di dominio.
 
-1. `https://…workers.dev/it` mostra la landing.
-2. `https://…workers.dev/api/health/engine` risponde `{"engine":"wasm", …}`. Se risponde `"typescript"` il sito funziona ma usa il ripiego più lento: controlla che `src/lib/engine/engine.wasm` sia nel repository e che `wrangler.jsonc` abbia `"main": "worker.ts"`.
+## A5. Passaggio del dominio `pausa.gnagno.org` al Worker nuovo
 
-Se `BETTER_AUTH_URL` è già `https://pausa.gnagno.org`, aspetta di collegare quel dominio prima di provare l'accesso: i link email puntano all'indirizzo configurato.
+Il dominio oggi è collegato al vecchio Worker `pausa`. Un custom domain può stare su un solo Worker, quindi:
 
-### Accesso per la revisione degli store
+1. **Stacca il dominio dal vecchio Worker.** Dashboard Cloudflare → *Workers & Pages* → `pausa` → *Settings* → *Domains & Routes* → `pausa.gnagno.org` → *Remove*. Da qui il sito è offline finché non finisci il punto 2 (pochi minuti).
+2. **Attaccalo al nuovo.** In `crates/api/wrangler.jsonc` aggiungi:
 
-Google Play non può ricevere il link via email. Con `REVIEW_EMAIL` e `REVIEW_PASSWORD` impostati, la pagina `https://pausa.gnagno.org/en/review` (senza link dal sito, `noindex`) chiede solo la password e apre una sessione normale nella Cerchia **Demo circle** (3 persone, 6 film d'epoca con voti), di cui il revisore è amministratore. Senza le due variabili la pagina non esiste (404). Dopo 10 password sbagliate in un'ora da uno stesso IP la pagina rifiuta altri tentativi. Per spegnere l'accesso basta cancellare il segreto: `npx wrangler secret delete REVIEW_PASSWORD`.
+   ```jsonc
+   "routes": [{ "pattern": "pausa.gnagno.org", "custom_domain": true }],
+   ```
+   e ripubblica:
+   ```bash
+   cd crates/api && npx wrangler deploy && cd ../..
+   ```
+3. **Svuota la cache.** Dashboard → zona `gnagno.org` → *Caching* → *Configuration* → *Purge Everything* (toglie i vecchi file `/_next/...` del sito Next).
+4. Togli dal commento in testa a `crates/api/wrangler.jsonc` la frase "NO custom domain and NO routes", che non è più vera.
 
-Nella Play Console (Contenuti dell'app → Accesso all'app) scrivi, in inglese: *Open https://pausa.gnagno.org/en/review, enter the password, tap "Open the demo".* e metti la password nel campo password.
+> Il nome del Worker resta `pausa-v2`: non rinominarlo in `pausa`, altrimenti il deploy finirebbe sopra il vecchio Worker ereditandone segreti e impostazioni (Better Auth, Google, binding ai servizi) che v2 non usa.
 
-### Impostazioni Cloudflare per la ricerca (dall'audit SEO del 21 novembre 2026)
+**Controllo:**
+- `https://pausa.gnagno.org/it` è la landing nuova (nessun file `/_next/` nella scheda Rete del browser);
+- `https://pausa.gnagno.org/robots.txt` e `/sitemap.xml` rispondono;
+- `https://pausa.gnagno.org/api/push/key` risponde 200;
+- un link magico arriva e porta dentro l'app su `pausa.gnagno.org`;
+- dopo un'ora, in *Workers & Pages* → `pausa-v2` → *Metrics*: nessun errore, CPU mediana sotto i 10 ms.
 
-- **Security > Bots: Bot Fight Mode spento.** Blocca gli IP dei datacenter di Google: PageSpeed Insights e Lighthouse ricevono un 403 e misurano la pagina di blocco invece del sito. Googlebot e Bingbot verificati passano comunque.
-- **SSL/TLS > Edge Certificates: Always Use HTTPS acceso.** Oggi `http://pausa.gnagno.org` risponde 200 invece di reindirizzare.
-- **AI Crawl Control / "Block AI bots":** decidere se i crawler di addestramento (GPTBot, ClaudeBot, CCBot) possono leggere le pagine pubbliche, e dirlo anche in `src/app/robots.ts`. I crawler di ricerca e citazione (OAI-SearchBot, ChatGPT-User, Claude-SearchBot, PerplexityBot) devono restare ammessi.
-- **Search Console e Bing Webmaster Tools:** aggiungere il dominio e inviare `https://pausa.gnagno.org/sitemap.xml`.
+## A6. Aggiornamenti successivi
 
-## 4. Dominio
+Ogni volta:
 
-Cloudflare → Workers & Pages → `pausa` → Settings → **Domains & routes** → Add → Custom domain → `pausa.gnagno.org`. Il DNS si configura da solo se il dominio è su Cloudflare. Il dominio collegato è anche dichiarato in `wrangler.jsonc` con `"routes": [{ "pattern": "pausa.gnagno.org", "custom_domain": true }]`: mantieni coerenti dashboard e configurazione se lo cambi. Poi:
+```bash
+cd apps/mobile && npm run build:web && cd ../../crates/api
+npx wrangler d1 migrations apply pausa-v2 --remote   # solo se hai aggiunto file in migrations/
+npx wrangler deploy
+cd ../..
+```
 
-- se `BETTER_AUTH_URL` non è già `https://pausa.gnagno.org`, aggiornalo e rilancia `npm run deploy` con la chiave pubblica VAPID impostata;
-- sul dominio definitivo, registrati con la tua email: deve arrivare il link e portarti dentro. Crea una Cerchia, registra una visione;
-- apri una Serata e il suo link da un'altra finestra in incognito (ospite): deve entrare con un nome;
-- controlla `https://pausa.gnagno.org/sitemap.xml`, `/robots.txt`, `/llms.txt`;
-- Search Console e Bing Webmaster Tools: aggiungi il dominio e invia `https://pausa.gnagno.org/sitemap.xml`.
+Il CI (`.github/workflows/rebuild-ci.yml`) controlla Rust, schema e API, ma **non** pubblica: il deploy resta manuale.
 
-## 5. Google (facoltativo)
+---
 
-1. console.cloud.google.com → nuovo progetto.
-2. **Google Auth Platform → Branding**: nome Pausa; email di assistenza e contatto sviluppatore; home page `https://pausa.gnagno.org/it`; privacy `https://pausa.gnagno.org/it/privacy`; termini `https://pausa.gnagno.org/it/terms`; dominio autorizzato `gnagno.org`. In **Pubblico / Audience**, scegli "Esterno".
-3. **Accesso ai dati / Data Access**: seleziona solo `openid`, `https://www.googleapis.com/auth/userinfo.email` e `https://www.googleapis.com/auth/userinfo.profile`. Devono risultare ambiti non sensibili; non servono API o permessi Gmail, Drive o Calendar.
-4. Per la prima prova lascia lo stato **Testing** e aggiungi il tuo account Google in **Pubblico / Audience → Utenti di prova**.
-5. **Client / Clients → Crea client → Applicazione web**, nome "Pausa Web". URI di reindirizzamento autorizzato: `https://pausa.gnagno.org/api/auth/callback/google`, senza prefisso della lingua. Le origini JavaScript possono restare vuote per questo flusso server. Conserva Client ID e Client secret nel gestore di password: il segreto viene mostrato solo alla creazione, non salvarlo nel repository.
-6. Salva i valori sul Worker, uno alla volta: `npx wrangler secret put GOOGLE_CLIENT_ID`, poi `npx wrangler secret put GOOGLE_CLIENT_SECRET`. Anche l'id può essere salvato come segreto; in alternativa può essere una variabile, preservata da `"keep_vars": true`. Sul sito già pubblicato, `secret put` aggiorna il Worker senza rifare la build. Il pulsante "Continua con Google" compare quando entrambi i valori sono presenti.
-7. Prova l'accesso in una finestra in incognito su `https://pausa.gnagno.org/it/sign-in`. Per il lancio vai in **Pubblico / Audience → Pubblica app** e controlla che lo stato diventi **In produzione**; completa eventuali verifiche richieste da Google. Ripeti l'accesso anche con un account non incluso negli utenti di prova.
+# B. Cosa togliere del vecchio sito
 
-Nota: Google non funziona dentro i browser di WhatsApp e Instagram; il codice nasconde il pulsante lì e offre il link via email. Chi entra con Google e poi con email (stessa casella) finisce sullo stesso account.
+Fallo **dopo** che A5 è passato. Nessun ritorno indietro è previsto: quello che cancelli qui non torna.
 
-## 6. Dopo il lancio
+## B1. Cloudflare
 
-- **Pulizia automatica**: un lavoro pianificato (ogni giorno alle 03:17 UTC, in `wrangler.jsonc`) elimina ospiti vecchi senza Cerchia, sessioni e link scaduti. Controllo: Cloudflare → pausa → Logs, cerca `[pausa] cleanup`.
-- **Backup**: D1 ha *Time Travel* (ripristino a un istante passato). Per una copia a mano: `npx wrangler d1 export pausa --remote --output=backup.sql`.
-- **Errori**: se imposti `SENTRY_DSN` ogni errore del server arriva a Sentry; altrimenti guarda i log in Cloudflare.
-- **Metriche**: `https://pausa.gnagno.org/it/admin/metrics` (solo `ADMIN_EMAILS`). "n.d." significa "non ci sono ancora dati".
-- **Segnalazioni dei contenuti**: `/it/admin/reports` (solo `ADMIN_EMAILS`).
-- **Notifiche push**: dall'account, "Attiva le notifiche". Su iPhone funzionano solo dall'app aggiunta alla schermata Home. Richiedono HTTPS.
+1. **Worker `pausa` (vecchio, Next.js/OpenNext).** *Workers & Pages* → `pausa` → *Settings* → in fondo *Delete*. Cancellandolo spariscono anche, in un colpo:
+   - i suoi segreti: `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY` (vecchio), `TMDB_API_TOKEN` (copia vecchia), `VAPID_PRIVATE_KEY`, `REVIEW_PASSWORD`, `SENTRY_DSN`, ed eventualmente `ADMIN_EMAILS`, `CONTACT_EMAIL`, `LEGAL_ENTITY`, `GOOGLE_CLIENT_ID` se li avevi messi come segreti;
+   - le variabili del pannello (`BETTER_AUTH_URL`, `EMAIL_FROM`, `VAPID_SUBJECT`, `GOOGLE_CLIENT_ID`, `REVIEW_EMAIL`, `NEXT_PUBLIC_SITE_URL`…);
+   - i due cron (`17 3 * * *`, `0 17 * * *`) e il binding `WORKER_SELF_REFERENCE`.
 
-## 7. Cose che restano a chi mette online
+   Da riga di comando, in alternativa: `npx wrangler delete --name pausa`.
+   **Controllo:** in *Workers & Pages* resta solo `pausa-v2`.
 
-Non sono nel codice e non le posso fare per te:
+2. **Database D1 `pausa` (vecchio).** Prima tieni un'ultima copia **fuori dal repository e fuori dal cloud pubblico** (contiene dati personali):
 
-- **Revisione legale** di `/it/privacy` e `/it/terms` (testi in `src/lib/legal.ts`): sono una bozza scritta da quello che fa il codice.
-- Accordi sul trattamento dei dati con Cloudflare, Resend (e Google se lo attivi); registro dei trattamenti.
-- **TMDB**: la chiave gratuita è solo per uso non commerciale. Se il prodotto genera ricavi serve una licenza.
-- **Prove su telefono vero** (`docs/PHONE_TEST.md`): browser dentro WhatsApp e Instagram, notifiche push, installazione.
-- **App nativa** (`src-tauri/`): installer firmati, Android, iOS, store. Il guscio apre il sito, quindi va provato solo dopo il deploy.
-- **Contatore senza cookie** per misurare la landing (per esempio Cloudflare Web Analytics, si attiva dal pannello senza toccare il codice).
+   ```bash
+   npx wrangler d1 export pausa --remote --output C:/pausa-archivio/pausa-v1-finale.sql
+   npx wrangler d1 delete pausa
+   ```
+   Decidi tu quanto tenere quell'archivio; poi cancellalo (GDPR: non conservare dati più del necessario).
+   **Controllo:** `npx wrangler d1 list` mostra solo `pausa-v2`.
 
-## 8. Se qualcosa non va
+3. **DNS.** Zona `gnagno.org` → *DNS*: il record di `pausa` deve essere quello creato dal custom domain (tipo *Worker*, gestito da Cloudflare). Se trovi un vecchio `CNAME`/`A`/`AAAA` per `pausa` creato a mano, cancellalo.
 
-| Sintomo | Causa probabile |
+4. **Regole della zona** (se le avevi create per il vecchio sito): *Rules* → *Cache Rules*, *Page Rules*, *Transform Rules* che citano `/_next/`, `/api/auth/` (Better Auth) o `/en/review`: eliminale. Gli header di sicurezza ora li dà `apps/mobile/public/_headers`.
+
+5. **Web Analytics.** Il client nuovo non carica il beacon di Cloudflare Web Analytics (era `NEXT_PUBLIC_CF_ANALYTICS_TOKEN` nella build Next). Se non lo rimetti, *Analytics & Logs* → *Web Analytics* → sito `pausa.gnagno.org` → elimina.
+
+6. **Token API usato dal vecchio deploy automatico.** *My Profile* → *API Tokens*: revoca il token creato per GitHub Actions (quello di `CLOUDFLARE_API_TOKEN`).
+
+## B2. GitHub
+
+Il workflow di deploy del vecchio sito (`deploy.yml`) e il CI Next (`ci.yml`) sono stati cancellati dal repository. Nel repository su GitHub → *Settings* → *Secrets and variables* → *Actions*:
+- elimina i segreti `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`;
+- elimina la variabile `NEXT_PUBLIC_VAPID_PUBLIC_KEY`.
+
+## B3. Servizi esterni
+
+- **Resend:** elimina la **vecchia** chiave API (quella del Worker `pausa`), tieni il dominio verificato e la chiave nuova di A3.
+- **Google Cloud Console** (accesso con Google del vecchio sito): v2 per ora **non** ha l'accesso con Google. In *APIs & Services* → *Credentials* elimina il client OAuth di Pausa, oppure almeno togli l'URI di reindirizzamento `https://pausa.gnagno.org/api/auth/callback/google`. Se lo eliminerai, la schermata di consenso OAuth può restare o essere cancellata con il progetto.
+- **Sentry** (se l'avevi attivato con `SENTRY_DSN`): elimina il progetto, v2 non lo usa.
+- **TMDB:** nessuna azione; il token è lo stesso, ora vive come segreto di `pausa-v2`.
+
+## B4. Sul tuo PC
+
+- File `.env.local` / `.dev.vars` del vecchio progetto in altre copie della cartella: cancellali (contenevano chiavi).
+- Le vecchie chiavi VAPID non servono più.
+- La vecchia app Android (guscio Tauri, stesso pacchetto `org.gnagno.pausa`) viene sostituita dall'app Expo: vedi C0 sul numero di versione.
+
+---
+
+# C. Google Play: rilascio in modalità test
+
+## C0. Prima di tutto: due cose da sapere
+
+1. **Stesso pacchetto della vecchia app.** L'app Expo usa `org.gnagno.pausa` (`apps/mobile/app.json`), come il vecchio guscio Tauri. Se la vecchia app era già stata caricata su Play Console:
+   - l'AAB nuovo va firmato con la **stessa chiave di caricamento** (upload key) di allora. Era in `C:\Users\triof\.pausa-signing` su un altro PC: recuperala da lì. Se è persa, in Play Console → *Test e rilascio* → *Configurazione* → *Integrità dell'app* → *Firma dell'app* puoi chiedere il **ripristino della chiave di caricamento** (serve qualche giorno);
+   - il `versionCode` deve essere **più alto** dell'ultimo caricato. Tauri lo calcolava da `0.1.3` come `1003`. Metti in `apps/mobile/app.json`, dentro `"android"`, per esempio `"versionCode": 2000` e porta `"version"` a `"0.2.0"`. Ad ogni nuovo caricamento, `versionCode` +1.
+
+   Se invece non hai mai caricato nulla, crei tu una chiave nuova (C2) e parti da `versionCode` 1.
+
+2. **Accesso dei revisori.** Google esamina anche le versioni di test chiuso, e il revisore non può ricevere il link magico via email. v2 **non ha** l'account di revisione che aveva il vecchio sito (`/en/review`, segnato come escluso in `docs/rebuild/MANCA.md`). Finché non c'è, le alternative sono:
+   - **Test interno** (C5): fino a 100 tester scelti da te, disponibile in pochi minuti, di norma senza revisione. È la strada per provare subito;
+   - per il **test chiuso**: crea una casella email dedicata solo alla revisione (per esempio un Gmail nuovo senza dati tuoi) e nelle istruzioni di *Accesso all'app* scrivi indirizzo e password di quella casella, così il revisore apre l'email e tocca il link. Oppure implementa prima l'account di revisione in `crates/api`.
+
+## C1. Strumenti
+
+- **JDK 17** (`winget install Microsoft.OpenJDK.17`) e **Android Studio** (per l'Android SDK; `ANDROID_HOME` impostato, di solito `%LOCALAPPDATA%\Android\Sdk`).
+- **Controllo:** `java -version` dice 17; `adb version` risponde.
+
+Il prompt di progetto vuole l'AAB compilato **in locale** (costo zero). EAS Build di Expo ha un piano gratuito, ma qui non serve.
+
+## C2. Chiave di caricamento (solo se non ne hai già una, vedi C0)
+
+```bash
+keytool -genkeypair -v -storetype PKCS12 -keystore C:/Users/Giuseppe/.pausa-signing/pausa-upload.jks -alias pausa-upload -keyalg RSA -keysize 2048 -validity 10000
+```
+
+- Tieni la cartella `.pausa-signing` **fuori dal repository**, con una copia di backup altrove (senza questa chiave non puoi più aggiornare l'app, salvo la procedura di ripristino).
+- Le password non vanno in nessun file del progetto. `.gitignore` già esclude `*.jks` e `*.keystore`.
+
+Metti i riferimenti nel file **utente** di Gradle, `C:\Users\Giuseppe\.gradle\gradle.properties` (non nel progetto):
+
+```properties
+PAUSA_UPLOAD_STORE_FILE=C:/Users/Giuseppe/.pausa-signing/pausa-upload.jks
+PAUSA_UPLOAD_KEY_ALIAS=pausa-upload
+PAUSA_UPLOAD_STORE_PASSWORD=...
+PAUSA_UPLOAD_KEY_PASSWORD=...
+```
+
+## C3. Generare il progetto Android e firmarlo
+
+L'app Expo non contiene la cartella `android/`: si genera (si chiama *prebuild*) ed è esclusa da git.
+
+```bash
+cd apps/mobile
+npx expo prebuild --platform android --clean
+```
+
+Apri `apps/mobile/android/app/build.gradle` e:
+
+1. dentro `android { signingConfigs { ... } }` aggiungi:
+   ```groovy
+   release {
+       storeFile file(PAUSA_UPLOAD_STORE_FILE)
+       storePassword PAUSA_UPLOAD_STORE_PASSWORD
+       keyAlias PAUSA_UPLOAD_KEY_ALIAS
+       keyPassword PAUSA_UPLOAD_KEY_PASSWORD
+   }
+   ```
+2. in `buildTypes { release { ... } }` sostituisci `signingConfig signingConfigs.debug` con `signingConfig signingConfigs.release`.
+
+> `--clean` rigenera la cartella da zero e cancella queste due modifiche: rifalle dopo ogni `prebuild --clean`. (Per non doverle rifare, in futuro si può scrivere un piccolo *config plugin* Expo che le applica da solo.)
+
+## C4. Compilare l'AAB
+
+L'app nativa parla con `https://pausa.gnagno.org` (vedi `apps/mobile/src/api/index.ts`), quindi **compila dopo il passaggio di dominio A5**. Per provare prima, compila puntando all'indirizzo workers.dev: `EXPO_PUBLIC_API_URL=https://pausa-v2.<sottodominio>.workers.dev`.
+
+```bash
+cd apps/mobile/android
+./gradlew bundleRelease          # PowerShell: .\gradlew.bat bundleRelease
+```
+
+Risultato: `apps/mobile/android/app/build/outputs/bundle/release/app-release.aab`.
+
+**Controllo prima di caricare** (facoltativo ma utile): con `bundletool` (`winget install Google.Bundletool` o il jar da GitHub) installa l'AAB su un telefono collegato:
+
+```bash
+bundletool build-apks --bundle=app/build/outputs/bundle/release/app-release.aab --output=pausa.apks --mode=universal --ks=C:/Users/Giuseppe/.pausa-signing/pausa-upload.jks --ks-key-alias=pausa-upload
+bundletool install-apks --apks=pausa.apks
+```
+
+Prova sul telefono: accesso con link magico (il link dall'email deve riaprire l'app tramite `pausa://auth`), registrare una visione, Serata, cambio lingua, tasto Indietro.
+
+## C5. Play Console: test interno (il più veloce)
+
+1. Play Console → **Crea app** (se non esiste): nome *Pausa*, lingua predefinita italiano, *App*, *Gratuita*, accetta le dichiarazioni.
+   Se l'app esiste già (vecchio guscio Tauri), usa quella.
+2. **Test e rilascio** → **Test** → **Test interno** → scheda *Tester*: crea un elenco email (fino a 100 account Google) e salva. Copia il **link di partecipazione**.
+3. **Crea nuova release** → la prima volta conferma la **Firma dell'app di Google Play** (Google tiene la chiave di firma finale, tu solo quella di caricamento) → carica `app-release.aab` → note di rilascio (es. "Prima versione v2") → *Avanti* → *Salva e pubblica*.
+4. I tester aprono il link di partecipazione dal telefono, accettano e installano da Play Store.
+
+**Controllo:** la release risulta *Disponibile per i tester interni*; un tester la installa e accede.
+
+## C6. Play Console: test chiuso
+
+Serve prima completare **Contenuti dell'app** (*Monitora e migliora* → *Norme e programmi* → *Contenuti dell'app*):
+
+| Voce | Cosa mettere |
 |---|---|
-| Nessuno riceve il link di accesso | `RESEND_API_KEY` mancante o dominio non verificato su Resend. In produzione il codice non scrive mai i link nei log: fallisce apposta. |
-| La ricerca di film noti non trova titoli | Controllare `TMDB_API_TOKEN`: serve un **API Read Access Token** valido, non la chiave v3. Un `401` da TMDB indica una credenziale rifiutata; aggiornare il segreto con `npx wrangler secret put TMDB_API_TOKEN`, senza rifare la build. |
-| "Error 1102 / exceeded CPU" | piano gratuito: passare al piano a pagamento |
-| Il dominio rimanda a `cloudflareaccess.com` | Cloudflare Access protegge il sito prima dell'app: controllare in Zero Trust se la protezione è voluta o appartiene a una vecchia applicazione. Non rimuoverla senza verificare. |
-| `/api/health/engine` dice `typescript` | `engine.wasm` non incluso nel bundle (vedi controllo 2 del primo deploy) |
-| Le notifiche non si attivano | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` non era impostata durante la build |
-| Errori su `database_id` | `wrangler.jsonc` ha ancora l'id segnaposto |
-| 404 su ogni pagina | `BETTER_AUTH_URL` sbagliato o rotta del dominio non attiva |
+| Norme sulla privacy | `https://pausa.gnagno.org/it/privacy` (con titolare e contatto veri, vedi A4) |
+| Accesso all'app | *Alcune funzionalità sono limitate* + istruzioni in inglese per il revisore (vedi C0, punto 2) |
+| Annunci | No |
+| Classificazione dei contenuti | questionario IARC; contenuti generati dagli utenti: sì (recensioni, commenti), con segnalazione |
+| Pubblico di destinazione | 18+ (o 13+ se lo decidi tu: cambia gli obblighi) |
+| Sicurezza dei dati | raccolti: email, nome utente, contenuti dell'utente (visioni, voti, commenti), identificativi push; nessuna vendita, nessuna pubblicità; cifratura in transito sì; cancellazione account dall'app sì (*Account* → elimina) + URL per la cancellazione |
+| App governative / finanziarie / salute | No |
+
+Poi:
+
+1. **Test** → **Test chiuso** → *Gestisci canale* (o crea un canale, es. "Amici") → *Tester*: elenco email o Google Group.
+2. **Crea nuova release** → carica l'AAB (stesso o con `versionCode` più alto) → *Salva* → *Invia per la revisione*.
+3. La revisione richiede da qualche ora ad alcuni giorni. Poi i tester entrano con il link di partecipazione.
+
+> **Account sviluppatore personale creato dopo il 13 novembre 2023:** per passare alla **produzione** Google chiede un test chiuso con almeno **12 tester** iscritti per **14 giorni consecutivi**. Per restare in test non serve.
+
+## C7. Ogni nuova versione di test
+
+1. In `apps/mobile/app.json`: `android.versionCode` +1 (e `version` se vuoi).
+2. `npx expo prebuild --platform android --clean` → rifai le due modifiche di firma (C3) → `./gradlew bundleRelease`.
+3. Play Console → canale di test → *Crea nuova release* → carica → pubblica.
+
+## Cosa resta noto e non fatto (lato app)
+
+Da `docs/rebuild/MANCA.md`, rilevante per il test su Play:
+- l'app non registra ancora il dispositivo per le notifiche push native (`expo-notifications` presente ma non collegato; servirà anche `google-services.json` di Firebase, gratuito);
+- niente accesso con Google, niente account di revisione;
+- mai provata su emulatore o telefono vero: il test interno è la prima prova reale.

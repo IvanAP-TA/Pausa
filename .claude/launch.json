@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "pausa-dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3000
+      "name": "pausa-dev-stack",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/dev-stack.mjs"],
+      "port": 8798
     }
   ]
 }

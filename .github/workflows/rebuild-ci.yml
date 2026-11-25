@@ -40,7 +40,7 @@ jobs:
       - run: command -v worker-build || cargo install worker-build --version 0.9.0 --locked
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: npm }
-      # The repository root still carries the old app's dependencies; wrangler comes from there.
+      # The repository root only carries wrangler (package.json); the tools use it from there.
       - run: npm ci --ignore-scripts
       - run: node tools/run-smoke.mjs
 

@@ -357,7 +357,7 @@ test("case-insensitive duplicate emails stop the migration before anything is wr
 test("an empty v1 (migrations only) migrates to an empty v2 with every count 0", () => {
   const f = path.join(dir, "empty-v1.sqlite");
   const d = new DatabaseSync(f);
-  for (const m of fs.readdirSync(path.join(HERE, "..", "..", "drizzle")).filter((n) => n.endsWith(".sql")).sort()) d.exec(fs.readFileSync(path.join(HERE, "..", "..", "drizzle", m), "utf8"));
+  for (const m of fs.readdirSync(path.join(HERE, "v1-schema")).filter((n) => n.endsWith(".sql")).sort()) d.exec(fs.readFileSync(path.join(HERE, "v1-schema", m), "utf8"));
   d.close();
   const out = path.join(dir, "empty-v2.sqlite");
   const rep = migrate({ from: f, to: out });

@@ -22,8 +22,8 @@ describe("conversion", () => {
   });
 });
 
-describe("tokens match src/app/tokens.css exactly", () => {
-  const css = readFileSync(path.resolve(__dirname, "../../../src/app/tokens.css"), "utf8");
+describe("tokens match design/tokens.css exactly", () => {
+  const css = readFileSync(path.resolve(__dirname, "../../../design/tokens.css"), "utf8");
   const cssName: Record<string, string> = {
     paper2: "paper-2", paper3: "paper-3", ink2: "ink-2", accentHover: "accent-hover", accentDeep: "accent-deep",
     accentInk: "accent-ink", onTint: "on-tint", tint1: "tint-1", tint2: "tint-2", tint3: "tint-3", tint4: "tint-4",

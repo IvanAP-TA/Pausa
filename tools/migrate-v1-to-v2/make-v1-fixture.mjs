@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds a SYNTHETIC Pausa v1 database (never real data) by applying the real drizzle/*.sql migrations in order and filling it.
+// Builds a SYNTHETIC Pausa v1 database (never real data) by applying the real v1-schema/*.sql migrations (the frozen v1 drizzle migrations) in order and filling it.
 //
 //   node tools/migrate-v1-to-v2/make-v1-fixture.mjs <out.sqlite> [seed]
 //
@@ -12,7 +12,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const DRIZZLE = path.resolve(HERE, "..", "..", "drizzle");
+const DRIZZLE = path.resolve(HERE, "v1-schema");
 const DAY = 86_400_000;
 const T0 = Date.UTC(2026, 0, 1);
 

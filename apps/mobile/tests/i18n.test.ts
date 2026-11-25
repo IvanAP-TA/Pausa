@@ -9,7 +9,6 @@ const root = path.resolve(__dirname, "../../..");
 const LOCALES = ["it", "en", "es"] as const;
 const load = (file: string) => JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
 const catalogue = Object.fromEntries(LOCALES.map((l) => [l, load(path.join(root, "packages/messages", `${l}.json`))]));
-const original = Object.fromEntries(LOCALES.map((l) => [l, load(path.join(root, "messages", `${l}.json`))]));
 
 /** Flattens to dotted paths; arrays use their index (`landing.faq.items.0.q`). Only string leaves. */
 function flat(o: unknown, prefix = ""): Array<[string, string]> {
@@ -47,14 +46,6 @@ describe("packages/messages", () => {
       const other = new Set(flats[l].keys());
       expect([...base].filter((k) => !other.has(k)), `keys in it missing from ${l}`).toEqual([]);
       expect([...other].filter((k) => !base.has(k)), `keys in ${l} missing from it`).toEqual([]);
-    }
-  });
-
-  it("keeps every original key and value untouched (the copy is additive only)", () => {
-    for (const l of LOCALES) {
-      const orig = flat(original[l]);
-      expect(orig.length).toBeGreaterThanOrEqual(932);
-      for (const [k, v] of orig) expect(flats[l].get(k), `${l}:${k}`).toBe(v);
     }
   });
 

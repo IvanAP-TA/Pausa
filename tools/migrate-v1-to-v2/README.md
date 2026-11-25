@@ -1,7 +1,7 @@
 # Migrazione dati Pausa v1 -> v2
 
-Script Node (ES modules, `node:sqlite`, nessuna dipendenza) che legge un database v1 (D1/SQLite, schema `src/db/schema.ts` +
-`drizzle/0000..0014`) e scrive un database v2 (`migrations/0001_init.sql`), con conteggi prima/dopo e controlli di coerenza.
+Script Node (ES modules, `node:sqlite`, nessuna dipendenza) che legge un database v1 (D1/SQLite, schema v1 +
+`v1-schema/0000..0014`, copia congelata delle migrazioni drizzle di v1) e scrive un database v2 (`migrations/0001_init.sql`), con conteggi prima/dopo e controlli di coerenza.
 Richiede Node >= 22 (provato su 24).
 
 ## Cosa fa
