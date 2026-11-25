@@ -104,7 +104,7 @@ async fn request_link_inner(req: &mut Request, env: &Env) -> R<Response> {
     )
 }
 
-fn locale_code(l: Locale) -> &'static str {
+pub(crate) fn locale_code(l: Locale) -> &'static str {
     match l {
         Locale::It => "it",
         Locale::En => "en",
@@ -113,7 +113,7 @@ fn locale_code(l: Locale) -> &'static str {
 }
 
 /// Percent-encodes everything outside the unreserved set (enough for a path in a query value).
-fn encode(s: &str) -> String {
+pub(crate) fn encode(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for b in s.bytes() {
         if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b'~' | b'/') {
@@ -216,6 +216,7 @@ async fn verify_inner(req: &Request, env: &Env) -> R<Response> {
                 .as_deref()
                 .and_then(Locale::from_code)
                 .unwrap_or(Locale::It),
+            true,
         );
     }
 
@@ -307,22 +308,37 @@ async fn logout_inner(req: &Request, env: &Env) -> R<Response> {
 
 /// The page the system browser shows after a native sign-in: a button (and an automatic jump) into the app. No script, so
 /// it works under any content policy; the code in the link is single-use and lives 3 minutes.
-fn native_page(deep_link: &str, locale: Locale) -> R<Response> {
-    let (title, button, hint) = match locale {
-        Locale::It => (
+pub(crate) fn native_page(deep_link: &str, locale: Locale, success: bool) -> R<Response> {
+    let (title, button, hint) = match (locale, success) {
+        (Locale::It, true) => (
             "Accesso riuscito",
             "Torna a Pausa",
             "Se l'app non si apre da sola, tocca il pulsante.",
         ),
-        Locale::En => (
+        (Locale::En, true) => (
             "Signed in",
             "Back to Pausa",
             "If the app does not open by itself, tap the button.",
         ),
-        Locale::Es => (
+        (Locale::Es, true) => (
             "Sesión iniciada",
             "Volver a Pausa",
             "Si la app no se abre sola, toca el botón.",
+        ),
+        (Locale::It, false) => (
+            "Accesso Google non riuscito",
+            "Torna a Pausa",
+            "Riprova o accedi via email.",
+        ),
+        (Locale::En, false) => (
+            "Google sign-in failed",
+            "Back to Pausa",
+            "Try again or sign in by email.",
+        ),
+        (Locale::Es, false) => (
+            "No se pudo acceder con Google",
+            "Volver a Pausa",
+            "Inténtalo de nuevo o accede por email.",
         ),
     };
     let href = deep_link.replace('&', "&amp;");
@@ -363,6 +379,7 @@ async fn native_code_inner(req: &Request, env: &Env) -> R<Response> {
 #[derive(Deserialize)]
 struct ExchangeIn {
     code: String,
+    verifier: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -384,13 +401,18 @@ async fn native_exchange_inner(req: &mut Request, env: &Env) -> R<Response> {
     )
     .await?;
     let input: ExchangeIn = body(req).await?;
+    let challenge = input.verifier.as_deref().map(hash_token);
     let now = now_ms();
     let used = db
         .prepare(
             "UPDATE login_token SET used_at = ?2 WHERE token_hash = ?1 AND kind = 'native_code' AND used_at IS NULL \
-             AND expires_at > ?2 RETURNING user_id",
+             AND expires_at > ?2 AND (native_challenge IS NULL OR native_challenge = ?3) RETURNING user_id",
         )
-        .bind(&[hash_token(&input.code).into(), (now as f64).into()])?
+        .bind(&[
+            hash_token(&input.code).into(),
+            (now as f64).into(),
+            challenge.map_or(worker::wasm_bindgen::JsValue::NULL, Into::into),
+        ])?
         .first::<UserIdRow>(None)
         .await?
         .ok_or_else(Fail::unauthorized)?;

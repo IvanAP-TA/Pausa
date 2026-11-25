@@ -12,6 +12,7 @@ mod cleanup;
 mod diary;
 mod email_change;
 mod foryou;
+mod google_oauth;
 mod http;
 mod imports;
 mod limit;
@@ -77,6 +78,11 @@ async fn route(req: Request, env: Env) -> Result<Response> {
 
         (Method::Post, ["api", "auth", "magic-link"]) => auth::request_link(req, env).await,
         (Method::Get, ["api", "auth", "magic-link", "verify"]) => auth::verify_link(req, env).await,
+        (Method::Get, ["api", "auth", "google", "status"]) => google_oauth::status(req, env),
+        (Method::Get, ["api", "auth", "google", "start"]) => google_oauth::start(req, env).await,
+        (Method::Get, ["api", "auth", "callback", "google"]) => {
+            google_oauth::callback(req, env).await
+        }
         (Method::Post, ["api", "auth", "guest"]) => auth::guest(req, env).await,
         (Method::Post, ["api", "auth", "logout"]) => auth::logout(req, env).await,
         (Method::Post, ["api", "auth", "native", "code"]) => auth::native_code(req, env).await,

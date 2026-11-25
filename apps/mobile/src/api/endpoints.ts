@@ -21,9 +21,11 @@ export function endpoints(c: Client) {
 
     requestMagicLink: (input: { email: string; next: string; locale: Locale; native?: boolean }) =>
       c.json<MagicLinkSent>("POST", "/api/auth/magic-link", { body: input, auth: false }),
+    googleStatus: (signal?: AbortSignal) => c.json<{ enabled: boolean }>("GET", "/api/auth/google/status", { auth: false, signal }),
     guest: (name: string) => c.json<{ ok: true }>("POST", "/api/auth/guest", { body: { name }, auth: false }),
     logout: () => c.none("POST", "/api/auth/logout", { auth: false }),
-    nativeExchange: (code: string) => c.json<{ token: string }>("POST", "/api/auth/native/exchange", { body: { code }, auth: false }),
+    nativeExchange: (code: string, verifier?: string) =>
+      c.json<{ token: string }>("POST", "/api/auth/native/exchange", { body: { code, verifier }, auth: false }),
     nativeCode: () => c.json<{ code: string }>("POST", "/api/auth/native/code"),
 
     createCircle: (name: string) => c.json<CircleCreated>("POST", "/api/circles", { body: { name } }),

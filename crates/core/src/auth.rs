@@ -57,6 +57,11 @@ pub fn hash_token(token: &str) -> String {
     out
 }
 
+/// RFC 7636 S256 challenge for a Google OAuth code verifier.
+pub fn pkce_s256(verifier: &str) -> String {
+    base64url(&Sha256::digest(verifier.as_bytes()))
+}
+
 /// RFC 4122 version 4 UUID from 16 random bytes supplied by the caller.
 pub fn uuid_v4(bytes: &[u8; 16]) -> String {
     let mut b = *bytes;
@@ -144,6 +149,14 @@ pub fn name_from_email(email: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pkce_matches_rfc_7636() {
+        assert_eq!(
+            pkce_s256("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"),
+            "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+        );
+    }
 
     #[test]
     fn base64url_matches_known_vectors() {

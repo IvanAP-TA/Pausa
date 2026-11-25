@@ -2,6 +2,7 @@
 // `devLink`). Usage:  node tools/api-smoke.mjs http://localhost:8798
 // It resets the rate-limit counters through `wrangler d1 execute --local`, so it must run next to crates/api.
 import { spawnSync } from "node:child_process";
+import { createHash, randomBytes } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -35,7 +36,8 @@ async function call(method, url, { cookie, body, redirect = "manual", headers = 
   const res = await fetch(base + url, {
     method,
     redirect,
-    headers: { ...(body ? { "content-type": "application/json" } : {}), ...(cookie ? { cookie } : {}), ...headers },
+    // Synchronous D1 CLI calls between requests can outlive Wrangler's idle keep-alive sockets.
+    headers: { connection: "close", ...(body ? { "content-type": "application/json" } : {}), ...(cookie ? { cookie } : {}), ...headers },
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
@@ -389,6 +391,26 @@ r = await call("POST", "/api/auth/native/exchange", { body: { code: mint } });
 check("an expired code is refused", r.status === 401, r.text);
 r = await call("POST", "/api/auth/native/code");
 check("minting a code needs a session", r.status === 401);
+
+// The browser handoff for Google must also prove that it was started in this app.
+r = await call("GET", "/api/auth/google/status");
+check("Google is hidden on the local origin", r.status === 200 && r.json?.enabled === false);
+r = await call("GET", "/api/auth/google/start");
+check("Google cannot start on the local origin", r.status === 404);
+const protectedCode = randomBytes(32).toString("base64url");
+const verifier = randomBytes(32).toString("hex");
+const hash = (value) => createHash("sha256").update(value).digest("hex");
+sql(`INSERT INTO login_token(token_hash, kind, user_id, native_challenge, expires_at)
+     SELECT '${hash(protectedCode)}', 'native_code', id, '${hash(verifier)}', ${Date.now() + 60_000}
+     FROM user WHERE email = '${mail("native")}'`);
+r = await call("POST", "/api/auth/native/exchange", { body: { code: protectedCode } });
+check("Google native code refuses a missing verifier", r.status === 401);
+r = await call("POST", "/api/auth/native/exchange", { body: { code: protectedCode, verifier: "wrong" } });
+check("Google native code refuses a wrong verifier", r.status === 401);
+r = await call("POST", "/api/auth/native/exchange", { body: { code: protectedCode, verifier } });
+check("Google native code accepts the right verifier after failed attempts", r.status === 200 && !!r.json?.token);
+r = await call("POST", "/api/auth/native/exchange", { body: { code: protectedCode, verifier } });
+check("Google native code cannot be redeemed twice", r.status === 401);
 
 // ═════════ T2b: daily housekeeping ═════════
 const ok = await signIn(mail("keep"));

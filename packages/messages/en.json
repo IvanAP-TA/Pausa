@@ -1236,6 +1236,8 @@
     "signIn": {
       "emailPlaceholder": "you@example.com",
       "invalidEmail": "Check the email address.",
+      "google": "Sign in with Google",
+      "googleError": "Google sign-in failed. Try again or use an email link.",
       "devLink": "Open the dev link",
       "devHint": "Local only: the email was not sent, the link is right here.",
       "nativeOpen": "After you open the link you come straight back here.",

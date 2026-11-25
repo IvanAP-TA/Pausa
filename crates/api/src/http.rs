@@ -165,7 +165,9 @@ pub fn cors_allowed(env: &Env, origin: Option<&str>) -> Option<String> {
 pub fn with_security(mut res: Response) -> Response {
     let h = res.headers_mut();
     let _ = h.set("X-Content-Type-Options", "nosniff");
-    let _ = h.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    if !h.has("Referrer-Policy").unwrap_or(false) {
+        let _ = h.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    }
     let _ = h.set("X-Frame-Options", "DENY");
     let _ = h.set("Cross-Origin-Resource-Policy", "same-site");
     let _ = h.set(

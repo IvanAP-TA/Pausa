@@ -13,7 +13,8 @@ npm run test:e2e            # Playwright against dist/ (serve-dist.mjs); app-flo
 
 ## Running against a local API
 
-`crates/api` under `wrangler dev --local --port 8798` (never `--remote`). The web build is same-origin in production
+`crates/api` under `wrangler dev --local --infer-origin-from-routes=false --port 8798` (never `--remote`). The flag keeps the
+loopback origin for local sign-in links instead of inferring the live domain from the production route. The web build is same-origin in production
 (`/api/*` goes to the Worker), so `scripts/serve-dist.mjs` serves `dist/` and proxies `/api/*` to `API_ORIGIN`
 (default `http://127.0.0.1:8798`): `node scripts/serve-dist.mjs 4173`. The e2e tests start it themselves.
 

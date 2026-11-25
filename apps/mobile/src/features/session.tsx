@@ -3,7 +3,7 @@ import { Redirect, usePathname } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, onUnauthorized } from "@/api";
 import { ApiFailure } from "@/api/errors";
-import { setToken } from "@/api/token";
+import { onNativeSignIn, setToken } from "@/api/token";
 import { useI18n } from "@/i18n";
 import { ErrorState, Loading } from "@/ui";
 import { Screen } from "@/ui/Screen";
@@ -41,6 +41,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     alive.current = true;
     void load();
+    const offSignIn = onNativeSignIn(() => { void load(); });
     // Any call answering 401 means the session is gone (expired, revoked from another device, account closed).
     const off = onUnauthorized(() => {
       void setToken(null);
@@ -49,6 +50,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       alive.current = false;
       off();
+      offSignIn();
     };
   }, [load]);
 

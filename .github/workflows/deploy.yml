@@ -1,0 +1,65 @@
+name: Deploy Pausa v2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pausa-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/mobile/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: wasm32-unknown-unknown }
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/worker-build
+          key: worker-build-${{ runner.os }}-${{ runner.arch }}-0.9.0
+      - run: command -v worker-build || cargo install worker-build --version 0.9.0 --locked
+      - run: npm ci
+      - run: npm ci
+        working-directory: apps/mobile
+      - name: Build and check the web client
+        working-directory: apps/mobile
+        env:
+          LEGAL_ENTITY: ${{ vars.LEGAL_ENTITY }}
+          CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
+        run: |
+          if [[ -z "${LEGAL_ENTITY//[[:space:]]/}" || -z "${CONTACT_EMAIL//[[:space:]]/}" ]]; then
+            echo "::error::Set LEGAL_ENTITY and CONTACT_EMAIL in the repository Actions variables."
+            exit 1
+          fi
+          npm run build:web
+          npm run budget
+      - name: Build the Worker before touching D1
+        working-directory: crates/api
+        run: worker-build --release
+      - name: Apply pending migrations and deploy
+        working-directory: crates/api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            echo "::error::Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the repository Actions secrets."
+            exit 1
+          fi
+          npx wrangler d1 migrations apply pausa-v2 --remote
+          npx wrangler deploy

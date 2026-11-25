@@ -6,3 +6,7 @@ export async function getToken(): Promise<string | null> {
 export async function setToken(_token: string | null): Promise<void> {
   // nothing to store on web
 }
+
+export function onNativeSignIn(_listener: () => void): () => void {
+  return () => {};
+}

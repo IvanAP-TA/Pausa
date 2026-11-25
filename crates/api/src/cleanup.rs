@@ -16,6 +16,8 @@ pub async fn run(env: &Env) -> Result<()> {
             .bind(&[now.into()])?,
         db.prepare("DELETE FROM login_token WHERE expires_at < ?1")
             .bind(&[(now - day).into()])?,
+        db.prepare("DELETE FROM google_oauth_state WHERE expires_at < ?1")
+            .bind(&[now.into()])?,
         db.prepare("DELETE FROM rate_limit WHERE window_start < ?1")
             .bind(&[(now - 2.0 * day).into()])?,
         // Old notifications nobody pushed (no device, or the job was down): stop them from lingering in the partial index.

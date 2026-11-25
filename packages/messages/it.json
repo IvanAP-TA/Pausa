@@ -1236,6 +1236,8 @@
     "signIn": {
       "emailPlaceholder": "tu@esempio.it",
       "invalidEmail": "Controlla l'indirizzo email.",
+      "google": "Accedi con Google",
+      "googleError": "Accesso con Google non riuscito. Riprova oppure usa il link via email.",
       "devLink": "Apri il link di sviluppo",
       "devHint": "Solo in locale: l'email non è partita, il link è qui.",
       "nativeOpen": "Dopo aver aperto il link torni qui da solo.",

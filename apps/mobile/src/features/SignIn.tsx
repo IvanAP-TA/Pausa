@@ -5,24 +5,28 @@ import { Platform, View } from "react-native";
 import { api } from "@/api";
 import { useAction } from "@/api/useAction";
 import { errorMessage } from "@/api/errors";
+import { useResource } from "@/api/useResource";
 import { useI18n } from "@/i18n";
 import { space } from "@/theme";
 import { Button, Field, Heading, Loading, Notice, Screen, Text } from "@/ui";
 import { safeNext } from "./next";
+import { openGoogle } from "./google-sign-in";
 import { useSession } from "./session";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Magic-link sign-in. No password, no social button yet (Google arrives with T2c). */
 export function SignIn() {
   const { t, href, locale } = useI18n();
   const { state } = useSession();
-  const params = useLocalSearchParams<{ next?: string }>();
+  const params = useLocalSearchParams<{ next?: string; google_error?: string }>();
   const next = safeNext(params.next, href("/home"));
   const [email, setEmail] = useState("");
   const [invalid, setInvalid] = useState(false);
   const [devLink, setDevLink] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [googleError, setGoogleError] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const { data: google } = useResource(api.googleStatus, []);
   const send = useAction();
 
   if (state.status === "loading")
@@ -53,6 +57,18 @@ export function SignIn() {
     else void Linking.openURL(devLink);
   };
 
+  const startGoogle = async () => {
+    setGoogleBusy(true);
+    setGoogleError(false);
+    try {
+      await openGoogle(next, locale);
+    } catch {
+      setGoogleError(true);
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
+
   return (
     <Screen width={560}>
       <View style={{ gap: space.md, paddingTop: space.lg }}>
@@ -76,6 +92,10 @@ export function SignIn() {
           error={invalid ? t("app.signIn.invalidEmail") : send.error ? errorMessage(t, send.error) : null}
         />
         <Button label={send.busy ? t("auth.sending") : t("auth.sendLink")} busy={send.busy} onPress={submit} />
+        {google?.enabled ? (
+          <Button label={t("app.signIn.google")} variant="secondary" busy={googleBusy} onPress={startGoogle} />
+        ) : null}
+        {googleError || params.google_error === "1" ? <Notice>{t("app.signIn.googleError")}</Notice> : null}
       </View>
       {sent ? (
         <View style={{ gap: space.sm }}>

@@ -88,7 +88,7 @@ const log = fs.openSync(path.join(state, "api.log"), "w");
 const dev = spawn(
   process.execPath,
   [
-    wranglerJs, "dev", "--local", "--port", String(port), "--persist-to", d1, "--test-scheduled",
+    wranglerJs, "dev", "--local", "--infer-origin-from-routes=false", "--port", String(port), "--persist-to", d1, "--test-scheduled",
     "--var", `TMDB_BASE_URL:http://127.0.0.1:${mockPort}`, "--var", `ANILIST_URL:http://127.0.0.1:${mockPort}/anilist`, "--var", "TMDB_API_TOKEN:test-token",
     // The web client in `expo start` is served from another port; allow it (development only).
     "--var", "CORS_ORIGINS:http://localhost:8081,http://localhost:8082,http://localhost:19006",

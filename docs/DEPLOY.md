@@ -237,16 +237,42 @@ Il dominio oggi è collegato al vecchio Worker `pausa`. Un custom domain può st
 
 ## A6. Aggiornamenti successivi
 
-Ogni volta:
+Il workflow [Deploy Pausa v2](../.github/workflows/deploy.yml) parte ad ogni push su `main` (o manualmente da **Actions** su `main`). Compila il web e il Worker, applica le migrazioni pendenti a D1 e pubblica `pausa-v2`. Le esecuzioni verso produzione non si sovrappongono.
+
+Prima del primo push, configura **GitHub → Settings → Secrets and variables → Actions**:
+
+| Dove | Nomi |
+|---|---|
+| **Secrets** | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` |
+| **Variables** | `LEGAL_ENTITY`, `CONTACT_EMAIL` (mostrati in Privacy e Termini) |
+
+Crea un token Cloudflare dedicato al workflow v2, limitato all'account di Pausa e alla zona `gnagno.org`, con accesso in modifica a **Workers Scripts**, **D1** e **Workers Routes** e accesso in lettura alla **Zone**. Verifica che la configurazione committata punti a `pausa-v2`, al suo D1 e al dominio corretto. Controlla il primo run in **Actions** e verifica `https://pausa.gnagno.org/api/health/db`.
+
+Per un deploy manuale di emergenza:
 
 ```bash
-cd apps/mobile && npm run build:web && cd ../../crates/api
-npx wrangler d1 migrations apply pausa-v2 --remote   # solo se hai aggiunto file in migrations/
-npx wrangler deploy
-cd ../..
+cd apps/mobile
+LEGAL_ENTITY="Nome Cognome" CONTACT_EMAIL="contatto@esempio.it" npm run build:web &&
+  npm run budget &&
+  cd ../../crates/api &&
+  npx wrangler d1 migrations apply pausa-v2 --remote &&
+  npx wrangler deploy
 ```
 
-Il CI (`.github/workflows/rebuild-ci.yml`) controlla Rust, schema e API, ma **non** pubblica: il deploy resta manuale.
+## A7. Attiva «Accedi con Google» (sito e Android)
+
+1. In **Google Auth Platform → Clients**, usa o crea un client OAuth di tipo **Web application**. In **Authorized redirect URIs** aggiungi esattamente `https://pausa.gnagno.org/api/auth/callback/google`. Configura la schermata di consenso e, se lo stato è *Testing*, aggiungi gli account di prova in **Audience → Test users**.
+2. Dopo il deploy che applica `0002_google_oauth.sql`, da `crates/api` salva le credenziali **solo** sul Worker `pausa-v2`:
+
+   ```bash
+   npx wrangler secret put GOOGLE_CLIENT_ID
+   npx wrangler secret put GOOGLE_CLIENT_SECRET
+   ```
+
+3. Verifica che `/api/auth/google/status` sul dominio pubblico risponda `{"enabled":true}`. Accedi dal sito (anche con un account del vecchio sito, che deve ritrovare i suoi dati) e prova separatamente il link magico.
+4. Per Android, rigenera e ricompila l'app (C3–C4). Il login apre il browser di sistema e rientra in Pausa con `pausa://auth`; usa lo stesso client Web, senza segreti nell'app. Prova il flusso su un telefono reale.
+
+Il pulsante Google è attivo solo sull'origine HTTPS configurata in `APP_URL`. I collegamenti Google migrati continuano a usare l'identificativo Google già associato; un nuovo collegamento richiede un indirizzo Gmail o Workspace verificato da Google. Per altri indirizzi rimane il link magico.
 
 ---
 
@@ -273,24 +299,22 @@ Fallo **dopo** che A5 è passato. Nessun ritorno indietro è previsto: quello ch
    Decidi tu quanto tenere quell'archivio; poi cancellalo (GDPR: non conservare dati più del necessario).
    **Controllo:** `npx wrangler d1 list` mostra solo `pausa-v2`.
 
-3. **DNS.** Zona `gnagno.org` → *DNS*: il record di `pausa` deve essere quello creato dal custom domain (tipo *Worker*, gestito da Cloudflare). Se trovi un vecchio `CNAME`/`A`/`AAAA` per `pausa` creato a mano, cancellalo.
+3. **DNS.** Zona `gnagno.org` → *DNS*: il record di `pausa` deve essere quello creato dal custom domain (tipo *Worker*, gestito da Cloudflare). Se trovi un vecchio `CNAME`/`A`/`AAAA` per `pausa` creato a mano, cancellalo. Mantieni i record Resend per l'invio (`resend._domainkey.pausa`, `send.pausa` e `rsend.pausa`).
 
 4. **Regole della zona** (se le avevi create per il vecchio sito): *Rules* → *Cache Rules*, *Page Rules*, *Transform Rules* che citano `/_next/`, `/api/auth/` (Better Auth) o `/en/review`: eliminale. Gli header di sicurezza ora li dà `apps/mobile/public/_headers`.
 
 5. **Web Analytics.** Il client nuovo non carica il beacon di Cloudflare Web Analytics (era `NEXT_PUBLIC_CF_ANALYTICS_TOKEN` nella build Next). Se non lo rimetti, *Analytics & Logs* → *Web Analytics* → sito `pausa.gnagno.org` → elimina.
 
-6. **Token API usato dal vecchio deploy automatico.** *My Profile* → *API Tokens*: revoca il token creato per GitHub Actions (quello di `CLOUDFLARE_API_TOKEN`).
+6. **Token API usato dal vecchio deploy automatico.** *My Profile* → *API Tokens*: revoca il token v1 dopo aver salvato su GitHub quello nuovo di A6.
 
 ## B2. GitHub
 
-Il workflow di deploy del vecchio sito (`deploy.yml`) e il CI Next (`ci.yml`) sono stati cancellati dal repository. Nel repository su GitHub → *Settings* → *Secrets and variables* → *Actions*:
-- elimina i segreti `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID`;
-- elimina la variabile `NEXT_PUBLIC_VAPID_PUBLIC_KEY`.
+Il workflow di deploy ora pubblica la v2. In GitHub → *Settings* → *Secrets and variables* → *Actions*, mantieni i segreti Cloudflare aggiornati come in A6 ed elimina solo la vecchia variabile `NEXT_PUBLIC_VAPID_PUBLIC_KEY`.
 
 ## B3. Servizi esterni
 
 - **Resend:** elimina la **vecchia** chiave API (quella del Worker `pausa`), tieni il dominio verificato e la chiave nuova di A3.
-- **Google Cloud Console** (accesso con Google del vecchio sito): v2 per ora **non** ha l'accesso con Google. In *APIs & Services* → *Credentials* elimina il client OAuth di Pausa, oppure almeno togli l'URI di reindirizzamento `https://pausa.gnagno.org/api/auth/callback/google`. Se lo eliminerai, la schermata di consenso OAuth può restare o essere cancellata con il progetto.
+- **Google Cloud Console:** mantieni il client OAuth Web che usi per A7 e il suo URI di reindirizzamento. Elimina soltanto eventuali client v1 che non usi in v2 o altrove.
 - **Sentry** (se l'avevi attivato con `SENTRY_DSN`): elimina il progetto, v2 non lo usa.
 - **TMDB:** nessuna azione; il token è lo stesso, ora vive come segreto di `pausa-v2`.
 
@@ -427,5 +451,5 @@ Poi:
 
 Da `docs/rebuild/MANCA.md`, rilevante per il test su Play:
 - l'app non registra ancora il dispositivo per le notifiche push native (`expo-notifications` presente ma non collegato; servirà anche `google-services.json` di Firebase, gratuito);
-- niente accesso con Google, niente account di revisione;
+- niente account di revisione dedicato;
 - mai provata su emulatore o telefono vero: il test interno è la prima prova reale.
