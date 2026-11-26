@@ -8,11 +8,13 @@ import { errorMessage } from "@/api/errors";
 import { useAction } from "@/api/useAction";
 import { useResource } from "@/api/useResource";
 import { useI18n } from "@/i18n";
-import { hair, space, useTheme } from "@/theme";
-import { Button, Chevron, Choice, ConfirmButton, Empty, ErrorState, Heading, Loading, Notice, Row, RowList, Screen, Stagger, Tag, Text, TextLink, Title } from "@/ui";
+import { fonts, space, useTheme, web } from "@/theme";
+import { Button, Chevron, ConfirmButton, ErrorState, Heading, Loading, Row, RowList, Screen, Stagger, Tag, Text, TextLink } from "@/ui";
+import { Select } from "@/ui/Select";
+import { Chapter, Well } from "@/ui/Surfaces";
 import { Avatar } from "@/ui/Avatar";
-import { diaryApi } from "@/api/diary";
-import { CircleNav, LogCard, useCircleScope } from "./diary/shared";
+import { useCircleScope } from "./diary/shared";
+import { PushToggle } from "./people/PushToggle";
 import { inviteLink } from "./circle-links";
 import { RequireSession, useMe, useSession } from "./session";
 
@@ -41,17 +43,24 @@ function Invite({ circleId, invite, canRevoke, onChanged }: { circleId: string; 
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <View style={{ gap: space.xs, paddingVertical: space.sm, borderBottomWidth: hair, borderColor: c.rule }}>
-      <Title selectable>{invite.code}</Title>
-      <Text variant="small" tone="muted">
-        {invite.expiresAt ? t("circle.invites.expires", { date: date(invite.expiresAt) }) : t("circle.invites.never")}
+    <View role="listitem" style={{ gap: space.sm, paddingVertical: space.md }}>
+      {/* v1: the code is the figure of the well, big, tracked, breaking anywhere rather than overflowing. */}
+      <Text
+        selectable
+        style={[{ fontFamily: fonts.display200, fontSize: 48, lineHeight: 52, color: c.ink, textTransform: "uppercase", letterSpacing: 2 }, web({ overflowWrap: "anywhere", fontSynthesis: "none" })]}
+      >
+        {invite.code}
       </Text>
-      <Text variant="small" tone="muted">
-        {invite.maxUses ? t("circle.invites.usesOf", { used: invite.uses, max: invite.maxUses }) : t("circle.invites.uses", { used: invite.uses })}
-      </Text>
-      <Text variant="small" tone="ink2" selectable>{link}</Text>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs }}>
-        <Button label={copied ? t("circle.copied") : t("circle.copy")} variant="secondary" onPress={copy} />
+      <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: space.lg, rowGap: space["3xs"] }}>
+        <Text variant="small" tone="muted">
+          {invite.expiresAt ? t("circle.invites.expires", { date: date(invite.expiresAt) }) : t("circle.invites.never")}
+        </Text>
+        <Text variant="small" tone="muted">
+          {invite.maxUses ? t("circle.invites.usesOf", { used: invite.uses, max: invite.maxUses }) : t("circle.invites.uses", { used: invite.uses })}
+        </Text>
+      </View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.xs }}>
+        <Button label={copied ? t("circle.copied") : t("circle.copy")} onPress={copy} testID={`invite-copy-${invite.id}`} />
         {canRevoke ? (
           <ConfirmButton
             label={t("circle.invites.revoke")}
@@ -63,7 +72,6 @@ function Invite({ circleId, invite, canRevoke, onChanged }: { circleId: string; 
           />
         ) : null}
       </View>
-      {copied ? <Notice>{t("circle.copied")}</Notice> : null}
       {revoke.error ? <Text tone="error" role="alert">{errorMessage(t, revoke.error)}</Text> : null}
     </View>
   );
@@ -75,15 +83,18 @@ function NewInvite({ circleId, onCreated }: { circleId: string; onCreated: () =>
   const [max, setMax] = useState<(typeof MAX_USES)[number]>("none");
   const create = useAction();
   return (
-    <View style={{ gap: space.sm }}>
-      <Title>{t("circle.invites.new")}</Title>
-      <Choice label={t("circle.invites.expiry")} value={expiry} onChange={setExpiry} options={EXPIRY.map((v) => ({ value: v, label: t(`circle.invites.expiryChoices.${v}`) }))} />
-      <Choice
-        label={t("circle.invites.maxUses")}
-        value={max}
-        onChange={setMax}
-        options={MAX_USES.map((v) => ({ value: v, label: v === "none" ? t("circle.invites.unlimited") : String(v) }))}
-      />
+    <View style={{ gap: space.md }}>
+      <Heading level={3}>{t("circle.invites.new")}</Heading>
+      <View style={{ flexDirection: "row", gap: space.sm }}>
+        <Select label={t("circle.invites.expiry")} value={expiry} onChange={setExpiry} options={EXPIRY.map((v) => ({ value: v, label: t(`circle.invites.expiryChoices.${v}`) }))} testID="invite-expiry" />
+        <Select
+          label={t("circle.invites.maxUses")}
+          value={max}
+          onChange={setMax}
+          options={MAX_USES.map((v) => ({ value: v, label: v === "none" ? t("circle.invites.unlimited") : t("circle.invites.people", { count: Number(v) }) }))}
+          testID="invite-max"
+        />
+      </View>
       <Button
         label={create.busy ? t("app.circle.creating") : t("circle.invites.create")}
         busy={create.busy}
@@ -147,31 +158,13 @@ function Member({ circle, member, index, onChanged }: { circle: CircleDetail; me
   );
 }
 
-/** The latest viewings of the Cerchia (three), with a way into the whole feed. */
-function Recent({ circleId }: { circleId: string }) {
-  const { t, href, locale } = useI18n();
-  const feed = useResource((signal) => diaryApi.feed(circleId, { locale }, signal), [circleId, locale]);
+/** One of the pages a Cerchia leads to: its name, and what is in it. */
+function PageRow({ to, title, body }: { to: string; title: string; body: string }) {
   return (
-    <View style={{ gap: space.sm }}>
-      <Heading level={2}>{t("diary.nav.recent")}</Heading>
-      {feed.loading && !feed.data ? <Loading rows={2} /> : null}
-      {feed.error ? <ErrorState error={feed.error} onRetry={feed.reload} /> : null}
-      {feed.data && feed.data.items.length === 0 ? (
-        <Empty title={t("feed.emptyTitle")} body={t("feed.emptyBody")}>
-          <Button label={t("feed.emptyCta")} href={href("/log")} />
-        </Empty>
-      ) : null}
-      {feed.data && feed.data.items.length > 0 ? (
-        <>
-          <RowList>
-            {feed.data.items.slice(0, 3).map((log) => (
-              <LogCard key={log.id} log={log} circleId={circleId} />
-            ))}
-          </RowList>
-          <Button label={t("diary.nav.allFeed")} variant="secondary" href={href(`/c/${circleId}/feed`)} />
-        </>
-      ) : null}
-    </View>
+    <Row href={to} style={{ alignItems: "flex-start", flexDirection: "column", gap: space["3xs"], paddingVertical: space.md }}>
+      <Heading level={3}>{title}</Heading>
+      <Text variant="small" tone="muted">{body}</Text>
+    </Row>
   );
 }
 
@@ -210,16 +203,37 @@ function CircleBody({ id }: { id: string }) {
         <Heading level={1}>{circle.name}</Heading>
         {circle.description ? <Text variant="lead" tone="ink2">{circle.description}</Text> : null}
         <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.sm }}>
-          <Tag label={t("app.circle.people", { count: circle.members.length })} />
           <Tag label={t(`app.role.${circle.myRole}`)} tone={circle.myRole === "member" ? "ink2" : "accent"} />
         </View>
       </View>
-      <CircleNav circleId={circle.id} current="hub" />
 
-      <Recent circleId={circle.id} />
+      {/* The invite comes first: bringing friends in is what this page is for. The one well on this screen. */}
+      <Well grained style={{ padding: space.lg, gap: space.lg }}>
+        <View style={{ gap: space.sm }}>
+          <Heading level={2}>{t("circle.invites.title")}</Heading>
+          <Text tone="ink2">{t("circle.invites.body")}</Text>
+        </View>
+        {circle.invites.length === 0 ? (
+          <Text variant="small" tone="muted">{canManage ? t("circle.invites.none") : t("circle.invites.noneMember")}</Text>
+        ) : (
+          <RowList style={{ borderTopWidth: 0 }}>
+            {circle.invites.map((inv) => (
+              <Invite key={inv.id} circleId={circle.id} invite={inv} canRevoke={canManage} onChanged={refresh} />
+            ))}
+          </RowList>
+        )}
+        {canManage ? <NewInvite circleId={circle.id} onCreated={refresh} /> : null}
+      </Well>
 
-      <View style={{ gap: space.sm, borderTopWidth: hair, borderColor: c.rule, paddingTop: space.lg }}>
-        <Heading level={2}>{t("circle.members")}</Heading>
+      <View style={{ gap: space.sm }}>
+        <View style={{ flexDirection: "row", alignItems: "baseline", gap: space.sm }}>
+          <View style={{ flexShrink: 1 }}>
+            <Chapter>{t("circle.members")}</Chapter>
+          </View>
+          <Text style={{ fontFamily: fonts.display200, fontSize: 32, lineHeight: 36, color: c.muted }} aria-label={String(circle.members.length)}>
+            {circle.members.length}
+          </Text>
+        </View>
         <RowList>
           {circle.members.map((m, i) => (
             <Member key={m.userId} circle={circle} member={m} index={i} onChanged={refresh} />
@@ -227,19 +241,22 @@ function CircleBody({ id }: { id: string }) {
         </RowList>
       </View>
 
-      <View style={{ gap: space.sm, borderTopWidth: hair, borderColor: c.rule, paddingTop: space.lg }}>
-        <Heading level={2}>{t("circle.invites.title")}</Heading>
-        <Text tone="ink2">{t("circle.invites.body")}</Text>
-        {circle.invites.length === 0 ? (
-          <Text variant="small" tone="muted">{canManage ? t("circle.invites.none") : t("circle.invites.noneMember")}</Text>
-        ) : (
-          <View>
-            {circle.invites.map((inv) => (
-              <Invite key={inv.id} circleId={circle.id} invite={inv} canRevoke={canManage} onChanged={refresh} />
-            ))}
-          </View>
-        )}
-        {canManage ? <NewInvite circleId={circle.id} onCreated={refresh} /> : null}
+      <RowList>
+        <PageRow to={href(`/lists?circle=${circle.id}`)} title={t("tabs.lists")} body={t("circle.listsBody")} />
+        <PageRow to={href(`/c/${circle.id}/insights`)} title={t("circle.insightsTitle")} body={t("circle.insightsBody")} />
+        <PageRow to={href("/import")} title={t("circle.importTitle")} body={t("circle.importBody")} />
+        <PageRow to={href("/account")} title={t("manage.accountTitle")} body={t("manage.accountBody")} />
+        <PageRow to={href(`/c/${circle.id}/settings`)} title={t("app.circle.settings")} body={t("settings.mine")} />
+      </RowList>
+
+      <PushToggle />
+
+      <View style={{ gap: space.xs }}>
+        <View role="navigation" aria-label={t("manage.legal")} style={{ flexDirection: "row", gap: space.lg }}>
+          <TextLink href={href("/privacy")} tone="ink2">{t("manage.privacy")}</TextLink>
+          <TextLink href={href("/terms")} tone="ink2">{t("manage.terms")}</TextLink>
+        </View>
+        <Text variant="small" tone="muted">{t("tmdb.attribution")}</Text>
       </View>
     </Screen>
   );

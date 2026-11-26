@@ -1,4 +1,4 @@
-import type { MySettings, PersonProfile } from "@pausa/api-types";
+import type { ForYou, MyProviders, MySettings, PersonProfile, Provider, ProviderCatalogue } from "@pausa/api-types";
 import { client } from "@/api";
 import type { Client } from "./client";
 import { query } from "./diary";
@@ -25,6 +25,14 @@ export function peopleEndpoints(c: Client) {
     addFavorite: (mediaId: string) => c.none("POST", "/api/me/favorites", { body: { mediaId } }),
     removeFavorite: (mediaId: string) => c.none("DELETE", `/api/me/favorites/${e(mediaId)}`),
     circleMe: (circleId: string, input: { muted?: boolean; hideWatching?: boolean }) => c.none("PUT", `/api/circles/${e(circleId)}/me`, { body: input }),
+    forYou: (locale: string, signal?: AbortSignal) => c.json<ForYou>("GET", `/api/me/for-you${query({ locale })}`, { signal }),
+    providerCatalogue: (country: string, locale: string, signal?: AbortSignal) => c.json<ProviderCatalogue>("GET", `/api/providers${query({ country, locale })}`, { signal }),
+    myProviders: (signal?: AbortSignal) => c.json<MyProviders>("GET", "/api/me/providers", { signal }),
+    saveProviders: (country: string | null, providers: Provider[]) => c.none("PUT", "/api/me/providers", { body: { country, providers } }),
+    /** The Web Push public key; 404 when this server has no VAPID keys (push is off). */
+    pushKey: (signal?: AbortSignal) => c.json<{ publicKey: string }>("GET", "/api/push/key", { signal }),
+    pushRegister: (input: { endpoint: string; p256dh: string; auth: string; locale: string }) => c.none("POST", "/api/me/push", { body: { kind: "webpush", ...input } }),
+    pushUnregister: (endpoint: string) => c.none("DELETE", "/api/me/push", { body: { endpoint } }),
     person: (circleId: string, userId: string, locale: string, signal?: AbortSignal) =>
       c.json<PersonProfile>("GET", `/api/circles/${e(circleId)}/people/${e(userId)}${query({ locale })}`, { signal }),
   };

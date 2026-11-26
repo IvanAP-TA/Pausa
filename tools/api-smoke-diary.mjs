@@ -154,6 +154,18 @@ check("Cineforum's thread shows only Cineforum's comment (no cross-group leak)",
 r = await call("GET", `/api/circles/${c2.id}/logs/${logA}`, { cookie: carol.cookie });
 check("a viewing not shared in a Cerchia is 404 there", r.status === 404, r.text);
 
+// the diary card (v1 LogCard): last comment of THIS Cerchia, runtime, genres, synopsis, "visto con"
+const cardOf = async (circle, who, id) => (await call("GET", `/api/circles/${circle}/feed`, { cookie: who.cookie })).json.items.find((i) => i.id === id);
+let card = await cardOf(c1.id, bob, logB);
+check("card: the last comment in Divano, with its author", card.lastComment?.body === "Concordo" && card.lastComment.author.id === alice.id && card.lastComment.isSpoiler === false, JSON.stringify(card.lastComment));
+card = await cardOf(c2.id, bob, logB);
+check("card: Cineforum shows its own last comment", card.lastComment?.body === "Per me è troppo lungo", JSON.stringify(card.lastComment));
+check("card: runtime, genres and synopsis of the title travel with the viewing", card.runtimeMin === 136 && card.genres.length === 2 && card.overview?.startsWith("Un hacker"), JSON.stringify({ r: card.runtimeMin, g: card.genres, o: card.overview }));
+card = await cardOf(c1.id, bob, logA);
+check("card: 'visto con' in the feed, members only", card.watchedWith.length === 1 && card.watchedWith[0].id === bob.id, JSON.stringify(card.watchedWith));
+r = await call("GET", "/api/me/diary", { cookie: alice.cookie });
+check("my diary: 'visto con' too, and no last comment", r.json.items.find((i) => i.id === logA)?.watchedWith.some((w) => w.id === bob.id) && r.json.items.every((i) => i.lastComment === null), r.text.slice(0, 300));
+
 // notifications
 const notes = (user, type) => sql(`SELECT circle_id, log_id, actor_id FROM notification WHERE user_id='${user}' AND type='${type}'`);
 check("bob (the author) was told about alice's comment, in Divano", notes(bob.id, "comment").some((n) => n.circle_id === c1.id && n.actor_id === alice.id));
@@ -172,6 +184,8 @@ r = await call("POST", `/api/circles/${c1.id}/logs/${logB}/comments`, { cookie: 
 check("a non-member cannot comment (404)", r.status === 404);
 r = await call("POST", `/api/circles/${c1.id}/logs/${logB}/comments`, { cookie: alice.cookie, body: { body: "Finale a sorpresa", isSpoiler: true } });
 const cmSp = r.json.id;
+card = await cardOf(c1.id, bob, logB);
+check("card: a spoiler comment as last comment travels without its text", card.lastComment?.isSpoiler === true && card.lastComment.body === null, JSON.stringify(card.lastComment));
 r = await call("GET", `/api/circles/${c1.id}/logs/${logB}`, { cookie: bob.cookie });
 const spc = r.json.comments.find((c) => c.id === cmSp);
 check("a spoiler comment is withheld from others", spc.body === null && spc.bodyHidden === true && !r.text.includes("sorpresa"), JSON.stringify(spc));
@@ -343,6 +357,70 @@ sql(`DELETE FROM notification WHERE type='now_watching'`);
 sql(`UPDATE circle SET live_watching=0 WHERE id='${c1.id}'`);
 r = await call("PUT", `/api/media/${op}/progress`, { cookie: alice.cookie, body: { season: 1, episode: 1 } });
 check("a Cerchia with 'sta guardando' off gets nothing", notes(bob.id, "now_watching").length === 0);
+
+// the diary head: "N visioni quest'anno" and the "sta guardando" strip in the Cerchia detail
+r = await call("GET", `/api/circles/${c1.id}`, { cookie: bob.cookie });
+check("strip: a Cerchia with 'sta guardando' off shows nobody", r.status === 200 && Array.isArray(r.json.watching) && r.json.watching.length === 0, r.text);
+const year = new Date().getUTCFullYear();
+const expected = sql(`SELECT COUNT(*) AS n FROM log_share s JOIN log l ON l.id = s.log_id JOIN circle_member m ON m.circle_id = s.circle_id AND m.user_id = l.user_id WHERE s.circle_id='${c1.id}' AND l.watched_on LIKE '${year}-%'`)[0].n;
+check("head: logsThisYear counts this year's viewings shared here", r.json.logsThisYear === expected, `${r.json.logsThisYear} vs ${expected}`);
+sql(`UPDATE circle SET live_watching=1 WHERE id='${c1.id}'`);
+r = await call("GET", `/api/circles/${c1.id}`, { cookie: bob.cookie });
+check("strip: with it on, bob sees alice at S1·E1 of the title", r.json.watching.length === 1 && r.json.watching[0].user.id === alice.id && r.json.watching[0].media.id === op && r.json.watching[0].season === 1 && r.json.watching[0].episode === 1, r.text);
+sql(`UPDATE circle_member SET hide_watching=1 WHERE circle_id='${c1.id}' AND user_id='${alice.id}'`);
+r = await call("GET", `/api/circles/${c1.id}`, { cookie: bob.cookie });
+check("strip: a member who hides it is left out", r.json.watching.length === 0, r.text);
+sql(`UPDATE circle_member SET hide_watching=0 WHERE circle_id='${c1.id}' AND user_id='${alice.id}'`);
+sql(`UPDATE circle_member SET hide_watching=1 WHERE circle_id='${c1.id}' AND user_id='${bob.id}'`);
+r = await call("GET", `/api/circles/${c1.id}`, { cookie: bob.cookie });
+check("strip: hiding it for myself hides the whole strip", r.json.watching.length === 0, r.text);
+sql(`UPDATE circle_member SET hide_watching=0 WHERE circle_id='${c1.id}' AND user_id='${bob.id}'`);
+sql(`UPDATE circle SET live_watching=0 WHERE id='${c1.id}'`);
+
+// "Per cominciare" and "Un anno fa… e oltre" (v1 retention.ts)
+r = await call("GET", `/api/circles/${c1.id}/extras`, { cookie: carol.cookie });
+check("extras: not in the Cerchia is 404", r.status === 404, r.text);
+r = await call("GET", `/api/circles/${c1.id}/extras`, { cookie: bob.cookie });
+check("extras: bob has logged and has company, no Serata yet", r.status === 200 && r.json.hasLog === true && r.json.hasCompany === true && r.json.hasSerata === false, r.text);
+check("extras: this year's viewings are not memories", r.json.memories.every((m) => m.yearsAgo >= 1), r.text);
+const yearsBack = (n, shiftDays = 0) => {
+  const d = new Date(Date.now() + shiftDays * 86_400_000);
+  d.setUTCFullYear(d.getUTCFullYear() - n);
+  return d.toISOString().slice(0, 10);
+};
+const mem = [];
+for (const body of [
+  { watchedOn: yearsBack(2, -2), rating: null, review: "Finale che spiazza", containsSpoilers: true },
+  { watchedOn: yearsBack(1), rating: null, review: "Rivisto dopo anni" },
+  { watchedOn: yearsBack(1, 10), rating: null, review: "Troppo lontano" },
+  { watchedOn: yearsBack(1), rating: null, review: "Solo per me", circles: [] },
+]) {
+  r = await log(alice, body);
+  mem.push(r.json?.id);
+}
+r = await call("GET", `/api/circles/${c1.id}/extras`, { cookie: bob.cookie });
+const ids = r.json.memories.map((m) => m.logId);
+check("memories: today a year ago first, then two days off two years ago", ids[0] === mem[1] && ids[1] === mem[0] && r.json.memories[0].yearsAgo === 1 && r.json.memories[1].yearsAgo === 2, r.text);
+check("memories: a spoiler review is left out, the plain one is there", r.json.memories[0].review === "Rivisto dopo anni" && r.json.memories[1].review === null, r.text);
+check("memories: ten days off and private viewings are not memories", !ids.includes(mem[2]) && !ids.includes(mem[3]), r.text);
+check("memories: who and what", r.json.memories[0].author.id === alice.id && r.json.memories[0].media.title === "Matrix", r.text);
+for (const id of mem) if (id) await call("DELETE", `/api/logs/${id}`, { cookie: alice.cookie });
+
+// diary search (v1 FilterBar): title text, "visto con", the year it was watched, one title
+const feedOf = async (qs) => (await call("GET", `/api/circles/${c1.id}/feed?${qs}`, { cookie: bob.cookie })).json.items;
+let items = await feedOf("q=matr");
+check("search: part of the title finds it", items.length > 0 && items.every((i) => i.media.title === "Matrix"), JSON.stringify(items.map((i) => i.media.title)));
+check("search: any case", (await feedOf("q=MATR")).length === items.length);
+check("search: % and _ are letters, not wildcards", (await feedOf("q=%25")).length === 0 && (await feedOf("q=_")).length === 0);
+const withBob = sql(`SELECT ww.log_id FROM log_watched_with ww JOIN log_share s ON s.log_id = ww.log_id AND s.circle_id='${c1.id}' WHERE ww.user_id='${bob.id}'`).map((x) => x.log_id);
+items = await feedOf(`with=${bob.id}`);
+check("'visto con': only viewings bob was at", withBob.length > 0 && items.length === withBob.length && items.every((i) => withBob.includes(i.id)), `${items.length} vs ${withBob.length}`);
+const thisYear = new Date().getUTCFullYear();
+items = await feedOf(`watchedYear=${thisYear}`);
+check("watched year: only viewings of that year", items.length > 0 && items.every((i) => i.watchedOn.startsWith(String(thisYear))));
+check("watched year: none in 1999", (await feedOf("watchedYear=1999")).length === 0);
+items = await feedOf(`mediaId=${media.id}`);
+check("one title: only its viewings", items.length > 0 && items.every((i) => i.media.id === media.id));
 sql(`UPDATE circle SET live_watching=1 WHERE id='${c1.id}'`);
 
 // ═════════ title detail, localised on demand ═════════
@@ -359,6 +437,70 @@ r = await call("GET", "/api/media/does-not-exist", { cookie: alice.cookie });
 check("an unknown title is 404", r.status === 404, r.text);
 r = await call("GET", `/api/media/search?q=Mat`, { cookie: alice.cookie });
 check("titles Pausa already has are found by prefix without calling anyone", r.json.some((c) => c.key === `local:${media.id}`), r.text);
+
+// ═════════ one own viewing (edit inside the Cerchia) ═════════
+r = await call("GET", `/api/logs/${logA}?locale=it`, { cookie: alice.cookie });
+check("own log: the author reads it with tags and shares", r.status === 200 && r.json.id === logA && r.json.author.id === alice.id && Array.isArray(r.json.sharedIn) && r.json.sharedIn.includes(c1.id) && Array.isArray(r.json.watchedWith), r.text);
+r = await call("GET", `/api/logs/${logA}?locale=it`, { cookie: bob.cookie });
+check("own log: anyone else gets 404", r.status === 404, r.text);
+r = await call("GET", `/api/logs/${logA}`);
+check("own log: no session is 401", r.status === 401, r.text);
+r = await call("GET", "/api/logs/does-not-exist", { cookie: alice.cookie });
+check("own log: unknown id is 404", r.status === 404, r.text);
+
+// ═════════ title page inside a Cerchia (GET /api/circles/:id/media/:mediaId) ═════════
+r = await call("GET", `/api/circles/${c1.id}/media/${media.id}?locale=it`, { cookie: bob.cookie });
+const expectedAvg = sql(`SELECT AVG(r.rating) AS a, COUNT(*) AS n FROM rating_current r JOIN circle_member m ON m.circle_id = r.circle_id AND m.user_id = r.user_id WHERE r.circle_id='${c1.id}' AND r.media_id='${media.id}'`)[0];
+check("circle title: original title, source and the Cerchia average", r.status === 200 && typeof r.json.originalTitle === "string" && r.json.originalTitle.length > 0 && typeof r.json.source === "string" && r.json.rated === expectedAvg.n && (expectedAvg.n === 0 ? r.json.average === null : r.json.average === Math.round(expectedAvg.a)), r.text);
+r = await call("GET", `/api/circles/${c1.id}/media/${media.id}`, { cookie: carol.cookie });
+check("circle title: not for someone outside the Cerchia", r.status === 403 || r.status === 404, r.text);
+r = await call("GET", `/api/circles/${c1.id}/media/does-not-exist`, { cookie: bob.cookie });
+check("circle title: an unknown title is 404", r.status === 404, r.text);
+
+// ═════════ Registra form: resolve a chosen title, a synopsis written by the person ═════════
+r = await call("POST", "/api/media/resolve", { cookie: alice.cookie, body: { mediaKey: "tmdb:movie:807", locale: "it" } });
+check("resolve: a catalogue result becomes a stored title and its id comes back", r.status === 200 && typeof r.json.id === "string", r.text);
+const fresh = r.json.id;
+r = await call("POST", "/api/media/resolve", { cookie: alice.cookie, body: { mediaKey: "tmdb:movie:807", locale: "it" } });
+check("resolve twice gives the same id", r.status === 200 && r.json.id === fresh, r.text);
+r = await call("POST", "/api/media/resolve", { cookie: alice.cookie, body: { mediaKey: "nonsense" } });
+check("resolve refuses a key it does not know", r.status === 400, r.text);
+r = await call("POST", "/api/media/resolve", { body: { mediaKey: "tmdb:movie:807" } });
+check("resolve needs a session", r.status === 401, r.text);
+sql(`UPDATE media_detail SET overview = NULL, source = 'none' WHERE media_id = '${fresh}' AND locale = 'it'`);
+r = await call("POST", "/api/logs", { cookie: alice.cookie, body: { mediaKey: "local:" + fresh, watchedOn: today, circles: [], locale: "it", overview: "x".repeat(1201) } });
+check("a synopsis over 1200 characters is refused", r.status === 400, r.text);
+r = await call("POST", "/api/logs", { cookie: alice.cookie, body: { mediaKey: "local:" + fresh, watchedOn: today, circles: [], locale: "it", overview: "  Una trama scritta da me.  " } });
+check("a log can carry a synopsis for a title that has none", r.status === 201, r.text);
+r = await call("GET", `/api/media/${fresh}?locale=it`, { cookie: alice.cookie });
+check("the written synopsis is the title's (trimmed), marked as the user's", r.json.overview === "Una trama scritta da me." && sql(`SELECT source FROM media_detail WHERE media_id = '${fresh}' AND locale = 'it'`)[0].source === "user", r.text);
+r = await call("POST", "/api/logs", { cookie: alice.cookie, body: { mediaKey: "local:" + fresh, watchedOn: today, circles: [], locale: "it", overview: "Un'altra trama." } });
+r = await call("GET", `/api/media/${fresh}?locale=it`, { cookie: alice.cookie });
+check("a synopsis already there is never replaced", r.json.overview === "Una trama scritta da me.", r.text);
+r = await call("POST", "/api/logs", { cookie: alice.cookie, body: { mediaKey: "local:" + media.id, watchedOn: today, circles: [], locale: "it", overview: "Non deve passare." } });
+r = await call("GET", `/api/media/${media.id}?locale=it`, { cookie: alice.cookie });
+check("the catalogue's synopsis wins over a written one", r.json.overview?.startsWith("Un hacker"), r.text);
+
+// ═════════ my diary: tabs, counts, only=private ═════════
+const dora = await signIn(mail("dora"));
+const dc = (await call("POST", "/api/circles", { cookie: dora.cookie, body: { name: "Solo private" } })).json;
+const dl = (extra) => call("POST", "/api/logs", { cookie: dora.cookie, body: { mediaKey: "tmdb:movie:603", watchedOn: "2026-11-01", circles: [], locale: "it", ...extra } });
+const d1 = (await dl({})).json.id;
+const d2 = (await dl({ watchedOn: "2026-11-02", circles: [dc.id] })).json.id;
+const d3 = (await dl({ watchedOn: "2026-11-03" })).json.id;
+r = await call("GET", "/api/me/diary/counts");
+check("the counts need a session", r.status === 401);
+r = await call("GET", "/api/me/diary/counts", { cookie: dora.cookie });
+check("counts: three viewings, two of them private", r.status === 200 && r.json.all === 3 && r.json.private === 2, r.text);
+r = await call("GET", "/api/me/diary?only=private", { cookie: dora.cookie });
+check("only=private lists the two nobody shares, newest first", r.status === 200 && r.json.items.map((l) => l.id).join() === [d3, d1].join(), r.text);
+r = await call("GET", "/api/me/diary", { cookie: dora.cookie });
+check("without it, all three", r.json.items.length === 3);
+await call("PUT", `/api/logs/${d2}/shares`, { cookie: dora.cookie, body: { circles: [] } });
+r = await call("GET", "/api/me/diary/counts", { cookie: dora.cookie });
+check("making one private moves the counts", r.json.all === 3 && r.json.private === 3, r.text);
+r = await call("GET", "/api/me/diary/counts", { cookie: alice.cookie });
+check("counts are per person", r.json.all !== 3 || r.json.private !== 3);
 
 // ═════════ accounts: viewings leave with a deleted person ═════════
 r = await call("DELETE", "/api/account", { cookie: bob.cookie, body: { confirm: true } });

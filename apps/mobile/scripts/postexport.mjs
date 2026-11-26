@@ -32,32 +32,39 @@ const PUBLIC = [
   [re(`^(${L})/(privacy|terms)\\.html$`), (m) => ({ locale: m[1], sub: `/${m[2]}` })],
 ];
 const SHELL = [
-  re(`^(${L})/(sign-in|home|account)\\.html$`),
+  re(`^(${L})/(sign-in|home|account|review)\\.html$`),
+  re(`^(${L})/admin/(metrics|reports)\\.html$`),
   re(`^(${L})/c/\\[id\\](/settings)?\\.html$`),
   re(`^(${L})/join/\\[code\\]\\.html$`),
   /^auth\.html$/,
   // diary / social / profile / statistics screens
   re(`^(${L})/(diary|log|notifications|me)\\.html$`),
   re(`^(${L})/log/\\[logId\\]\\.html$`),
-  re(`^(${L})/me/(profile|settings|account)\\.html$`),
+  re(`^(${L})/me/(profile|settings|account|circles)\\.html$`),
   re(`^(${L})/t/\\[mediaId\\]\\.html$`),
-  re(`^(${L})/c/\\[id\\]/(feed|ranking|insights)\\.html$`),
+  re(`^(${L})/c/\\[id\\]/(feed|ranking|insights|members)\\.html$`),
   re(`^(${L})/c/\\[id\\]/log/\\[logId\\]\\.html$`),
+  re(`^(${L})/c/\\[id\\]/log/\\[logId\\]/edit\\.html$`),
+  re(`^(${L})/c/\\[id\\]/m/\\[mediaId\\]\\.html$`),
   re(`^(${L})/c/\\[id\\]/people/\\[userId\\]\\.html$`),
   // Serata / lists / import (the other engineer's screens; listed here so the shared export passes while both trees are in flux)
   re(`^(${L})/(lists|import|imports)(/\\[[a-zA-Z]+\\])?\\.html$`),
   re(`^(${L})/c/\\[id\\]/serate(/\\[[a-zA-Z]+\\])?\\.html$`),
   re(`^(${L})/s/\\[code\\](/[a-z]+)?\\.html$`),
 ];
+// Static pages that are not for search engines: no JavaScript like the public ones, but noindex and not in the sitemap.
+const QUIET = re(`^(${L})/slow-down\\.html$`);
 const JUNK = [/^\[locale\]/, /\(app\)/, /^_sitemap\.html$/, /^(it|en|es)\/guide\/\[slug\]\.html$/];
 
-/** What a built HTML file is: a public page (zero JS), an app shell page (keeps JS), the 404, junk to delete, or unknown. */
+/** What a built HTML file is: a public page (zero JS), a quiet page (zero JS, noindex), an app shell page (keeps JS), the 404, junk to delete, or unknown. */
 export function classify(rel) {
   rel = rel.split(path.sep).join("/");
   if (JUNK.some((r) => r.test(rel))) return { kind: "junk" };
   if (rel === "offline.html") return { kind: "offline" }; // written by this script (the service worker's fallback page)
   if (rel === "index.html") return { kind: "public", locale: DEFAULT_LOCALE, sub: "", chooser: true };
   if (rel === "+not-found.html" || rel === "404.html") return { kind: "notfound", locale: DEFAULT_LOCALE };
+  const quiet = QUIET.exec(rel);
+  if (quiet) return { kind: "quiet", locale: quiet[1] };
   for (const [r, f] of PUBLIC) {
     const m = r.exec(rel);
     if (m) return { kind: "public", ...f(m) };
@@ -83,8 +90,8 @@ export function build404Html({ css, messages }) {
     const h = i === 0 ? "h1" : "h2";
     return `<section lang="${l}" class="blk"><${h}>${esc(m.notFoundTitle)}</${h}><p>${esc(m.notFoundBody)}</p><a class="btn${i === 0 ? " pri" : ""}" href="/${l}">${esc(m.home)}</a></section>`;
   }).join("");
-  const own = `body{margin:0}main{max-width:720px;margin:0 auto;padding:64px 16px;font-family:Barlow_400,ui-sans-serif,system-ui,sans-serif;line-height:1.55}.blk{padding:24px 0;border-top:1px solid var(--c-rule)}.blk:first-child{border-top:0}h1,h2{font-family:SofiaSansExtraCondensed_200,ui-sans-serif,sans-serif;font-weight:200;text-transform:uppercase;line-height:1.08;margin:0 0 12px}h1{font-size:clamp(3.75rem,3.3rem + 1.9vw,4.5rem)}h2{font-size:2rem}p{margin:0 0 16px;color:var(--c-ink-2,var(--c-ink2));max-width:65ch}.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 24px;border:1px solid var(--c-ink);font-family:SofiaSansExtraCondensed_400,ui-sans-serif,sans-serif;text-transform:uppercase;font-size:20px}.btn.pri{background:var(--c-accent);border-color:var(--c-accent);color:var(--c-accentInk)}`;
-  return `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><title>${esc(it.notFoundTitle)} · Pausa</title><meta name="robots" content="noindex, nofollow"/><meta name="theme-color" content="#001113"/><link rel="icon" href="/favicon.ico"/><style>${css}${own}</style></head><body><main>${blocks}</main></body></html>`;
+  const own = `body{margin:0}main{max-width:720px;margin:0 auto;padding:64px 16px;font-family:Barlow_400,ui-sans-serif,system-ui,sans-serif;line-height:1.55}.mk{margin:0 0 16px;font-family:SofiaSansExtraCondensed_400,ui-sans-serif,sans-serif;text-transform:uppercase;font-size:36px;line-height:1;color:var(--c-ink)}.blk{padding:24px 0;border-top:1px solid var(--c-rule)}.blk:first-child{border-top:0}h1,h2{font-family:SofiaSansExtraCondensed_200,ui-sans-serif,sans-serif;font-weight:200;text-transform:uppercase;line-height:1.08;margin:0 0 12px}h1{font-size:clamp(3.75rem,3.3rem + 1.9vw,4.5rem)}h2{font-size:2rem}p{margin:0 0 16px;color:var(--c-ink-2,var(--c-ink2));max-width:65ch}.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 24px;border:1px solid var(--c-ink);font-family:SofiaSansExtraCondensed_400,ui-sans-serif,sans-serif;text-transform:uppercase;font-size:20px}.btn.pri{background:var(--c-accent);border-color:var(--c-accent);color:var(--c-accentInk)}`;
+  return `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><title>${esc(it.notFoundTitle)} · Pausa</title><meta name="robots" content="noindex, nofollow"/><meta name="theme-color" content="#001113"/><link rel="icon" href="/favicon.ico"/><style>${css}${own}</style></head><body><main><p class="mk">Pausa</p>${blocks}</main></body></html>`;
 }
 
 /** The theme/font CSS Expo already wrote into a page of this build (so the 404 looks like the rest without duplicating the tokens). */
@@ -167,10 +174,23 @@ export function check404(html) {
   const bad = [];
   const h = readHead(html);
   if (!h.robots || !/noindex/i.test(h.robots)) bad.push("the 404 must be noindex");
-  if (/<script/.test(html)) bad.push("the 404 must ship no JavaScript");
+  if (/<script\b/.test(html)) bad.push("the 404 must ship no JavaScript");
   if (!h.title) bad.push("the 404 has no <title>");
   if (h.h1 !== 1) bad.push(`the 404 needs one <h1>, found ${h.h1}`);
   for (const l of LOCALES) if (!new RegExp(`<section lang="${l}"`).test(html)) bad.push(`the 404 lacks the ${l} message`);
+  return bad;
+}
+
+/** The "slow down" page: static like a public page, but it must never be indexed. */
+export function checkQuietPage(html, { locale }) {
+  const h = readHead(html);
+  const bad = [];
+  if (h.lang !== locale) bad.push(`<html lang> is "${h.lang}", expected "${locale}"`);
+  if (!h.robots || !/noindex/i.test(h.robots)) bad.push(`a quiet page must be noindex (robots: ${h.robots ?? "none"})`);
+  if (!h.title || h.title.trim() === "" || h.title === "Pausa") bad.push("a quiet page needs its own <title>");
+  if (h.h1 !== 1) bad.push(`expected one <h1>, found ${h.h1}`);
+  if (/<script\b[^>]*\bsrc=/.test(html)) bad.push("contains <script src>: a quiet page must ship no JavaScript");
+  if (/<link\b[^>]*as="script"/.test(html)) bad.push("contains a script preload");
   return bad;
 }
 
@@ -198,7 +218,7 @@ export function sitemapXml() {
 /** `robots.txt`: AI crawlers out, private prefixes out, everything else in (INVENTORY 1.4). */
 export function robotsTxt() {
   const blocked = BLOCKED_AGENTS.map((a) => `User-Agent: ${a}`).join("\n") + "\nDisallow: /\n";
-  const disallow = ["/api/", "/*/c/", "/*/join/", "/*/sign-in", "/*/home", "/*/account", "/auth"].map((p) => `Disallow: ${p}`).join("\n");
+  const disallow = ["/api/", "/*/c/", "/*/join/", "/*/sign-in", "/*/slow-down", "/*/home", "/*/account", "/auth"].map((p) => `Disallow: ${p}`).join("\n");
   return `${blocked}\nUser-Agent: *\nAllow: /\n${disallow}\n\nSitemap: ${SITE_URL}/sitemap.xml\n`;
 }
 
@@ -236,7 +256,7 @@ export function run(dist, { env = process.env, log = console.log, warn = console
   const messages = Object.fromEntries(LOCALES.map((l) => [l, JSON.parse(fs.readFileSync(path.join(here, "..", "..", "..", "packages", "messages", `${l}.json`), "utf8"))]));
   fs.writeFileSync(path.join(dist, "404.html"), build404Html({ css, messages }));
 
-  const counts = { public: 0, shell: 0, notfound: 0 };
+  const counts = { public: 0, quiet: 0, shell: 0, notfound: 0 };
   const htmls = [];
   for (const rel of walk(dist).filter((f) => f.endsWith(".html"))) {
     const info = classify(rel);
@@ -248,14 +268,14 @@ export function run(dist, { env = process.env, log = console.log, warn = console
     }
     let html = fs.readFileSync(file, "utf8");
     html = patchViewport(setLang(html, info.locale));
-    if (info.kind === "public" || info.kind === "notfound") html = stripScripts(html);
+    if (info.kind === "public" || info.kind === "notfound" || info.kind === "quiet") html = stripScripts(html);
     html = addInstallTags(html, info.locale);
     if (info.kind === "public") html = ogLocaleAlternates(html, info.locale, OG_LOCALE);
     fs.writeFileSync(file, html);
     htmls.push(html);
     counts[info.kind]++;
     const bad =
-      info.kind === "public" ? checkPublicPage(html, info) : info.kind === "shell" ? checkShellPage(html) : check404(html);
+      info.kind === "public" ? checkPublicPage(html, info) : info.kind === "shell" ? checkShellPage(html) : info.kind === "quiet" ? checkQuietPage(html, info) : check404(html);
     for (const b of bad) problems.push(`${rel}: ${b}`);
   }
 

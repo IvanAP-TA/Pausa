@@ -2,8 +2,18 @@
 import type { InviteDto } from "./InviteDto";
 import type { MemberDto } from "./MemberDto";
 import type { Role } from "./Role";
+import type { WatchingDto } from "./WatchingDto";
 
 /**
  * `GET /api/circles/:id`. Everyone in the Cerchia sees the same people and the active invites.
  */
-export type CircleDetail = { id: string, name: string, description: string | null, cover: string | null, liveWatching: boolean, myRole: Role, members: Array<MemberDto>, invites: Array<InviteDto>, };
+export type CircleDetail = { id: string, name: string, description: string | null, cover: string | null, liveWatching: boolean, myRole: Role, members: Array<MemberDto>, invites: Array<InviteDto>, 
+/**
+ * Viewings shared here this (UTC) year by people still in the Cerchia: "4 membri, 37 visioni quest'anno".
+ */
+logsThisYear: number, 
+/**
+ * "Sta guardando": each member's latest title in progress, most recent first. Empty when the Cerchia has it
+ * switched off or I hide it for myself; members who hide it are left out.
+ */
+watching: Array<WatchingDto>, };

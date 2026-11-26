@@ -8,7 +8,7 @@ export function Tag({ label, tone = "ink2", accessibilityLabel }: { label: strin
   return (
     <View
       {...(accessibilityLabel ? { role: "img" as const, "aria-label": accessibilityLabel } : {})}
-      style={{ borderWidth: hair, borderColor: tone === "accent" ? c.accent : c.rule, paddingHorizontal: space.xs, paddingVertical: 1, alignSelf: "flex-start" }}
+      style={{ borderWidth: hair, borderColor: tone === "accent" ? c.accent : c.rule, paddingHorizontal: space.xs, minHeight: 24, justifyContent: "center", alignSelf: "flex-start" }}
     >
       <Text variant="small" tone={tone}>
         {label}

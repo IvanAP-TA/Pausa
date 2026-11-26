@@ -1,23 +1,24 @@
 import type { RankedDto } from "@pausa/api-types";
 import { Link, useLocalSearchParams, type Href } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { api } from "@/api";
 import { statsApi, type RankingQuery, type RankingSort } from "@/api/stats";
 import { useResource } from "@/api/useResource";
 import { useI18n } from "@/i18n";
-import { control, hair, space, useTheme, web } from "@/theme";
+import { breakpoints, control, hair, space, useTheme, web } from "@/theme";
 import { BackLink } from "@/ui/BackLink";
 import { Button } from "@/ui/Button";
 import { Choice } from "@/ui/Choice";
 import { Field } from "@/ui/Field";
 import { MediaPoster } from "@/ui/MediaPoster";
 import { Sheet } from "@/ui/Sheet";
-import { Stars, starsText } from "@/ui/Stars";
+import { starsText } from "@/ui/Stars";
+import { Meter } from "@/ui/Surfaces";
 import { Toggle } from "@/ui/Toggle";
 import { Empty, ErrorState, Heading, Loading, Screen, Tag, Text, Title } from "@/ui";
 import { CircleNav, KindTag, num, useCircleScope } from "../diary/shared";
-import { RequireSession } from "../session";
+import { RequireSession, useMe } from "../session";
 import "./stats.messages";
 
 const SORTS: RankingSort[] = ["avg", "votes", "year", "recent", "title"];
@@ -35,28 +36,67 @@ const toQuery = (d: Draft): RankingQuery => ({
   by: d.by || undefined,
 });
 
-function Entry({ item, position, names }: { item: RankedDto; position: number; names: Map<string, string> }) {
+/** Legacy shows a first name in the tag; the full name stays in the accessible label. */
+const first = (name: string) => name.split(/\s+/)[0] ?? name;
+
+function PersonTag({ name, rating, mine }: { name: string; rating: number | undefined; mine: boolean }) {
+  const { t, locale } = useI18n();
+  const { c } = useTheme();
+  const stars = rating === undefined ? null : starsText(rating, locale);
+  return (
+    <View
+      role="listitem"
+      aria-label={rating === undefined ? `${name}: ${t("ranking.noRating")}` : `${name}: ${t("ranking.rated", { stars: rating / 2 })}`}
+      style={{ flexDirection: "row", alignItems: "center", gap: space.xs, borderWidth: hair, borderColor: mine ? c.accent : c.rule, paddingHorizontal: space.xs, minHeight: 28 }}
+    >
+      <Text aria-hidden variant="small" tone="ink2">
+        {first(name)}
+      </Text>
+      {stars ? (
+        <Text aria-hidden variant="small" style={{ fontVariant: ["tabular-nums"] }}>
+          {stars}
+          <Text variant="small" tone="muted">
+            ★
+          </Text>
+        </Text>
+      ) : (
+        <Text aria-hidden variant="small" tone="muted">
+          {t("ranking.noRating")}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function Entry({ circleId, item, position, people, meId }: { circleId: string; item: RankedDto; position: number; people: { userId: string; name: string }[]; meId: string }) {
   const { t, href, locale } = useI18n();
   const { c } = useTheme();
-  const [open, setOpen] = useState(false);
+  const { width } = useWindowDimensions();
+  const wide = width >= breakpoints.phone;
   const y = num(item.media.year);
-  const avg = item.avg ? starsText(item.avg, locale) : null;
+  const avg = item.avg ? new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(item.avg / 2) : null;
+  const rated = new Map(item.ratings.map((r) => [r.userId, r.rating]));
+  // Everyone who saw it (rated or not), in the circle's order; a rating from someone no longer listed still shows by id.
+  const tags = people.filter((p) => item.watchedBy.includes(p.userId) || rated.has(p.userId));
+  const bigPos = position > 99 ? (wide ? 44 : 36) : wide ? 72 : 56;
   return (
-    <View testID={`rank-${item.media.id}`} role="listitem" style={{ borderBottomWidth: hair, borderColor: c.rule }}>
-      <Pressable
-        role="button"
-        aria-expanded={open}
-        onPress={() => setOpen((o) => !o)}
-        style={StyleSheet.flatten([{ minHeight: control, flexDirection: "row", alignItems: "center", gap: space.sm, paddingVertical: space.sm }, web({ cursor: "pointer" })])}
-      >
-        <Text variant="strong" tone="muted" style={{ width: 32, textAlign: "right" }}>
+    <View testID={`rank-${item.media.id}`} role="listitem" style={{ borderBottomWidth: hair, borderColor: c.rule, paddingVertical: space.md, gap: space.sm }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-start", gap: space.sm }}>
+        <Title
+          style={{ width: wide ? 72 : 52, textAlign: "right", fontSize: bigPos, lineHeight: Math.round(bigPos * 0.9) }}
+          tone={position === 1 ? "accent" : "ink"}
+        >
           {position}
-        </Text>
-        <MediaPoster title={item.media.title} path={item.media.posterPath} width={44} />
-        <View style={{ flex: 1, gap: space["3xs"] }}>
-          <Title numberOfLines={2} style={{ fontSize: 22, lineHeight: 24 }}>
-            {item.media.title}
-          </Title>
+        </Title>
+        <MediaPoster title={item.media.title} path={item.media.posterPath} width={wide ? 56 : 48} />
+        <View style={{ flex: 1, gap: space["3xs"], minWidth: 0 }}>
+          <Link href={href(`/c/${circleId}/m/${item.media.id}`) as Href} asChild>
+            <Pressable role="link" aria-label={t("feed.openTitle", { title: item.media.title })} style={StyleSheet.flatten([{ minHeight: control, justifyContent: "center" }, web({ cursor: "pointer" })])}>
+              <Title numberOfLines={3} style={{ fontSize: wide ? 26 : 22, lineHeight: wide ? 28 : 24 }}>
+                {item.media.title}
+              </Title>
+            </Pressable>
+          </Link>
           <View style={{ flexDirection: "row", gap: space.xs, alignItems: "center", flexWrap: "wrap" }}>
             {y ? (
               <Text variant="small" tone="muted">
@@ -64,42 +104,29 @@ function Entry({ item, position, names }: { item: RankedDto; position: number; n
               </Text>
             ) : null}
             <KindTag media={item.media} />
-            <Text variant="small" tone="muted">
-              {t("ranking.votes", { count: item.votes })}
-            </Text>
           </View>
         </View>
-        <View style={{ alignItems: "flex-end", gap: space["3xs"] }}>
-          <Title style={{ fontSize: 26, lineHeight: 28 }} tone={item.avg ? "ink" : "muted"}>
-            {avg ?? "–"}
-          </Title>
-          <Stars halves={item.avg ? Math.round(item.avg) : null} size={12} />
-        </View>
-      </Pressable>
-      {open ? (
-        <View style={{ paddingLeft: 32 + space.sm, paddingBottom: space.sm, gap: space.xs }}>
-          <Text variant="label" tone="ink2">
-            {t("ranking.who")}
-          </Text>
-          {item.ratings.length === 0 ? (
-            <Text variant="small" tone="muted">
-              {t("ranking.noRating")}
-            </Text>
-          ) : (
-            item.ratings.map((r) => (
-              <View key={r.userId} style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
-                <Text style={{ flex: 1 }}>{names.get(r.userId) ?? "?"}</Text>
-                <Stars halves={r.rating} size={14} />
-              </View>
-            ))
-          )}
-          <Link href={href(`/t/${item.media.id}`) as Href} asChild>
-            <Pressable role="link" style={StyleSheet.flatten([{ minHeight: control, justifyContent: "center" }, web({ cursor: "pointer" })])}>
-              <Text tone="accent" variant="strong">
-                {t("feed.openTitle", { title: item.media.title })}
+        <View style={{ alignItems: "flex-end", gap: space.xs, minWidth: 64 }}>
+          {avg ? (
+            <>
+              <Title style={{ fontSize: 40, lineHeight: 40 }}>{avg}</Title>
+              <Meter value={(item.avg ?? 0) / 10} style={{ width: 64 }} />
+              <Text variant="small" tone="muted">
+                {t("ranking.votes", { count: item.votes })}
               </Text>
-            </Pressable>
-          </Link>
+            </>
+          ) : (
+            <Text variant="small" tone="muted">
+              {t("ranking.notRated")}
+            </Text>
+          )}
+        </View>
+      </View>
+      {tags.length > 0 ? (
+        <View role="list" aria-label={t("ranking.who")} style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs, paddingLeft: wide ? 72 + space.sm : 52 + space.sm }}>
+          {tags.map((p) => (
+            <PersonTag key={p.userId} name={p.name} rating={rated.get(p.userId)} mine={p.userId === meId} />
+          ))}
         </View>
       ) : null}
     </View>
@@ -117,7 +144,8 @@ function RankingBody({ id }: { id: string }) {
   const [open, setOpen] = useState(false);
   const query = { ...toQuery(applied), sort, page };
   const rank = useResource((signal) => statsApi.ranking(id, { ...query, locale }, signal), [id, locale, JSON.stringify(query)]);
-  const names = new Map((circle.data?.members ?? []).map((m) => [m.userId, m.name]));
+  const me = useMe();
+  const people = (circle.data?.members ?? []).map((m) => ({ userId: m.userId, name: m.name }));
   const filtered = Object.values(toQuery(applied)).filter((v) => v !== undefined).length;
   const set = <K extends keyof Draft>(k: K) => (v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }));
   const pages = rank.data ? Math.max(1, Math.ceil(rank.data.total / rank.data.pageSize)) : 1;
@@ -149,7 +177,7 @@ function RankingBody({ id }: { id: string }) {
           ) : (
             <View role="list" style={{ borderTopWidth: hair, borderColor: "transparent" }}>
               {rank.data.items.map((item, i) => (
-                <Entry key={item.media.id} item={item} position={rank.data!.page * rank.data!.pageSize + i + 1} names={names} />
+                <Entry circleId={id} key={item.media.id} item={item} position={rank.data!.page * rank.data!.pageSize + i + 1} people={people} meId={me.id} />
               ))}
             </View>
           )}

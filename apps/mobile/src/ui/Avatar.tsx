@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Image, View } from "react-native";
 import { fonts, radius, useTheme, type ColorName } from "@/theme";
 import { tintIndex } from "./Poster-seed";
-import { Text } from "./Text";
+import { Glyph } from "./Glyph";
 
 const TINTS: ColorName[] = ["tint1", "tint2", "tint3", "tint4", "tint5", "tint6", "tint7", "tint8"];
 
@@ -14,9 +14,7 @@ export function Avatar({ name, image, size = 40 }: { name: string; image?: strin
   if (image?.startsWith("emoji:"))
     return (
       <View aria-hidden style={[frame, { backgroundColor: c.paper3 }]}>
-        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: size * 0.52, lineHeight: size * 0.7, textAlign: "center" }}>
-          {image.slice(6)}
-        </Text>
+        <Glyph style={{ fontSize: size * 0.52, lineHeight: size * 0.7, textAlign: "center" }}>{image.slice(6)}</Glyph>
       </View>
     );
   if (image?.startsWith("https://") && !broken)
@@ -28,9 +26,7 @@ export function Avatar({ name, image, size = 40 }: { name: string; image?: strin
   const initial = name.trim().slice(0, 1).toUpperCase();
   return (
     <View aria-hidden style={[frame, { backgroundColor: c[TINTS[tintIndex(name)]] }]}>
-      <Text maxFontSizeMultiplier={1.2} style={{ color: c.onTint, fontFamily: fonts.display400, fontSize: size * 0.48, lineHeight: size * 0.6 }}>
-        {initial}
-      </Text>
+      <Glyph style={{ color: c.onTint, fontFamily: fonts.display400, fontSize: size * 0.48, lineHeight: size * 0.6 }}>{initial}</Glyph>
     </View>
   );
 }

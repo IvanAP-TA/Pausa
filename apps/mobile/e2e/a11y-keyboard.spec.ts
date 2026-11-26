@@ -99,7 +99,14 @@ for (const [name, url] of screens) {
     } else await page.goto(url());
     await page.waitForLoadState("networkidle");
     await expect(page.getByRole("progressbar")).toHaveCount(0, { timeout: 10_000 });
-    const total = await mark(page);
+    // parts that load on their own (the thread's "add to a list") may still arrive: count the controls once they stop changing
+    let total = await mark(page);
+    for (let i = 0; i < 10; i++) {
+      await page.waitForTimeout(400);
+      const again = await mark(page);
+      if (again === total) break;
+      total = again;
+    }
     expect(total, "the screen has controls").toBeGreaterThan(3);
     const stops = await tabThrough(page, total + 4);
     const reached = new Set(stops.map((s) => s.kb).filter((k): k is string => k !== null));
@@ -120,7 +127,8 @@ for (const [name, url] of screens) {
 
 test("a sheet traps focus, Escape closes it, and focus returns to the control that opened it", async () => {
   const { page } = u;
-  await page.goto(`/it/c/${cid}/feed`);
+  // the ranking's filter sheet (the diary's filters are a panel in the page, as in v1)
+  await page.goto(`/it/c/${cid}/ranking`);
   await page.waitForLoadState("networkidle");
   const opener = page.getByTestId("open-filters");
   await opener.focus();

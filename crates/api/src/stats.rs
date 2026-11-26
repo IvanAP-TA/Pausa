@@ -7,7 +7,7 @@ use crate::{catalog, manage, session};
 use pausa_core::diary::date_of_ms;
 use pausa_core::dto::{
     Counted, Insights, LovedBy, MediaDto, PairDto, PersonCount, PersonDto, PersonRating, RankedDto,
-    RankingPage, Recommendation, YearReview,
+    RankingPage, Recommendation, TogetherDto, YearReview,
 };
 use pausa_core::ranking::{agree_and_split, rank, year_span, Filters, Ranked, Sort, Title};
 use serde::Deserialize;
@@ -159,6 +159,7 @@ fn ranked_dto(r: &Ranked) -> RankedDto {
                 rating: *x as u8,
             })
             .collect(),
+        watched_by: r.title.watched_by.clone(),
     }
 }
 
@@ -249,6 +250,45 @@ struct MediaAvg {
 }
 
 #[derive(Deserialize)]
+struct TogetherRow {
+    media_id: String,
+    watched_on: String,
+    user_id: String,
+    with_ids: Option<String>,
+}
+
+/// The pair of members with the most shared viewings; a (title, day, pair) counts once even if both logged it.
+fn together_of(d: &CircleData, rows: &[TogetherRow]) -> Option<TogetherDto> {
+    let members: HashMap<&str, &MemberRow> = d.members.iter().map(|m| (m.id.as_str(), m)).collect();
+    let mut seen: std::collections::HashSet<(String, String, String, String)> = Default::default();
+    let mut counts: HashMap<(String, String), u32> = HashMap::new();
+    for r in rows {
+        let mut group: Vec<&str> = std::iter::once(r.user_id.as_str())
+            .chain(r.with_ids.as_deref().unwrap_or("").split(',').filter(|x| !x.is_empty()))
+            .filter(|id| members.contains_key(id))
+            .collect();
+        group.sort();
+        group.dedup();
+        for i in 0..group.len() {
+            for j in i + 1..group.len() {
+                let key = (r.media_id.clone(), r.watched_on.clone(), group[i].to_string(), group[j].to_string());
+                if seen.insert(key) {
+                    *counts.entry((group[i].to_string(), group[j].to_string())).or_default() += 1;
+                }
+            }
+        }
+    }
+    let ((a, b), times) = counts
+        .into_iter()
+        .max_by(|x, y| x.1.cmp(&y.1).then_with(|| y.0.cmp(&x.0)))?;
+    Some(TogetherDto {
+        a: person(members[a.as_str()]),
+        b: person(members[b.as_str()]),
+        times,
+    })
+}
+
+#[derive(Deserialize)]
 struct YearRow {
     y: String,
 }
@@ -328,6 +368,7 @@ async fn insights_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response
             db.prepare(format!("SELECT l.media_id, AVG(l.rating) AS a {base} AND l.rating IS NOT NULL GROUP BY l.media_id HAVING COUNT(DISTINCT l.user_id) >= 2 ORDER BY a DESC, l.media_id LIMIT 1")).bind(&args)?,
             db.prepare(format!("SELECT l.media_id, MAX(l.rating) AS a {base} AND l.rating IS NOT NULL GROUP BY l.media_id ORDER BY a DESC, l.media_id LIMIT 1")).bind(&args)?,
             db.prepare("SELECT DISTINCT substr(l.watched_on, 1, 4) AS y FROM log_share s JOIN log l ON l.id = s.log_id WHERE s.circle_id = ?1 ORDER BY y DESC").bind(&[circle_id.into()])?,
+            db.prepare(format!("SELECT l.media_id, l.watched_on, l.user_id, (SELECT GROUP_CONCAT(w.user_id) FROM log_watched_with w WHERE w.log_id = l.id) AS with_ids {base}")).bind(&args)?,
         ])
         .await?;
     let st = res[0].results::<StatsRow>()?.into_iter().next();
@@ -398,6 +439,7 @@ async fn insights_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response
         .into_iter()
         .filter_map(|y| y.y.parse().ok())
         .collect();
+    let together_most = together_of(&d, &res[8].results::<TogetherRow>()?);
     json(
         &Insights {
             agree: pick(&dis.agree),
@@ -420,6 +462,7 @@ async fn insights_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response
                 busiest_month: counted(3)?,
                 top_platform: counted(4)?,
                 title_of_the_year,
+                together_most,
             },
             years_with_logs,
         },
@@ -448,9 +491,19 @@ async fn recommendations_inner(req: &Request, env: &Env, circle_id: &str) -> R<R
         .and_then(|l| l.parse::<usize>().ok())
         .unwrap_or(12)
         .clamp(1, 30);
-    let d = load(&db, circle_id, loc).await?;
+    json(&recommend_list(&db, circle_id, loc, limit).await?, 200)
+}
+
+/// The recommendations themselves (also used to suggest a Serata roster). The caller has checked membership.
+pub(crate) async fn recommend_list(
+    db: &D1Database,
+    circle_id: &str,
+    loc: &str,
+    limit: usize,
+) -> R<Vec<Recommendation>> {
+    let d = load(db, circle_id, loc).await?;
     if d.members.len() < 2 {
-        return json(&Vec::<Recommendation>::new(), 200);
+        return Ok(Vec::new());
     }
     let progress = db
         .prepare(
@@ -554,5 +607,5 @@ async fn recommendations_inner(req: &Request, env: &Env, circle_id: &str) -> R<R
             })
         })
         .collect();
-    json(&out, 200)
+    Ok(out)
 }

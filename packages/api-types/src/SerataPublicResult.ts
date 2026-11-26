@@ -4,4 +4,8 @@ import type { MediaDto } from "./MediaDto";
 /**
  * `GET /api/serate/:code/result`, no sign-in: what the share card shows. Never who voted what.
  */
-export type SerataPublicResult = { code: string, winner: MediaDto, circleName: string | null, mode: string, turns: number, people: number, drew: boolean, finishedAt: number, };
+export type SerataPublicResult = { code: string, winner: MediaDto, circleName: string | null, mode: string, turns: number, people: number, drew: boolean, finishedAt: number, 
+/**
+ * An open invitation to the Serata's Cerchia (for a guest who wants to join after the result); `None` when there is none.
+ */
+inviteCode: string | null, };

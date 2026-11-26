@@ -1,14 +1,14 @@
 import type { CircleDetail } from "@pausa/api-types";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, type ReactNode } from "react";
-import { Switch, View } from "react-native";
+import { Pressable, Switch, View } from "react-native";
 import { api } from "@/api";
 import { errorMessage } from "@/api/errors";
-import { COVERS } from "@/api/endpoints";
+import { COVERS, COVER_GLYPH } from "@/api/endpoints";
 import { useAction } from "@/api/useAction";
 import { useResource } from "@/api/useResource";
 import { useI18n } from "@/i18n";
-import { hair, space, useTheme } from "@/theme";
+import { control, hair, space, useTheme, web } from "@/theme";
 import { Button, Chevron, Choice, ConfirmButton, ErrorState, Field, Heading, Loading, Notice, Screen, Text, TextLink } from "@/ui";
 import { RequireSession, useMe, useSession } from "./session";
 import { peopleApi } from "@/api/people";
@@ -38,12 +38,26 @@ function GroupSettings({ circle, onSaved }: { circle: CircleDetail; onSaved: () 
       <Heading level={2}>{t("settings.group")}</Heading>
       <Field label={t("manage.renameCircle")} value={name} onChangeText={(v) => { setName(v); setSaved(false); }} maxLength={60} />
       <Field label={t("settings.description")} value={description} onChangeText={(v) => { setDescription(v); setSaved(false); }} multiline maxLength={280} />
-      <Choice
-        label={t("settings.cover")}
-        value={cover}
-        onChange={(v) => { setCover(v); setSaved(false); }}
-        options={[{ value: "none" as Cover, label: t("settings.noCover") }, ...COVERS.map((v) => ({ value: v as Cover, label: t(`settings.covers.${v}`) }))]}
-      />
+      <View role="radiogroup" aria-label={t("settings.cover")} style={{ gap: space.xs }}>
+        <Text variant="label" tone="ink2">{t("settings.cover")}</Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs }}>
+          {(["none", ...COVERS] as Cover[]).map((v) => {
+            const on = cover === v;
+            return (
+              <Pressable
+                key={v}
+                role="radio"
+                aria-checked={on}
+                aria-label={v === "none" ? t("settings.noCover") : t(`settings.covers.${v}`)}
+                onPress={() => { setCover(v); setSaved(false); }}
+                style={[{ minHeight: control, minWidth: control, paddingHorizontal: v === "none" ? space.sm : 0, alignItems: "center", justifyContent: "center", borderWidth: hair, borderColor: on ? c.accent : c.rule }, web({ cursor: "pointer" })]}
+              >
+                {v === "none" ? <Text tone={on ? "ink" : "ink2"}>{t("settings.noCover")}</Text> : <Text aria-hidden style={{ fontSize: 22, lineHeight: 28 }}>{COVER_GLYPH[v]}</Text>}
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
       <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: 44 }}>
         <Switch
           value={live}
@@ -179,7 +193,7 @@ function SettingsBody({ id }: { id: string }) {
   const router = useRouter();
   const { reload: reloadMe } = useSession();
   const detail = useResource((signal) => api.circle(id, signal), [id]);
-  const back = href(`/c/${id}`);
+  const back = href(`/c/${id}/members`);
   const header = (
     <View style={{ flexDirection: "row", alignItems: "center" }}>
       <Chevron dir="left" color={c.ink2} />

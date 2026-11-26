@@ -1,4 +1,4 @@
-import type { Ballot, CandidateDto, LogPage, Mode, NativeToken, Recommendation, RoomView, SerataCreated, SerataPublicResult, SerataSummary } from "@pausa/api-types";
+import type { Ballot, CandidateDto, CircleServices, LogPage, Mode, NativeToken, Recommendation, RoomView, SerataCreated, SerataPublicResult, SerataSuggest, SerataSummary } from "@pausa/api-types";
 import { client } from "@/api";
 import type { Client } from "./client";
 
@@ -25,6 +25,11 @@ export function serataEndpoints(c: Client) {
     watched: (code: string, logId: string) => c.none("POST", `/api/serate/${e(code)}/watched`, { body: { logId } }),
     publicResult: (code: string, signal?: AbortSignal) => c.json<SerataPublicResult>("GET", `/api/serate/${e(code)}/result`, { signal, auth: false }),
     history: (circleId: string, limit = 20, signal?: AbortSignal) => c.json<SerataSummary[]>("GET", `/api/circles/${e(circleId)}/serate?limit=${limit}`, { signal }),
+
+    /** What the Cerchia can stream together (the services every member who set theirs has). */
+    services: (circleId: string, signal?: AbortSignal) => c.json<CircleServices>("GET", `/api/circles/${e(circleId)}/serate/services`, { signal }),
+    /** "Fill the roster for us": a roster the group would want, and which shared services carry each title. */
+    suggest: (circleId: string, locale: string, signal?: AbortSignal) => c.json<SerataSuggest>("GET", `/api/circles/${e(circleId)}/serate/suggest?locale=${e(locale)}`, { signal }),
 
     /** An anonymous account for a guest. `native: true` answers with a Bearer token instead of setting the cookie. */
     guest: (name: string, native: boolean) => c.json<{ ok: true } | NativeToken>("POST", "/api/auth/guest", { body: { name, native }, auth: false }),

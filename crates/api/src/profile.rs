@@ -4,8 +4,8 @@ use crate::diary::{locale_of, num, query_param};
 use crate::http::{body, finish, json, no_content, now_ms, Fail, R};
 use crate::{catalog, manage, session};
 use pausa_core::dto::{
-    CircleMySettings, Locale, MediaDto, MySettings, NotificationDto, NotificationPage, PersonDto,
-    PersonProfile,
+    CircleMySettings, KindCount, Locale, MediaDto, MySettings, NotificationDto, NotificationPage, PersonDto,
+    PersonProfile, WatchingDto,
 };
 use pausa_core::profile::{
     avatar_change, clean_bio, clean_display_name, clean_genres, AvatarChange, COUNTRIES,
@@ -57,6 +57,13 @@ struct TypeRow {
 }
 
 #[derive(Deserialize)]
+struct CountsRow {
+    logs: i64,
+    private_logs: i64,
+    brought: i64,
+}
+
+#[derive(Deserialize)]
 struct CircleSettingsRow {
     circle_id: String,
     name: String,
@@ -90,8 +97,17 @@ async fn settings_inner(req: &Request, env: &Env) -> R<Response> {
                 "SELECT m.circle_id, c.name, m.muted, m.hide_watching FROM circle_member m JOIN circle c ON c.id = m.circle_id WHERE m.user_id = ?1 ORDER BY m.joined_at",
             )
             .bind(&[s.user_id.as_str().into()])?,
+            db.prepare(
+                "SELECT (SELECT COUNT(*) FROM log WHERE user_id = ?1) AS logs,                         (SELECT COUNT(*) FROM log l WHERE l.user_id = ?1 AND NOT EXISTS (SELECT 1 FROM log_share s WHERE s.log_id = l.id)) AS private_logs,                         (SELECT COUNT(DISTINCT u.user_id) FROM invite_use u JOIN invite i ON i.id = u.invite_id WHERE i.created_by = ?1 AND u.user_id <> ?1) AS brought",
+            )
+            .bind(&[s.user_id.as_str().into()])?,
         ])
         .await?;
+    let counts = res[4]
+        .results::<CountsRow>()?
+        .into_iter()
+        .next()
+        .unwrap_or(CountsRow { logs: 0, private_logs: 0, brought: 0 });
     let u = res[0]
         .results::<UserRow>()?
         .into_iter()
@@ -128,6 +144,9 @@ async fn settings_inner(req: &Request, env: &Env) -> R<Response> {
                     hide_watching: c.hide_watching != 0,
                 })
                 .collect(),
+            logs: counts.logs.max(0) as u32,
+            private_logs: counts.private_logs.max(0) as u32,
+            brought: counts.brought.max(0) as u32,
         },
         200,
     )
@@ -383,6 +402,33 @@ struct StatsRow {
 }
 
 #[derive(Deserialize)]
+struct KindRow {
+    kind: String,
+    n: i64,
+}
+
+#[derive(Deserialize)]
+struct LovedRatingRow {
+    rating: i64,
+}
+
+#[derive(Deserialize)]
+struct LiveRow {
+    user_id: String,
+    name: String,
+    image: Option<String>,
+    media_id: String,
+    season: Option<i64>,
+    episode: Option<i64>,
+    updated_at: i64,
+    kind: String,
+    original_title: String,
+    loc_title: Option<String>,
+    year: Option<i64>,
+    poster_path: Option<String>,
+}
+
+#[derive(Deserialize)]
 struct RatingRow {
     media_id: String,
     rating: i64,
@@ -436,6 +482,17 @@ async fn person_inner(req: &Request, env: &Env, circle_id: &str, user_id: &str) 
             .bind(&[circle_id.into(), user_id.into(), loc.into()])?,
             db.prepare("SELECT media_id, rating FROM rating_current WHERE circle_id = ?1 AND user_id = ?2").bind(&[circle_id.into(), s.user_id.as_str().into()])?,
             db.prepare("SELECT media_id, rating FROM rating_current WHERE circle_id = ?1 AND user_id = ?2").bind(&[circle_id.into(), user_id.into()])?,
+            db.prepare(
+                "SELECT e.kind, COUNT(DISTINCT l.media_id) AS n FROM log_share s JOIN log l ON l.id = s.log_id JOIN media_entity e ON e.id = l.media_id                  WHERE s.circle_id = ?1 AND l.user_id = ?2 GROUP BY e.kind",
+            )
+            .bind(&[circle_id.into(), user_id.into()])?,
+            db.prepare("SELECT r.rating FROM rating_current r WHERE r.circle_id = ?1 AND r.user_id = ?2 AND r.rating >= 8 ORDER BY r.rating DESC, r.rated_at DESC LIMIT 12")
+                .bind(&[circle_id.into(), user_id.into()])?,
+            // Same rule as the hub's "now watching": off when the Cerchia, that person or the viewer switched it off.
+            db.prepare(
+                "SELECT w.user_id, u.name, u.image, w.media_id, w.season, w.episode, w.updated_at, e.kind, e.original_title, mt.title AS loc_title, e.year, e.poster_path                  FROM watch_progress w JOIN circle c ON c.id = ?1 AND c.live_watching = 1                  JOIN circle_member m ON m.circle_id = ?1 AND m.user_id = w.user_id AND m.hide_watching = 0                  JOIN user u ON u.id = w.user_id JOIN media_entity e ON e.id = w.media_id                  LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?3                  WHERE w.user_id = ?4 AND w.status = 'watching' AND NOT EXISTS                    (SELECT 1 FROM circle_member me WHERE me.circle_id = ?1 AND me.user_id = ?2 AND me.hide_watching = 1)                  ORDER BY w.updated_at DESC LIMIT 1",
+            )
+            .bind(&[circle_id.into(), s.user_id.as_str().into(), loc.into(), user_id.into()])?,
         ])
         .await?;
     let p = res[0]
@@ -452,6 +509,22 @@ async fn person_inner(req: &Request, env: &Env, circle_id: &str, user_id: &str) 
             &res[5].results::<RatingRow>()?,
         )
     };
+    let kinds: Vec<KindCount> = ["movie", "tv", "anime"]
+        .iter()
+        .filter_map(|k| {
+            let n = res[6].results::<KindRow>().ok()?.into_iter().find(|r| r.kind == *k)?.n;
+            (n > 0).then(|| KindCount { kind: (*k).to_string(), count: n as u32 })
+        })
+        .collect();
+    let titles = kinds.iter().map(|k| k.count).sum();
+    let loved_ratings = res[7].results::<LovedRatingRow>()?.into_iter().map(|r| r.rating as u8).collect();
+    let watching = res[8].results::<LiveRow>()?.into_iter().next().map(|r| WatchingDto {
+        user: PersonDto { id: r.user_id, name: r.name, image: r.image },
+        media: MediaDto { id: r.media_id, kind: r.kind, title: r.loc_title.unwrap_or(r.original_title), year: r.year, poster_path: r.poster_path },
+        season: r.season,
+        episode: r.episode,
+        updated_at: r.updated_at,
+    });
     json(
         &PersonProfile {
             person: PersonDto {
@@ -476,6 +549,10 @@ async fn person_inner(req: &Request, env: &Env, circle_id: &str, user_id: &str) 
             taste_match: score,
             taste_common: common as u32,
             joined_at: p.joined_at,
+            titles,
+            kinds,
+            loved_ratings,
+            watching,
         },
         200,
     )

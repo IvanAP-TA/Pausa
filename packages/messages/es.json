@@ -1277,6 +1277,8 @@
       "diarySoon": "Aquí llegará el diario de la Cerchia: qué habéis visto, qué os ha parecido."
     },
     "account": {
+      "alertsTitle": "Avisos, país y silencios",
+      "alertsBody": "Qué notificaciones recibes, tu país y las Cerchie que silenciar.",
       "sessionsTitle": "Dispositivos conectados",
       "sessionsBody": "Dónde has iniciado sesión. Si no reconoces un dispositivo, ciérrale la sesión.",
       "current": "Este dispositivo",
@@ -1442,6 +1444,7 @@
     "updated": "Actualizado",
     "back": "Todas las guías",
     "more": "Más guías",
+    "breadcrumb": "Ruta de navegación",
     "updatedOn": "2026-11-17",
     "items": {
       "choose-a-movie-with-friends": {

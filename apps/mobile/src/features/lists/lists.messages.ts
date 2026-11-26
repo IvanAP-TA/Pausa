@@ -57,6 +57,15 @@ const it = {
     up: "Sposta {title} più in alto",
     down: "Sposta {title} più in basso",
     moved: "{title} ora è in posizione {n}.",
+    manage: "Gestisci la lista",
+    manageHide: "Chiudi la gestione",
+    openList: "Apri la lista {name}",
+    deleteNamed: "Elimina la lista {name}",
+    deleteWarnPersonal: "La lista sparisce per sempre. I titoli restano nel catalogo.",
+    deleteWarnGroup: "La lista sparisce per sempre per tutta la Cerchia. I titoli restano nel catalogo.",
+    rankLabel: "Posizione {n}",
+    stripLabel: "I primi titoli di {name}",
+    newHint: "Una classifica numera i titoli e si riordina con le frecce.",
   },
 } as const;
 
@@ -114,6 +123,15 @@ const en = {
     up: "Move {title} up",
     down: "Move {title} down",
     moved: "{title} is now in position {n}.",
+    manage: "Manage the list",
+    manageHide: "Close management",
+    openList: "Open the list {name}",
+    deleteNamed: "Delete the list {name}",
+    deleteWarnPersonal: "The list is gone for good. The titles stay in the catalogue.",
+    deleteWarnGroup: "The list is gone for good for the whole Cerchia. The titles stay in the catalogue.",
+    rankLabel: "Position {n}",
+    stripLabel: "The first titles of {name}",
+    newHint: "A ranking numbers its titles and is reordered with the arrows.",
   },
 } as const;
 
@@ -171,6 +189,15 @@ const es = {
     up: "Subir {title}",
     down: "Bajar {title}",
     moved: "{title} está ahora en la posición {n}.",
+    manage: "Gestionar la lista",
+    manageHide: "Cerrar la gestión",
+    openList: "Abrir la lista {name}",
+    deleteNamed: "Eliminar la lista {name}",
+    deleteWarnPersonal: "La lista desaparece para siempre. Los títulos siguen en el catálogo.",
+    deleteWarnGroup: "La lista desaparece para siempre para toda la Cerchia. Los títulos siguen en el catálogo.",
+    rankLabel: "Posición {n}",
+    stripLabel: "Los primeros títulos de {name}",
+    newHint: "Un ranking numera sus títulos y se reordena con las flechas.",
   },
 } as const;
 

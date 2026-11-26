@@ -107,7 +107,8 @@ for (const { size, scheme } of MATRIX) {
     await page.getByRole("button", { name: it.auth.sendLink }).click();
     await page.getByTestId("dev-link").waitFor();
     await check(page, out, "sign-in, link sent", env);
-    if (ids.invite) await check(page, out, "invite landing (signed out)", env, `/it/join/${ids.invite}`);
+    if (ids.invite) await check(page, out, "invite landing (signed out: goes to sign-in)", env, `/it/join/${ids.invite}`);
+    await check(page, out, "invite landing, a link that does not work (the reason)", env, "/it/join/NOTACODE");
     await check(page, out, "serata door (signed out, guest form)", env, `/it/s/${ids.openCode}`);
     await ctx.close();
     expect(fmt(out)).toEqual([]);
@@ -139,14 +140,22 @@ async function statesSignedIn(page: Page, out: Finding[], env: string) {
   await settled(page);
   await page.getByLabel("Cerca un film, una serie, un anime…").fill("breaking");
   await page.getByRole("button", { name: /^Breaking Bad/ }).first().click();
-  await page.getByRole("radio", { name: "1", exact: true }).click();
+  // the details are folded (v1): open them, then the season is a select
+  if ((await page.getByTestId("log-details").getAttribute("aria-expanded")) !== "true") await page.getByTestId("log-details").click();
+  await page.getByTestId("season").selectOption("1");
   await check(page, out, "Registra with a series", env);
-  // filter sheet on the feed
+  // the filter panel on the feed (v1: in the page, not a sheet)
   await page.goto(`/it/c/${ids.circle}/feed`);
   await settled(page);
   await page.getByTestId("open-filters").click();
+  await page.getByTestId("filter-panel").waitFor();
+  await check(page, out, "feed: filter panel open", env);
+  // the ranking keeps its filter sheet
+  await page.goto(`/it/c/${ids.circle}/ranking`);
+  await settled(page);
+  await page.getByTestId("open-filters").click();
   await page.getByRole("dialog").waitFor();
-  await check(page, out, "feed: filter sheet open", env);
+  await check(page, out, "ranking: filter sheet open", env);
   await page.keyboard.press("Escape");
   // report sheet in a thread
   await page.goto(`/it/c/${ids.circle}/log/${ids.log}`);

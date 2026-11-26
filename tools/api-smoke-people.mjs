@@ -191,6 +191,17 @@ r = await add(ann, wl, { mediaId: M[3], note: "per sabato", priority: 2 });
 check("add a title by id with note and priority", r.status === 201 && r.json.added === true, r.text);
 r = await add(ann, wl, { mediaId: M[3] });
 check("adding it again changes nothing", r.status === 200 && r.json.added === false);
+// overview card data: the owner's name and the strip of titles (a "ranking" kind is kept as such)
+r = await call("POST", "/api/lists", { cookie: ann.cookie, body: { name: "Top di Ann", kind: "ranking", circleId: C.id } });
+const rk = r.json.id;
+check("a ranking list is created and keeps its kind", r.status === 201 && sql(`SELECT kind FROM list WHERE id='${rk}'`)[0].kind === "ranking", r.text);
+await add(ann, rk, { mediaId: M[3] });
+await add(ann, rk, { mediaId: M[4] });
+r = await call("GET", `/api/lists?circle=${C.id}&locale=it`, { cookie: ben.cookie });
+const card = r.json.find((l) => l.id === rk);
+check("overview carries the owner's name and the strip in order (id, title, posterPath)", !!card && typeof card.ownerName === "string" && card.ownerName.length > 0 && card.strip.length === 2 && card.strip[0].id === M[3] && card.strip[1].id === M[4] && card.strip.every((m) => m.title && "posterPath" in m), r.text);
+r = await call("GET", `/api/lists/${wl}?locale=it`, { cookie: ann.cookie });
+check("detail carries the same fields on its list", r.json.list.ownerName.length > 0 && r.json.list.strip.length === 1 && r.json.list.strip[0].id === M[3], r.text);
 r = await add(ann, wl, { mediaId: "does-not-exist" });
 check("an unknown title is 404", r.status === 404, r.text);
 r = await add(ann, wl, { mediaId: M[4], priority: 5 });
@@ -266,12 +277,39 @@ r = await call("DELETE", `/api/lists/${big}/items/${capIds[0]}`, { cookie: ann.c
 r = await add(ann, big, { mediaId: M[9] });
 check("and there is room again after removing one", r.status === 201, `status=${r.status} ${r.text}`);
 
+// ═════════ person page: titles, kinds, loved ratings, what they are watching ═════════
+r = await call("GET", `/api/circles/${C.id}/people/${ben.id}`, { cookie: ann.cookie });
+check("person page: distinct titles and the split per kind", r.json.titles === 3 && JSON.stringify(r.json.kinds) === JSON.stringify([{ kind: "movie", count: 3 }]), JSON.stringify([r.json.titles, r.json.kinds]));
+check("person page: loved comes with its rating in half stars, same order", JSON.stringify(r.json.lovedRatings) === "[9]", JSON.stringify(r.json.lovedRatings));
+sql(`INSERT INTO watch_progress(user_id,media_id,season,episode,status,updated_at) VALUES ('${ben.id}','${M[3]}',2,5,'watching',${Date.now()})`);
+sql(`UPDATE circle SET live_watching=1 WHERE id='${C.id}'`);
+sql(`UPDATE circle_member SET hide_watching=0 WHERE circle_id='${C.id}'`);
+r = await call("GET", `/api/circles/${C.id}/people/${ben.id}`, { cookie: ann.cookie });
+check("person page: shows what they are watching, with the episode", r.json.watching?.media.id === M[3] && r.json.watching.season === 2 && r.json.watching.episode === 5, JSON.stringify(r.json.watching));
+sql(`UPDATE circle_member SET hide_watching=1 WHERE circle_id='${C.id}' AND user_id='${ben.id}'`);
+r = await call("GET", `/api/circles/${C.id}/people/${ben.id}`, { cookie: ann.cookie });
+check("person page: nothing when they hide it", r.json.watching === null);
+sql(`UPDATE circle_member SET hide_watching=0 WHERE circle_id='${C.id}' AND user_id='${ben.id}'`);
+sql(`UPDATE circle_member SET hide_watching=1 WHERE circle_id='${C.id}' AND user_id='${ann.id}'`);
+r = await call("GET", `/api/circles/${C.id}/people/${ben.id}`, { cookie: ann.cookie });
+check("person page: nothing when the viewer hides theirs (no peeking)", r.json.watching === null);
+sql(`UPDATE circle_member SET hide_watching=0 WHERE circle_id='${C.id}' AND user_id='${ann.id}'`);
+sql(`UPDATE circle SET live_watching=0 WHERE id='${C.id}'`);
+r = await call("GET", `/api/circles/${C.id}/people/${ben.id}`, { cookie: ann.cookie });
+check("person page: nothing when the Cerchia switched live watching off", r.json.watching === null);
+sql(`UPDATE circle SET live_watching=1 WHERE id='${C.id}'`);
+
 // ═════════ invitation preview, native guest, CORS (found by the client work) ═════════
 r = await call("GET", `/api/invites/${C.inviteCode.toLowerCase()}`);
 check("invite preview needs no sign-in: name, members, state", r.status === 200 && r.json.circleName === "Casa" && r.json.members === 3 && r.json.state === "active", r.text);
 sql(`UPDATE invite SET revoked_at = 1 WHERE code='${C.inviteCode}'`);
 r = await call("GET", `/api/invites/${C.inviteCode}`);
 check("a revoked invite says so", r.json.state === "revoked");
+check("a dead invite gives the reason and nothing about the Cerchia (no name, no head count)", r.json.circleName === "" && r.json.members === 0, r.text);
+sql(`UPDATE invite SET revoked_at = NULL, expires_at = 1 WHERE code='${C.inviteCode}'`);
+r = await call("GET", `/api/invites/${C.inviteCode}`);
+check("an expired invite says so, and keeps the Cerchia private", r.json.state === "expired" && r.json.circleName === "", r.text);
+sql(`UPDATE invite SET expires_at = NULL WHERE code='${C.inviteCode}'`);
 sql(`UPDATE invite SET revoked_at = NULL WHERE code='${C.inviteCode}'`);
 r = await call("GET", "/api/invites/ZZZZZZZZ");
 check("an unknown code is 404", r.status === 404);
@@ -287,6 +325,21 @@ r = await call("POST", "/api/auth/guest", { body: { name: "App", native: true } 
 check("a native guest gets a token in the body and no cookie", r.status === 200 && /^[A-Za-z0-9_-]{43}$/.test(r.json?.token ?? "") && r.cookies.length === 0, r.text);
 r = await call("GET", "/api/me", { headers: { authorization: `Bearer ${r.json.token}` } });
 check("and the token works as Bearer", r.status === 200 && r.json.isAnonymous === true);
+
+// ═════════ profile page numbers: visions, private visions, people brought ═════════
+{
+  const mine = async (who) => (await call("GET", "/api/me/settings", { cookie: who.cookie })).json;
+  const annLogs = Number(sql(`SELECT COUNT(*) AS n FROM log WHERE user_id='${ann.id}'`)[0].n);
+  const annPrivate = Number(sql(`SELECT COUNT(*) AS n FROM log l WHERE l.user_id='${ann.id}' AND NOT EXISTS (SELECT 1 FROM log_share s WHERE s.log_id = l.id)`)[0].n);
+  st = await mine(ann);
+  check("settings count my visions and the ones only mine", st.logs === annLogs && st.privateLogs === annPrivate && st.privateLogs <= st.logs, JSON.stringify([st.logs, st.privateLogs, annLogs, annPrivate]));
+  const broughtByAnn = Number(sql(`SELECT COUNT(DISTINCT u.user_id) AS n FROM invite_use u JOIN invite i ON i.id = u.invite_id WHERE i.created_by='${ann.id}' AND u.user_id <> '${ann.id}'`)[0].n);
+  check("ann brought ben and cleo", st.brought === broughtByAnn && st.brought === 2, String(st.brought));
+  st = await mine(dan);
+  check("dan brought nobody and has no visions", st.brought === 0 && st.logs === 0 && st.privateLogs === 0, JSON.stringify(st));
+  r = await call("DELETE", "/api/account", { cookie: dan.cookie, body: { confirm: true, email: "not-my-address@example.test" } });
+  check("deleting the account with another email typed is refused, and nothing goes", r.status === 400 && (await call("GET", "/api/me", { cookie: dan.cookie })).status === 200, r.text);
+}
 
 const ORIGIN = "http://localhost:8081";
 r = await call("OPTIONS", "/api/me", { headers: { origin: ORIGIN, "access-control-request-method": "GET" } });

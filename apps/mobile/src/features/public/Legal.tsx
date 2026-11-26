@@ -1,33 +1,40 @@
 import { View } from "react-native";
 import { useI18n, type Locale } from "@/i18n";
-import { hair, space, useTheme } from "@/theme";
-import { Heading, Text } from "@/ui/Text";
+import { space } from "@/theme";
+import { Heading, Text, Title } from "@/ui/Text";
 import { Anchor } from "./Anchor";
 import { Container, PublicPage } from "./PublicPage";
+import { Plate } from "./Plate";
 import { legalContact } from "./legal-contact";
 
 type Doc = { title: string; updated: string; intro: string; sections: Array<{ h: string; p: string[] }> };
 
 export function LegalBody({ kind }: { kind: "privacy" | "terms" }) {
-  const { raw, t } = useI18n();
-  const { c } = useTheme();
+  const { raw, t, href } = useI18n();
   const doc = raw<Doc>(`legal.${kind}`);
   const { entity, email } = legalContact();
   return (
-    <Container style={{ paddingTop: space.xl, gap: space.lg }}>
-      <Heading level={1} style={{ maxWidth: 900 }}>{doc.title}</Heading>
-      <Text variant="small" tone="muted">{doc.updated}: {t("legal.updatedOn")}</Text>
-      <Text variant="lead" tone="ink2" style={{ maxWidth: 640 }}>{doc.intro}</Text>
+    <Container max={1152} style={{ paddingTop: space.md, paddingBottom: space["2xl"], gap: space.xl }}>
+      {/* No site header or footer on the legal pages (as in the old app): only the brand link. */}
+      <View style={{ alignSelf: "flex-start" }}>
+        <Anchor href={href()} label={t("app.nav.home")} pad>
+          <Title style={{ fontSize: 28, lineHeight: 34 }}>Pausa</Title>
+        </Anchor>
+      </View>
+      <View style={{ gap: space.sm }}>
+        <Heading level={1} style={{ maxWidth: 900 }}>{doc.title}</Heading>
+        <Text variant="small" tone="muted">{doc.updated}: {t("legal.updatedOn")}</Text>
+        <Text variant="lead" tone="ink2" style={{ maxWidth: 640 }}>{doc.intro}</Text>
+      </View>
       {doc.sections.map((s) => (
-        <View key={s.h} style={{ borderTopWidth: hair, borderColor: c.rule, paddingTop: space.lg, gap: space.sm }}>
-          <Heading level={2}>{s.h}</Heading>
+        <Plate key={s.h} title={s.h}>
           {s.p.map((p, i) => (
-            <Text key={i} tone="ink" style={{ maxWidth: 680 }}>{p}</Text>
+            <Text key={i}>{p}</Text>
           ))}
-        </View>
+        </Plate>
       ))}
       {/* Controller and contact: from LEGAL_ENTITY / CONTACT_EMAIL at build time. Until they are set the page SAYS so, visibly. */}
-      <View nativeID="controller" style={{ borderTopWidth: hair, borderColor: c.rule, paddingTop: space.lg, gap: space["2xs"] }}>
+      <View nativeID="controller" style={{ gap: space["2xs"] }}>
         <Text variant="small" tone="muted">{t("app.legal.entityLabel")}</Text>
         <Text tone={entity ? "ink" : "error"}>{entity ?? t("app.legal.entityPlaceholder")}</Text>
         <Text variant="small" tone="muted" style={{ marginTop: space.xs }}>{t("app.legal.contactLabel")}</Text>
@@ -45,7 +52,7 @@ export function LegalBody({ kind }: { kind: "privacy" | "terms" }) {
 
 export function Legal({ locale, kind }: { locale: Locale; kind: "privacy" | "terms" }) {
   return (
-    <PublicPage locale={locale} sub={`/${kind}`}>
+    <PublicPage locale={locale} sub={`/${kind}`} bare>
       <LegalBody kind={kind} />
     </PublicPage>
   );

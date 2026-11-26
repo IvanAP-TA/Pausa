@@ -32,6 +32,7 @@ const it = {
     failedRows: "{count, plural, one {# riga rifiutata} other {# righe rifiutate}}",
     runningAt: "Ferma a {done} di {total} righe.",
     continue: "Riprendi",
+    drop: "Oppure trascina qui il file.",
     deleteLists: "{count, plural, one {Elimina anche la lista creata} other {Elimina anche le # liste create}}",
   },
 } as const;
@@ -64,6 +65,7 @@ const en = {
     failedRows: "{count, plural, one {# row refused} other {# rows refused}}",
     runningAt: "Stopped at {done} of {total} rows.",
     continue: "Resume",
+    drop: "Or drop the file here.",
     deleteLists: "{count, plural, one {Also delete the list it made} other {Also delete the # lists it made}}",
   },
 } as const;
@@ -96,6 +98,7 @@ const es = {
     failedRows: "{count, plural, one {# fila rechazada} other {# filas rechazadas}}",
     runningAt: "Parada en {done} de {total} filas.",
     continue: "Reanudar",
+    drop: "O suelta aquí el archivo.",
     deleteLists: "{count, plural, one {Eliminar también la lista creada} other {Eliminar también las # listas creadas}}",
   },
 } as const;

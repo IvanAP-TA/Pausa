@@ -71,6 +71,16 @@ check("the disabled flag is stored", sql(`SELECT disabled_at FROM user WHERE id=
 // ═════════ metrics ═════════
 r = await call("GET", "/api/admin/metrics", { cookie: op.cookie });
 check("metrics: counts only", r.status === 200 && r.json.users >= 4 && r.json.circles >= 1 && r.json.logs >= 3 && typeof r.json.openReports === "number" && !JSON.stringify(r.json).includes("@"), r.text);
+const num0 = (v) => typeof v === "number";
+const rate = (v) => v === null || (num0(v) && v >= 0 && v <= 1);
+check(
+  "metrics: the early success numbers are rates in 0..1 or null (not enough data), with their sizes",
+  rate(r.json.circleWithin7d) && num0(r.json.circleWithin7dCohort) && (r.json.logsPerActiveCircleWeek === null || num0(r.json.logsPerActiveCircleWeek)) && rate(r.json.circlesUsingLists) &&
+    (r.json.serataMedianSeconds === null || num0(r.json.serataMedianSeconds)) && rate(r.json.serataUnder120) && num0(r.json.serataFinished) && rate(r.json.serataCardRate) && rate(r.json.serataInviteRate) &&
+    rate(r.json.retentionD7) && num0(r.json.retentionD7Eligible) && rate(r.json.retentionD30) && num0(r.json.retentionD30Eligible) && rate(r.json.nowWatchingRate) && num0(r.json.nowWatchingPeople),
+  r.text,
+);
+check("metrics: the retention base is at most the Cerchie there are, and the guest-free people count includes this run's members", r.json.retentionD30Eligible <= r.json.circles && r.json.nowWatchingPeople >= 3, r.text);
 
 // ═════════ blocks ═════════
 r = await call("PUT", `/api/me/blocks/${ann.id}`, { cookie: ann.cookie });
@@ -109,5 +119,52 @@ const csv = await r.text();
 check("the diary exports as CSV with Letterboxd-style columns, half stars and a download name", r.status === 200 && (r.headers.get("content-type") ?? "").startsWith("text/csv") && (r.headers.get("content-disposition") ?? "").includes("pausa-diario.csv") && csv.startsWith("Date,Name,Year,Rating,Rewatch,Review") && csv.includes("Titolo mod,2001,4,"), csv.slice(0, 200));
 r = await fetch(base + "/api/account/export?format=csv");
 check("the CSV export needs a session", r.status === 401);
+
+// ═════════ app-store review sign-in ═════════
+// run-smoke starts the Worker with REVIEW_EMAIL=review@pausa.test and REVIEW_PASSWORD=review-pass-test. Without them (any other
+// way of starting it) the whole feature must not exist: 404, before anything is read or written.
+const REVIEW_PASSWORD = "review-pass-test";
+sql("DELETE FROM rate_limit");
+r = await call("GET", "/api/review");
+if (r.status === 404) {
+  r = await call("POST", "/api/review/sign-in", { body: { password: REVIEW_PASSWORD } });
+  check("review sign-in not configured: 404 even with a password, no session", r.status === 404 && r.cookies.length === 0, r.text);
+  check("review sign-in not configured: nothing was created", sql("SELECT 1 AS x FROM user WHERE id = 'u-review'").length === 0);
+} else {
+  check("review sign-in configured: the page can ask whether it exists", r.status === 200 && r.json?.enabled === true, r.text);
+  r = await call("POST", "/api/review/sign-in", { body: { password: "not-" + REVIEW_PASSWORD } });
+  check("a wrong password is refused (401) and sets no cookie", r.status === 401 && r.cookies.length === 0, r.text);
+  check("the answer never echoes any password", !r.text.includes(REVIEW_PASSWORD));
+  r = await call("POST", "/api/review/sign-in", { body: { password: "" } });
+  check("an empty password is refused (401)", r.status === 401, r.text);
+  r = await call("POST", "/api/review/sign-in", { body: {} });
+  check("a missing password is refused as invalid, not accepted", r.status === 400 || r.status === 401 || r.status === 422, String(r.status));
+
+  r = await call("POST", "/api/review/sign-in", { body: { password: REVIEW_PASSWORD } });
+  const rc = r.cookies.find((c) => c.startsWith("pausa_session="))?.split(";")[0];
+  check("the right password opens a session and names the demo Cerchia", r.status === 200 && !!rc && r.json?.circleId === "c-review" && !r.json?.token, r.text);
+  check("the session cookie is HttpOnly", (r.cookies.find((c) => c.startsWith("pausa_session=")) ?? "").toLowerCase().includes("httponly"));
+  r = await call("GET", "/api/circles/c-review", { cookie: rc });
+  check("the demo Cerchia has the reviewer as owner and two more people", r.status === 200 && r.json?.myRole === "owner" && r.json.members.length === 3, r.text);
+  r = await call("GET", "/api/circles/c-review/feed", { cookie: rc });
+  check("the demo Cerchia's feed shows the sample films", r.status === 200 && JSON.stringify(r.json).includes("Nosferatu") && JSON.stringify(r.json).includes("Metropolis"), r.text.slice(0, 300));
+  r = await call("GET", "/api/admin/metrics", { cookie: rc });
+  check("the review session is not an operator (404 on the admin area)", r.status === 404, String(r.status));
+  check("the session is stored as a review session, on the demo account only", sql("SELECT s.kind, u.id FROM session s JOIN user u ON u.id = s.user_id WHERE u.email = 'review@pausa.test'").every((x) => x.kind === "review" && x.id === "u-review"));
+
+  r = await call("POST", "/api/review/sign-in", { body: { password: REVIEW_PASSWORD, native: true } });
+  check("a native sign-in answers with a token, no cookie", r.status === 200 && typeof r.json?.token === "string" && r.json.circleId === "c-review" && r.cookies.length === 0, r.text);
+  r = await call("GET", "/api/circles/c-review", { headers: { authorization: "Bearer " + r.json.token } });
+  check("that token works as a Bearer", r.status === 200, String(r.status));
+  check("signing in again does not duplicate the demo data", sql("SELECT COUNT(*) AS n FROM log WHERE id LIKE 'l-review-%'")[0].n === 9 && sql("SELECT COUNT(*) AS n FROM circle_member WHERE circle_id = 'c-review'")[0].n === 3);
+
+  sql("DELETE FROM rate_limit");
+  let last = 0;
+  for (let i = 0; i < 12; i++) last = (await call("POST", "/api/review/sign-in", { body: { password: "guess-" + i } })).status;
+  check("guessing is rate limited (429)", last === 429, String(last));
+  r = await call("POST", "/api/review/sign-in", { body: { password: REVIEW_PASSWORD } });
+  check("while limited, even the right password is refused", r.status === 429, String(r.status));
+  sql("DELETE FROM rate_limit");
+}
 
 finish();

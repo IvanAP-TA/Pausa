@@ -6,19 +6,20 @@ import { control, fonts, space, useTheme } from "@/theme";
 import { Button } from "./Button";
 import { Text } from "./Text";
 import { starsText } from "./stars-text";
+import { Star as StarIcon } from "./lucide";
 
 /** Ratings travel as half stars, 1..10 (the API's unit). 7 = three and a half stars. */
 export const MAX_HALVES = 10;
 
+/** v1 stars.tsx: a solid lucide star in rule, the signal colour laid over it up to the fill (half stars cut down the middle). */
 function Star({ fill, size }: { fill: 0 | 0.5 | 1; size: number }) {
   const { c } = useTheme();
-  const glyph = { fontFamily: fonts.body600, fontSize: size, lineHeight: size + 2, includeFontPadding: false } as const;
   return (
-    <View aria-hidden style={{ width: size, height: size + 2 }}>
-      <Text style={[glyph, { color: c.muted }]}>☆</Text>
+    <View aria-hidden style={{ width: size, height: size }}>
+      <StarIcon size={size} fill={c.rule} color={c.rule} strokeWidth={0} />
       {fill > 0 ? (
-        <View style={{ position: "absolute", left: 0, top: 0, width: size * fill, height: size + 2, overflow: "hidden" }}>
-          <Text style={[glyph, { color: c.accent, width: size }]}>★</Text>
+        <View style={{ position: "absolute", left: 0, top: 0, width: size * fill, height: size, overflow: "hidden" }}>
+          <StarIcon size={size} fill={c.accent} color={c.accent} strokeWidth={0} />
         </View>
       ) : null}
     </View>
@@ -48,7 +49,7 @@ export function StarInput({ value, onChange, label }: { value: number; onChange:
   const { t, locale } = useI18n();
   const { c } = useTheme();
   const [focused, setFocused] = useState(false);
-  const size = 40;
+  const size = 44;
   const slot = 56;
   const set = (n: number) => onChange(Math.max(0, Math.min(MAX_HALVES, n)));
   const text = value ? t("feed.rating", { stars: starsText(value, locale) }) : t("log.noRating");

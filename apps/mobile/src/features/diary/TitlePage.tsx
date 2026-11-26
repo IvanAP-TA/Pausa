@@ -13,7 +13,7 @@ import { Section } from "@/ui/Section";
 import { ErrorState, Heading, Loading, RowList, Screen, Tag, Text } from "@/ui";
 import { RequireSession } from "../session";
 import { ProgressCard } from "./MyDiary";
-import { KindTag, LogCard, num } from "./shared";
+import { CardList, KindTag, LogCard, num } from "./shared";
 import "./diary.messages";
 
 /** My viewings of one title. The API has no filter by title on the diary, so the first pages are read and matched here. */
@@ -140,11 +140,11 @@ function TitleBody({ id }: { id: string }) {
         {mine.status === "error" ? <ErrorState error={mine.error} onRetry={mine.retry} /> : null}
         {mine.status === "ready" && mine.logs.length === 0 ? <Text tone="muted">{t("diary.title.none")}</Text> : null}
         {mine.logs.length > 0 ? (
-          <RowList>
+          <CardList>
             {mine.logs.map((l) => (
               <LogCard key={l.id} log={l} hideAuthor />
             ))}
-          </RowList>
+          </CardList>
         ) : null}
         {mine.status === "ready" && !mine.complete ? <Text variant="small" tone="muted">{t("diary.title.partial")}</Text> : null}
       </Section>

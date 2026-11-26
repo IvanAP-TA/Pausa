@@ -70,7 +70,7 @@ const dev = spawn(
   process.execPath,
   [
     wranglerJs, "dev", "--local", "--infer-origin-from-routes=false", "--port", String(port), "--persist-to", persist, "--test-scheduled",
-    "--var", `TMDB_BASE_URL:http://127.0.0.1:${mockPort}`, "--var", `ANILIST_URL:http://127.0.0.1:${mockPort}/anilist`, "--var", "TMDB_API_TOKEN:test-token", "--var", "CORS_ORIGINS:http://localhost:8081", "--var", "OPERATOR_EMAILS:operator@pausa.test", "--var", `VAPID_PRIVATE_JWK:${JSON.stringify(vapidJwk)}`, "--var", `VAPID_PUBLIC_KEY:${env.VAPID_PUBLIC_B64}`, "--var", "VAPID_SUBJECT:mailto:test@pausa.test", "--var", "VAPID_DEV_LOOPBACK:1", "--var", `EXPO_PUSH_URL:http://127.0.0.1:${mockPort}/expo/send`, "--var", "SERATA_MATCH_MS:2500", "--var", "SERATA_TABLE_MS:2500", "--var", "SERATA_LOBBY_TTL_MS:25000",
+    "--var", `TMDB_BASE_URL:http://127.0.0.1:${mockPort}`, "--var", `ANILIST_URL:http://127.0.0.1:${mockPort}/anilist`, "--var", "TMDB_API_TOKEN:test-token", "--var", "CORS_ORIGINS:http://localhost:8081", "--var", "OPERATOR_EMAILS:operator@pausa.test", "--var", "REVIEW_EMAIL:review@pausa.test", "--var", "REVIEW_PASSWORD:review-pass-test", "--var", `VAPID_PRIVATE_JWK:${JSON.stringify(vapidJwk)}`, "--var", `VAPID_PUBLIC_KEY:${env.VAPID_PUBLIC_B64}`, "--var", "VAPID_SUBJECT:mailto:test@pausa.test", "--var", "VAPID_DEV_LOOPBACK:1", "--var", `EXPO_PUSH_URL:http://127.0.0.1:${mockPort}/expo/send`, "--var", "SERATA_MATCH_MS:2500", "--var", "SERATA_TABLE_MS:2500", "--var", "SERATA_LOBBY_TTL_MS:25000",
   ],
   { cwd: apiDir, env, stdio: ["ignore", devFd, devFd] },
 );

@@ -108,12 +108,17 @@ test("flow 3, Registra: the rating is a slider with a value and a spoken value, 
   expect(live(tree).length, "the tree has a live region").toBeGreaterThan(0);
   await expect(page.locator('[aria-live="polite"]').filter({ hasText: /stelle su 5/ }), "and the rating phrase is inside one").toHaveCount(1);
   // a future date: the field says why, and the submit is an alert-free, named button
+  const disclosure = page.getByTestId("log-details");
+  expect(await disclosure.getAttribute("aria-expanded"), "the folded details say they are closed").toBe("false");
+  await disclosure.click();
+  expect(await disclosure.getAttribute("aria-expanded")).toBe("true");
   const date = page.getByTestId("watched-on");
   await date.fill("2099-01-01");
   await page.getByTestId("submit-log").click();
+  // the browser's date input has its own role in the tree (not a textbox): the invalid state is read from the DOM, where the error is its description
+  expect(await date.getAttribute("aria-invalid"), "the date field is marked invalid").toBe("true");
+  await expect(page.getByLabel("Visto il")).toHaveAttribute("aria-describedby", /-err$/);
   const after = await ax(page);
-  const field = find(after, "textbox", "Visto il")[0];
-  expect(field?.props.invalid, "the date field is marked invalid").toBeTruthy();
   expect(find(after, "button", /Registra|Salva/).length).toBeGreaterThan(0);
 });
 

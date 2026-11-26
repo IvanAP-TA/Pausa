@@ -1277,6 +1277,8 @@
       "diarySoon": "The Cerchia's diary will land here: what you watched, what you thought."
     },
     "account": {
+      "alertsTitle": "Alerts, country and silences",
+      "alertsBody": "Which notifications you get, your country and the Circles to silence.",
       "sessionsTitle": "Signed-in devices",
       "sessionsBody": "Where you are signed in. If you do not recognise a device, sign it out.",
       "current": "This device",
@@ -1442,6 +1444,7 @@
     "updated": "Updated",
     "back": "All guides",
     "more": "More guides",
+    "breadcrumb": "Breadcrumb",
     "updatedOn": "2026-11-17",
     "items": {
       "choose-a-movie-with-friends": {

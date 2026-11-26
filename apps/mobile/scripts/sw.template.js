@@ -132,3 +132,50 @@ async function navigate(req, url, event) {
     return (await caches.match(OFFLINE_URL, { cacheName: PRECACHE })) || Response.error();
   }
 }
+
+// Web Push: the server sends a push with NO payload (crates/api/src/webpush.rs). Waking up, the worker asks what is new and says it.
+const PUSH_LINE = {
+  it: { log: "ha visto {t}", comment: "ha commentato {t}", reaction: "ha reagito a {t}", now_watching: "sta guardando {t}", serata_invite: "ti invita a una Serata", circle_join: "è entrato nel gruppo", mention: "ti ha nominato su {t}", other: "novità", someone: "Qualcuno" },
+  en: { log: "watched {t}", comment: "commented on {t}", reaction: "reacted to {t}", now_watching: "is watching {t}", serata_invite: "invites you to a Serata", circle_join: "joined the group", mention: "mentioned you on {t}", other: "news", someone: "Someone" },
+  es: { log: "ha visto {t}", comment: "ha comentado {t}", reaction: "ha reaccionado a {t}", now_watching: "está viendo {t}", serata_invite: "te invita a una Serata", circle_join: "se ha unido al grupo", mention: "te ha mencionado en {t}", other: "novedades", someone: "Alguien" },
+};
+
+self.addEventListener("push", (event) => {
+  event.waitUntil(
+    (async () => {
+      let n = null;
+      try {
+        const res = await fetch("/api/notifications", { credentials: "include" });
+        const page = res.ok ? await res.json() : null;
+        n = page && page.items ? page.items.find((i) => !i.read) || null : null;
+      } catch {
+        n = null;
+      }
+      const lang = (self.navigator.language || "it").slice(0, 2);
+      const L = PUSH_LINE[lang] || PUSH_LINE.it;
+      const who = (n && n.actor && n.actor.name) || L.someone;
+      const title = (n && n.media && n.media.title) || "";
+      const line = (L[n ? n.type : "other"] || L.other).replace("{t}", title).trim();
+      const url = n ? (n.circleId && n.logId ? `/${lang}/c/${n.circleId}/log/${n.logId}` : n.circleId ? `/${lang}/c/${n.circleId}` : `/${lang}/notifications`) : "/";
+      await self.registration.showNotification((n && n.circleName) || "Pausa", { body: `${who} ${line}`.trim(), icon: "/icons/icon-192.png", tag: n ? n.id : undefined, data: { url } });
+    })(),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin).href;
+  event.waitUntil(
+    (async () => {
+      const all = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const c of all) {
+        if (c.url.startsWith(self.location.origin) && "focus" in c) {
+          await c.focus();
+          if ("navigate" in c) await c.navigate(url);
+          return;
+        }
+      }
+      await self.clients.openWindow(url);
+    })(),
+  );
+});

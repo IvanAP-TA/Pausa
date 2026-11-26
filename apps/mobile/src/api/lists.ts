@@ -4,7 +4,7 @@ import type { Client } from "./client";
 
 const e = encodeURIComponent;
 
-export type NewListInput = { name: string; kind?: "watchlist" | "list"; description?: string | null; circleId?: string | null };
+export type NewListInput = { name: string; kind?: "watchlist" | "list" | "ranking"; description?: string | null; circleId?: string | null };
 export type AddItemInput = ({ mediaId: string } | { mediaKey: string }) & { note?: string | null; priority?: number };
 export type ItemPatch = { note?: string | null; priority?: number };
 
@@ -12,7 +12,10 @@ export const LIST_CAP = 200;
 
 export function listsEndpoints(c: Client) {
   return {
-    overview: (circleId?: string | null, signal?: AbortSignal) => c.json<ListSummary[]>("GET", `/api/lists${circleId ? `?circle=${e(circleId)}` : ""}`, { signal }),
+    overview: (circleId?: string | null, signal?: AbortSignal, locale?: string) => {
+      const q = [circleId ? `circle=${e(circleId)}` : "", locale ? `locale=${e(locale)}` : ""].filter(Boolean).join("&");
+      return c.json<ListSummary[]>("GET", `/api/lists${q ? `?${q}` : ""}`, { signal });
+    },
     create: (input: NewListInput) => c.json<IdOnly>("POST", "/api/lists", { body: input }),
     detail: (id: string, locale: string, signal?: AbortSignal) => c.json<ListDetail>("GET", `/api/lists/${e(id)}?locale=${e(locale)}`, { signal }),
     update: (id: string, input: { name?: string; description?: string | null }) => c.none("PATCH", `/api/lists/${e(id)}`, { body: input }),

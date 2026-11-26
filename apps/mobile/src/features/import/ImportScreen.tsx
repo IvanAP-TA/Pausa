@@ -1,11 +1,12 @@
 import type { ImportBatchDto } from "@pausa/api-types";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Platform, Pressable, View } from "react-native";
 import { ApiFailure, errorMessage } from "@/api/errors";
 import { importApi } from "@/api/import";
 import { RequireSession, useMe } from "@/features/session";
 import { useI18n, type MessageKey } from "@/i18n";
 import { control, hair, space, useTheme, web } from "@/theme";
+import { BackLink } from "@/ui/BackLink";
 import { Button } from "@/ui/Button";
 import { Choice } from "@/ui/Choice";
 import { Field } from "@/ui/Field";
@@ -18,7 +19,8 @@ import { TextLink } from "@/ui/TextLink";
 import { Toggle } from "@/ui/Toggle";
 import "./import.messages";
 import { anilistRows, jikanRows, type ImportRow } from "./parsers";
-import { assertSomething, fetchAniList, fetchJikan, ImportReadError, parseFiles, type FileSource, type Parsed, type ReadProblem } from "./parsers/read";
+import { assertSomething, fetchAniList, fetchJikan, ImportReadError, parseFiles, type FileSource, type Parsed, type Picked, type ReadProblem } from "./parsers/read";
+import { DropZone } from "./DropZone";
 import { pickFiles } from "./picker";
 import { runImport, type Progress, type RunResult, type Totals } from "./runner";
 
@@ -120,12 +122,17 @@ function Impl() {
   const stop = useRef(false);
   const alive = useRef(true);
   const [open, setOpen] = useState<ImportBatchDto[] | null>(null);
+  const [tmdb, setTmdb] = useState<boolean | null>(null);
 
   useEffect(() => {
     alive.current = true;
     importApi.list().then(
       (all) => alive.current && setOpen(all.filter((b) => b.status === "running")),
       () => alive.current && setOpen([]),
+    );
+    importApi.config().then(
+      (cfg) => alive.current && setTmdb(cfg.tmdb),
+      () => undefined,
     );
     return () => {
       alive.current = false;
@@ -181,6 +188,13 @@ function Impl() {
       setProblem("read");
       setPhase({ kind: "pick" });
     }
+  };
+
+  /** Files dropped on the zone (web): the same path as the picker. */
+  const dropped = (s: FileSource, files: Picked[]) => {
+    if (phase.kind !== "pick") return;
+    const use = ACCEPT[s].multiple ? files : files.slice(0, 1);
+    void load(async () => parseFiles(s, use));
   };
 
   const fromUser = () =>
@@ -246,6 +260,7 @@ function Impl() {
 
   return (
     <Screen>
+      <BackLink to={href("/me")} label={t("common.back")} />
       <Heading level={1}>{t("import.title")}</Heading>
       <Text variant="lead" tone="ink2">{t("import.lede")}</Text>
       <Text variant="small" tone="muted">{t("import.visibility")}</Text>
@@ -270,6 +285,7 @@ function Impl() {
             <Choice label={t("import.mal.mode")} value={malMode} options={[{ value: "user", label: t("import.mal.mode_user") }, { value: "file", label: t("import.mal.mode_file") }]} onChange={(m) => { setMalMode(m); reset(); }} />
           ) : null}
           {source === "mal" && malMode === "user" ? <Text tone="ink2">{t("import.mal.userBody")}</Text> : source !== "anilist" ? <Steps source={source} /> : null}
+          {source === "letterboxd" && tmdb === false ? <Text variant="small" tone="muted" testID="no-covers">{t("import.letterboxd.noCovers")}</Text> : null}
           {source === "cinemaniac" ? <Text variant="small" tone="muted">{t("import.cinemaniac.dates")}</Text> : null}
 
           {source === "anilist" || (source === "mal" && malMode === "user") ? (
@@ -278,7 +294,10 @@ function Impl() {
               <Button label={t("import.anilist.find")} onPress={fromUser} busy={phase.kind === "reading"} disabled={!username.trim()} testID="find" />
             </View>
           ) : (
-            <Button label={t(source === "mal" ? "import.mal.pick" : (`import.${source}.pick` as MessageKey))} onPress={() => pickOrCancel(source === "mal" ? "mal" : (source as FileSource))} busy={phase.kind === "reading"} testID="pick-file" />
+            <DropZone onFiles={(files) => dropped(source === "mal" ? "mal" : (source as FileSource), files)} disabled={phase.kind !== "pick"}>
+              <Button label={t(source === "mal" ? "import.mal.pick" : (`import.${source}.pick` as MessageKey))} onPress={() => pickOrCancel(source === "mal" ? "mal" : (source as FileSource))} busy={phase.kind === "reading"} testID="pick-file" />
+              {Platform.OS === "web" ? <Text variant="small" tone="muted">{t("importApp.drop")}</Text> : null}
+            </DropZone>
           )}
           {phase.kind === "reading" ? <Text variant="small" tone="muted" role="status">{t("import.reading")}</Text> : null}
           {problem ? <Text role="alert" tone="error" testID="read-error">{t(READ_KEYS[problem])}</Text> : null}
@@ -431,7 +450,7 @@ function Ended({ phase, totals, onAgain, onResume, circleName }: { phase: Extrac
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs }}>
         {r.status !== "done" ? <Button label={t("importApp.resume")} onPress={onResume} testID="resume-after" /> : null}
         {r.status === "done" ? (
-          phase.circleId ? <Button label={t("import.done.toCircle", { circle: circleName ?? "" })} href={href(`/c/${phase.circleId}`)} /> : <Button label={t("import.done.toSpace")} href={href("/me")} />
+          phase.circleId ? <Button label={t("import.done.toCircle", { circle: circleName ?? "" })} href={href(`/c/${phase.circleId}`)} /> : <Button label={t("import.done.toSpace")} href={`${href("/diary")}?only=private`} />
         ) : null}
         {r.status === "done" && tot.lists > 0 ? <Button label={t("import.done.toLists")} variant="secondary" href={`${href("/lists")}${phase.circleId ? `?circle=${phase.circleId}` : "?circle="}`} /> : null}
         <Button label={t("import.done.again")} variant="quiet" onPress={onAgain} />

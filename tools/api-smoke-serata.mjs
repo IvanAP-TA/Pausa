@@ -129,6 +129,48 @@ check("the share-card data needs no sign-in: winner, Cerchia, mode, turns, peopl
 check("and shows nobody's votes", !/voted|pick|ballot/i.test(r.text));
 r = await call("GET", "/api/serate/ZZZZZZ/result");
 check("a result of an unknown room is 404", r.status === 404);
+
+// the guest who has just seen the result can ask to join the Cerchia: the public result carries an open invitation, never a dead one
+// (only to someone who took part: the result is public, the card's QR leads to it, the Cerchia's door is not; as in v1)
+r = await call("GET", `/api/serate/${code}/result`);
+check("the public result offers no invitation to a stranger", r.status === 200 && r.json.inviteCode === null, r.text);
+r = await call("GET", `/api/serate/${code}/result`, { cookie: late.cookie });
+check("nor to someone signed in who did not take part", r.status === 200 && r.json.inviteCode === null, r.text);
+r = await call("GET", `/api/serate/${code}/result`, { cookie: G.cookie });
+check("the guest who took part gets the Cerchia's open invitation", r.json.inviteCode === C.inviteCode, r.text);
+sql(`UPDATE invite SET revoked_at = 1 WHERE circle_id='${C.id}'`);
+r = await call("GET", `/api/serate/${code}/result`, { cookie: G.cookie });
+check("a revoked invitation is not offered", r.status === 200 && r.json.inviteCode === null, r.text);
+sql(`UPDATE invite SET revoked_at = NULL WHERE circle_id='${C.id}'`);
+
+// ═════════ "Suggerisci" and the services in common ═════════
+const NETFLIX = { id: 8, name: "Netflix", logoPath: null };
+const PRIME = { id: 9, name: "Prime Video", logoPath: null };
+r = await call("GET", `/api/circles/${C.id}/serate/services`, { cookie: H.cookie });
+check("nobody has set their services: none in common, none counted", r.status === 200 && r.json.names.length === 0 && r.json.setBy === 0 && r.json.members === 2, r.text);
+await call("PUT", "/api/me/providers", { cookie: H.cookie, body: { country: "IT", providers: [NETFLIX, PRIME] } });
+await call("PUT", "/api/me/providers", { cookie: M.cookie, body: { country: "IT", providers: [NETFLIX] } });
+r = await call("GET", `/api/circles/${C.id}/serate/services`, { cookie: M.cookie });
+check("the services in common are the ones every member who set theirs has", r.status === 200 && r.json.names.join() === "Netflix" && r.json.setBy === 2 && r.json.members === 2, r.text);
+r = await call("GET", `/api/circles/${C.id}/serate/services`, { cookie: O.cookie });
+check("a non-member cannot read them", r.status === 403 || r.status === 404, r.text);
+r = await call("GET", `/api/circles/${C.id}/serate/services`);
+check("services need a session", r.status === 401);
+
+const wlist = (await call("POST", "/api/lists", { cookie: H.cookie, body: { name: "Da vedere", kind: "watchlist", circleId: C.id } })).json;
+for (const i of [3, 4, 5]) await call("POST", `/api/lists/${wlist.id}/items`, { cookie: H.cookie, body: { mediaId: T[i] } });
+// Film 5 is known to stream only on Prime (not shared by everybody), Film 6 on Netflix, Film 4 is not known at all
+const now = Date.now();
+sql(`INSERT INTO media_availability_check(media_id,country,fetched_at) VALUES ('${T[4]}','IT',${now}),('${T[5]}','IT',${now})`);
+sql(`INSERT INTO media_provider(media_id,country,provider_id,name,logo_path) VALUES ('${T[4]}','IT',9,'Prime Video',NULL),('${T[5]}','IT',8,'Netflix',NULL)`);
+r = await call("GET", `/api/circles/${C.id}/serate/suggest?locale=it`, { cookie: H.cookie });
+check("the suggestion is the watchlist minus what the group cannot stream together; an unknown title stays",
+  r.status === 200 && r.json.titles.map((t) => t.title).join() === "Film 4,Film 6" && r.json.titles.length === 2, r.text);
+check("each title says which shared service carries it (none for an unknown one)", r.json.on[T[5]]?.join() === "Netflix" && r.json.on[T[3]] === undefined, JSON.stringify(r.json.on));
+r = await call("GET", `/api/circles/${C.id}/serate/suggest`, { cookie: O.cookie });
+check("a non-member gets no suggestion", r.status === 403 || r.status === 404, r.text);
+r = await call("GET", `/api/circles/${C.id}/serate/suggest`);
+check("a suggestion needs a session", r.status === 401);
 r = await call("GET", `/api/circles/${C.id}/serate`, { cookie: M.cookie });
 check("history lists it with its winner and the number of people", r.json.length === 1 && r.json[0].code === code && r.json[0].status === "done" && r.json[0].winner.title === "Film 1" && r.json[0].people === 3 && r.json[0].watched === false, r.text);
 r = await call("GET", `/api/circles/${C.id}/serate`, { cookie: late.cookie });

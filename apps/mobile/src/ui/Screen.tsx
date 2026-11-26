@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, View, type StyleProp, type ViewStyle } from
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { layout, space, useTheme } from "@/theme";
 import { Arrive } from "./motion";
+import { Safelight } from "./Safelight";
 
 /**
  * A private screen: a scrolling column on the ground, content capped at a reading width. Keyboard taps pass through to the
@@ -44,6 +45,7 @@ export function Screen({
           : undefined
       }
     >
+      <Safelight />
       <Arrive style={[{ width: "100%", maxWidth: width, paddingHorizontal: layout.gutter.phone, paddingTop: space.lg + insets.top, gap: space.lg }, style]}>{children}</Arrive>
     </ScrollView>
   );

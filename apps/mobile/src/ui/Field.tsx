@@ -45,7 +45,7 @@ export function Field({ label, error, hint, required, onFocus, onBlur, ...input 
             paddingHorizontal: space.sm,
             paddingVertical: space.xs,
             borderWidth: hair,
-            borderColor: error ? c.error : focused ? c.ink : c.muted,
+            borderColor: error ? c.error : focused ? c.focus : c.muted,
             backgroundColor: "transparent",
             color: c.ink,
             fontFamily: fonts.body400,

@@ -6,6 +6,7 @@ import "@/i18n/public";
 import { I18nProvider, LOCALES, useI18n, type Locale } from "@/i18n";
 import { hair, space, useTheme, web } from "@/theme";
 import { Anchor } from "./Anchor";
+import { Safelight } from "@/ui/Safelight";
 import { Text, Title } from "@/ui/Text";
 
 /** Horizontal padding: 16dp on a phone, growing to 64 on wide screens, in one CSS clamp (no media queries needed). */
@@ -88,23 +89,22 @@ function Footer({ sub }: { sub: string }) {
  * `sub` is the path under /{locale} this page lives at, so the language links in the footer lead to the same page in the
  * other languages.
  */
-export function PublicPage({ locale, sub = "", children }: { locale: Locale; sub?: string; children: ReactNode }) {
+export function PublicPage({ locale, sub = "", bare, ownLandmarks, children }: { locale: Locale; sub?: string; /** The landing: children bring their own header, main and footer. */ ownLandmarks?: boolean; /** Guides and legal pages: no site header or footer (the page carries its own brand link). */ bare?: boolean; children: ReactNode }) {
   const { c } = useTheme();
   return (
     <I18nProvider locale={locale}>
-      <View
-        style={[
-          { flex: 1, backgroundColor: c.paper },
-          // The safelight: one soft light falling on the top of the screen (DESIGN.md Surfaces). Web only, CSS gradient.
-          web({ backgroundImage: "radial-gradient(ellipse 90% 420px at 50% 0, color-mix(in oklab, var(--c-accent) 14%, transparent), transparent)", backgroundRepeat: "no-repeat" }),
-        ]}
-      >
+      <View style={{ flex: 1, backgroundColor: c.paper }}>
+        <Safelight />
         <SkipLink />
-        <Header />
-        <View role="main" nativeID="main" style={{ flex: 1 }}>
-          {children}
-        </View>
-        <Footer sub={sub} />
+        {bare || ownLandmarks ? null : <Header />}
+        {ownLandmarks ? (
+          children
+        ) : (
+          <View role="main" nativeID="main" style={{ flex: 1 }}>
+            {children}
+          </View>
+        )}
+        {bare || ownLandmarks ? null : <Footer sub={sub} />}
       </View>
     </I18nProvider>
   );

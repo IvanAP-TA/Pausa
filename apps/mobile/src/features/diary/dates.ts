@@ -34,3 +34,31 @@ export function dedupeCandidates<T extends { key: string; kind: string; title: s
     return true;
   });
 }
+
+/**
+ * v1 `format.relativeTime(then, now)` (next-intl): the largest unit that fits, rounded, "2 ore fa", "ieri", "3 settimane fa".
+ * Under a minute it is "adesso" (seconds would tick and say nothing).
+ */
+export function relativeTime(then: number, now: number, locale: string): string {
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const s = (then - now) / 1000;
+  const a = Math.abs(s);
+  if (a < 60) return rtf.format(0, "second");
+  if (a < 3600) return rtf.format(Math.round(s / 60), "minute");
+  if (a < 86_400) return rtf.format(Math.round(s / 3600), "hour");
+  if (a < 604_800) return rtf.format(Math.round(s / 86_400), "day");
+  if (a < 2_629_800) return rtf.format(Math.round(s / 604_800), "week");
+  if (a < 31_557_600) return rtf.format(Math.round(s / 2_629_800), "month");
+  return rtf.format(Math.round(s / 31_557_600), "year");
+}
+
+/** v1 diary days: a day of the app's time zone ("YYYY-MM-DD", local). */
+export const dayKey = (ms: number) => msToYmd(ms);
+
+/** The name of a diary day: oggi, ieri, or the weekday ("lunedì"). */
+export function dayName(ms: number, now: number, locale: string): string {
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  if (dayKey(ms) === dayKey(now)) return rtf.format(0, "day");
+  if (dayKey(ms) === dayKey(now - 86_400_000)) return rtf.format(-1, "day");
+  return new Intl.DateTimeFormat(locale, { weekday: "long" }).format(ms);
+}

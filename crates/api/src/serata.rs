@@ -3,17 +3,20 @@
 
 use crate::diary::{locale_of, num, placeholders, query_param};
 use crate::http::{body, client_ip, finish, json, new_id, no_content, now_ms, random, Fail, R};
-use crate::{catalog, limit, manage, session};
+use crate::{catalog, limit, manage, session, stats};
 use pausa_core::catalog::Key;
 use pausa_core::dto::{
-    ErrorCode, Locale, MediaDto, SerataCreated, SerataPublicResult, SerataSummary,
+    CircleServices, ErrorCode, Locale, MediaDto, SerataCreated, SerataPublicResult, SerataSuggest,
+    SerataSummary,
 };
 use pausa_core::limits;
 use pausa_core::profile::GUEST_AVATARS;
 use pausa_core::serata::{
-    normalize_code, room_code, Candidate, Mode, NewRoom, Participant, Room, Timing, MAX_CANDIDATES,
-    MIN_CANDIDATES,
+    build_roster, normalize_code, room_code, Candidate, Mode, NewRoom, Participant, Room, Timing, MAX_CANDIDATES,
+    MIN_CANDIDATES, RosterTitle,
 };
+use pausa_core::streaming::{common_providers, default_country, is_country, Provider};
+use std::collections::{HashMap, HashSet};
 use serde::Deserialize;
 use worker::wasm_bindgen::JsValue;
 use worker::*;
@@ -609,6 +612,7 @@ struct PublicRow {
     mode: String,
     finished_at: Option<i64>,
     result: Option<String>,
+    circle_id: Option<String>,
     circle_name: Option<String>,
     w_id: Option<String>,
     w_kind: Option<String>,
@@ -635,7 +639,7 @@ async fn public_inner(req: &Request, env: &Env, code: &str) -> R<Response> {
     let loc = catalog::locale_code(locale_of(req));
     let row = db
         .prepare(
-            "SELECT s.code, s.mode, s.finished_at, s.result, c.name AS circle_name, e.id AS w_id, e.kind AS w_kind, COALESCE(mt.title, e.original_title) AS w_title, \
+            "SELECT s.code, s.mode, s.finished_at, s.result, s.circle_id, c.name AS circle_name, e.id AS w_id, e.kind AS w_kind, COALESCE(mt.title, e.original_title) AS w_title, \
                e.year AS w_year, e.poster_path AS w_poster FROM serata s LEFT JOIN circle c ON c.id = s.circle_id JOIN media_entity e ON e.id = s.winner_media_id \
              LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?2 WHERE s.code = ?1 AND s.status = 'done'",
         )
@@ -648,6 +652,29 @@ async fn public_inner(req: &Request, env: &Env, code: &str) -> R<Response> {
         .as_deref()
         .and_then(|r| serde_json::from_str(r).ok())
         .unwrap_or_default();
+    // An open invitation to the Cerchia, so a guest who has just seen the result can ask to join (the newest one that still works).
+    // As in v1, only for someone who took part in this Serata: the result page is public (the card's QR leads here), the Cerchia's
+    // door is not.
+    let viewer = session::current(req, &db).await?.map(|s| s.user_id);
+    let invite_code = match (row.circle_id.as_deref(), viewer) {
+        (Some(cid), Some(uid)) => {
+            #[derive(Deserialize)]
+            struct Inv {
+                code: String,
+            }
+            db.prepare(
+                "SELECT code FROM invite WHERE circle_id = ?1 AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > ?2) \
+                 AND (max_uses IS NULL OR uses < max_uses) \
+                 AND EXISTS (SELECT 1 FROM serata_participant p JOIN serata s ON s.id = p.serata_id WHERE s.code = ?3 AND p.user_id = ?4) \
+                 ORDER BY created_at DESC LIMIT 1",
+            )
+            .bind(&[cid.into(), num(now_ms()), code.as_str().into(), uid.as_str().into()])?
+            .first::<Inv>(None)
+            .await?
+            .map(|i| i.code)
+        }
+        _ => None,
+    };
     json(
         &SerataPublicResult {
             code: row.code,
@@ -667,7 +694,255 @@ async fn public_inner(req: &Request, env: &Env, code: &str) -> R<Response> {
                 .and_then(|v| v.as_bool())
                 .unwrap_or(false),
             finished_at: row.finished_at.unwrap_or(0),
+            invite_code,
         },
         200,
     )
+}
+
+#[derive(Deserialize)]
+struct MemberProvider {
+    user_id: String,
+    provider_id: i64,
+    name: String,
+    logo_path: Option<String>,
+}
+
+/// The services every member who set theirs has, and how many members that is (v1's `circleServices`).
+async fn circle_services(db: &D1Database, circle_id: &str) -> R<(Vec<Provider>, u32, u32)> {
+    #[derive(Deserialize)]
+    struct N {
+        n: i64,
+    }
+    let res = db
+        .batch(vec![
+            db.prepare("SELECT COUNT(*) AS n FROM circle_member WHERE circle_id = ?1")
+                .bind(&[circle_id.into()])?,
+            db.prepare(
+                "SELECT p.user_id, p.provider_id, p.name, p.logo_path FROM user_provider p \
+                 JOIN circle_member m ON m.user_id = p.user_id WHERE m.circle_id = ?1 ORDER BY p.user_id, p.name",
+            )
+            .bind(&[circle_id.into()])?,
+        ])
+        .await?;
+    let members = res[0]
+        .results::<N>()?
+        .first()
+        .map(|n| n.n as u32)
+        .unwrap_or(0);
+    let mut by_user: Vec<(String, Vec<Provider>)> = Vec::new();
+    for r in res[1].results::<MemberProvider>()? {
+        let p = Provider {
+            id: r.provider_id,
+            name: r.name,
+            logo_path: r.logo_path,
+        };
+        match by_user.last_mut() {
+            Some((u, list)) if *u == r.user_id => list.push(p),
+            _ => by_user.push((r.user_id, vec![p])),
+        }
+    }
+    let sets: Vec<Vec<Provider>> = by_user.into_iter().map(|(_, l)| l).collect();
+    let set_by = sets.len() as u32;
+    Ok((common_providers(&sets), set_by, members))
+}
+
+/// `GET /api/circles/:id/serate/services`: what the Cerchia can stream together.
+pub async fn services(req: Request, env: Env, circle_id: &str) -> Result<Response> {
+    finish(services_inner(&req, &env, circle_id).await)
+}
+
+async fn services_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response> {
+    let db = env.d1("DB")?;
+    let s = session::require(req, &db).await?;
+    manage::my_role(&db, circle_id, &s.user_id).await?;
+    let (common, set_by, members) = circle_services(&db, circle_id).await?;
+    json(
+        &CircleServices {
+            names: common.into_iter().map(|p| p.name).collect(),
+            set_by,
+            members,
+        },
+        200,
+    )
+}
+
+#[derive(Deserialize)]
+struct IdRow {
+    id: String,
+}
+
+#[derive(Deserialize)]
+struct SeenRow {
+    media_id: String,
+    n: i64,
+}
+
+#[derive(Deserialize)]
+struct AvailRow {
+    media_id: String,
+    provider_id: i64,
+}
+
+#[derive(Deserialize)]
+struct TitleRow {
+    id: String,
+    kind: String,
+    title: String,
+    year: Option<i64>,
+    poster_path: Option<String>,
+}
+
+/// `GET /api/circles/:id/serate/suggest`: "fill the roster for us". Only what Pausa already holds (no TMDB call here: a Worker request
+/// has little CPU). A title's services are read from the weekly availability cache; a title not in it is unknown, never hidden.
+pub async fn suggest(req: Request, env: Env, circle_id: &str) -> Result<Response> {
+    finish(suggest_inner(&req, &env, circle_id).await)
+}
+
+async fn suggest_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response> {
+    let db = env.d1("DB")?;
+    let s = session::require(req, &db).await?;
+    manage::my_role(&db, circle_id, &s.user_id).await?;
+    let locale = locale_of(req);
+    let loc = catalog::locale_code(locale);
+    let res = db
+        .batch(vec![
+            db.prepare(
+                "SELECT i.media_id AS id FROM list_item i JOIN list l ON l.id = i.list_id WHERE l.circle_id = ?1 \
+                 ORDER BY CASE WHEN l.kind = 'watchlist' THEN 0 ELSE 1 END, l.created_at, i.position LIMIT 40",
+            )
+            .bind(&[circle_id.into()])?,
+            db.prepare(
+                "SELECT l.media_id, COUNT(DISTINCT l.user_id) AS n FROM log_share sh JOIN log l ON l.id = sh.log_id \
+                 JOIN circle_member m ON m.circle_id = sh.circle_id AND m.user_id = l.user_id WHERE sh.circle_id = ?1 \
+                 AND l.user_id NOT IN (SELECT blocked_id FROM user_block WHERE blocker_id = ?2) GROUP BY l.media_id",
+            )
+            .bind(&[circle_id.into(), s.user_id.as_str().into()])?,
+            db.prepare("SELECT country FROM user WHERE id = ?1")
+                .bind(&[s.user_id.as_str().into()])?,
+        ])
+        .await?;
+    let watchlist: Vec<String> = res[0]
+        .results::<IdRow>()?
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+    let seen_by: HashMap<String, u32> = res[1]
+        .results::<SeenRow>()?
+        .into_iter()
+        .map(|r| (r.media_id, r.n as u32))
+        .collect();
+    #[derive(Deserialize)]
+    struct Country {
+        country: Option<String>,
+    }
+    let country = res[2]
+        .results::<Country>()?
+        .into_iter()
+        .next()
+        .and_then(|c| c.country)
+        .filter(|c| is_country(c))
+        .unwrap_or_else(|| default_country(loc).to_string());
+
+    let recs = stats::recommend_list(&db, circle_id, loc, 12).await?;
+    let recommended: Vec<RosterTitle> = recs
+        .iter()
+        .map(|r| RosterTitle {
+            id: r.media.id.clone(),
+            score: (r.score * 100.0).round() as i64,
+        })
+        .collect();
+    let (common, _, members) = circle_services(&db, circle_id).await?;
+
+    // Which services carry the candidates: what is already stored for this country.
+    let mut ids: Vec<String> = watchlist.clone();
+    for r in &recommended {
+        if !ids.contains(&r.id) {
+            ids.push(r.id.clone());
+        }
+    }
+    ids.truncate(60);
+    let mut known: HashSet<String> = HashSet::new();
+    let mut carried: HashMap<String, HashSet<i64>> = HashMap::new();
+    if !common.is_empty() && !ids.is_empty() {
+        let ph = placeholders(2, ids.len());
+        let mut args: Vec<JsValue> = vec![country.as_str().into()];
+        args.extend(ids.iter().map(|i| JsValue::from(i.as_str())));
+        let a = db
+            .batch(vec![
+                db.prepare(format!(
+                    "SELECT media_id FROM media_availability_check WHERE country = ?1 AND media_id IN ({ph})"
+                ))
+                .bind(&args)?,
+                db.prepare(format!(
+                    "SELECT media_id, provider_id FROM media_provider WHERE country = ?1 AND media_id IN ({ph})"
+                ))
+                .bind(&args)?,
+            ])
+            .await?;
+        #[derive(Deserialize)]
+        struct M {
+            media_id: String,
+        }
+        for r in a[0].results::<M>()? {
+            known.insert(r.media_id);
+        }
+        for r in a[1].results::<AvailRow>()? {
+            carried.entry(r.media_id).or_default().insert(r.provider_id);
+        }
+    }
+    let on_common = |id: &str| -> Vec<String> {
+        carried
+            .get(id)
+            .map(|set| {
+                common
+                    .iter()
+                    .filter(|p| set.contains(&p.id))
+                    .map(|p| p.name.clone())
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    let blocked = |id: &str| !common.is_empty() && known.contains(id) && on_common(id).is_empty();
+    let picked = build_roster(
+        &watchlist,
+        &recommended,
+        &seen_by,
+        members,
+        &blocked,
+        MAX_CANDIDATES,
+    );
+
+    let mut titles: Vec<MediaDto> = Vec::new();
+    if !picked.is_empty() {
+        let ph = placeholders(2, picked.len());
+        let mut args: Vec<JsValue> = vec![loc.into()];
+        args.extend(picked.iter().map(|i| JsValue::from(i.as_str())));
+        let rows = db
+            .prepare(format!(
+                "SELECT e.id, e.kind, COALESCE(mt.title, e.original_title) AS title, e.year, e.poster_path FROM media_entity e \
+                 LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?1 WHERE e.id IN ({ph})"
+            ))
+            .bind(&args)?
+            .all()
+            .await?
+            .results::<TitleRow>()?;
+        for id in &picked {
+            if let Some(r) = rows.iter().find(|r| &r.id == id) {
+                titles.push(MediaDto {
+                    id: r.id.clone(),
+                    kind: r.kind.clone(),
+                    title: r.title.clone(),
+                    year: r.year,
+                    poster_path: r.poster_path.clone(),
+                });
+            }
+        }
+    }
+    let on: HashMap<String, Vec<String>> = titles
+        .iter()
+        .map(|t| (t.id.clone(), on_common(&t.id)))
+        .filter(|(_, v)| !v.is_empty())
+        .collect();
+    json(&SerataSuggest { titles, on }, 200)
 }

@@ -247,6 +247,64 @@ async fn metrics_inner(req: &Request, env: &Env) -> R<Response> {
         .await?
         .unwrap_or_default();
     let f = |k: &str| row.get(k).and_then(|v| v.as_f64()).unwrap_or(0.0);
+
+    // The early success numbers: one statement of scalar subqueries (one D1 call) plus the finished Serate durations, whose
+    // median is cheaper to take here than in SQL. Anonymous guests are not counted as people.
+    const WK: &str = "604800000";
+    let retention = |d: i64| {
+        let from = d * 86_400_000;
+        let to = (d + 7) * 86_400_000;
+        format!(
+            "(SELECT COUNT(*) FROM circle c WHERE ?1 - c.created_at >= {to}) AS elig{d}, \
+             (SELECT COUNT(*) FROM circle c WHERE ?1 - c.created_at >= {to} AND (EXISTS \
+                (SELECT 1 FROM log l JOIN circle_member m ON m.user_id = l.user_id WHERE m.circle_id = c.id \
+                 AND l.created_at >= c.created_at + {from} AND l.created_at < c.created_at + {to}) \
+              OR EXISTS (SELECT 1 FROM serata s WHERE s.circle_id = c.id \
+                 AND s.created_at >= c.created_at + {from} AND s.created_at < c.created_at + {to}))) AS kept{d}"
+        )
+    };
+    let more = db
+        .prepare(format!(
+            "SELECT \
+             (SELECT COUNT(*) FROM user u WHERE u.is_anonymous = 0 AND ?1 - u.created_at >= {WK}) AS cohort, \
+             (SELECT COUNT(*) FROM user u WHERE u.is_anonymous = 0 AND ?1 - u.created_at >= {WK} AND EXISTS \
+                (SELECT 1 FROM circle_member m WHERE m.user_id = u.id AND m.joined_at - u.created_at <= {WK})) AS joined7, \
+             (SELECT AVG(n) FROM (SELECT COUNT(*) AS n FROM log l JOIN circle_member m ON m.user_id = l.user_id \
+                WHERE l.created_at <= ?1 AND l.created_at > ?1 - 4 * {WK} \
+                GROUP BY m.circle_id, CAST((?1 - l.created_at) / {WK} AS INTEGER))) AS per_week, \
+             (SELECT COUNT(DISTINCT circle_id) FROM list WHERE circle_id IS NOT NULL) AS with_lists, \
+             (SELECT COUNT(*) FROM circle) AS circles, \
+             (SELECT COUNT(*) FROM serata WHERE status = 'done' AND finished_at IS NOT NULL) AS done, \
+             (SELECT COUNT(*) FROM serata WHERE status = 'done' AND finished_at IS NOT NULL AND finished_at - created_at < 120000) AS under120, \
+             (SELECT COUNT(*) FROM serata s WHERE s.status = 'done' AND s.finished_at IS NOT NULL AND EXISTS \
+                (SELECT 1 FROM event e WHERE e.serata_id = s.id AND e.name = 'card_shared')) AS card, \
+             (SELECT COUNT(*) FROM serata s WHERE s.status = 'done' AND s.finished_at IS NOT NULL AND EXISTS \
+                (SELECT 1 FROM event e WHERE e.serata_id = s.id AND e.name = 'invite_shared')) AS invite, \
+             {}, {}, \
+             (SELECT COUNT(DISTINCT user_id) FROM circle_member) AS people, \
+             (SELECT COUNT(*) FROM (SELECT user_id FROM watch_progress UNION SELECT actor_id FROM notification \
+                WHERE type = 'now_watching' AND actor_id IS NOT NULL) w WHERE w.user_id IN (SELECT user_id FROM circle_member)) AS watchers",
+            retention(7),
+            retention(30)
+        ))
+        .bind(&[num(now_ms())])?
+        .first::<serde_json::Value>(None)
+        .await?
+        .unwrap_or_default();
+    let x = |k: &str| more.get(k).and_then(|v| v.as_f64());
+    let f2 = |k: &str| x(k).unwrap_or(0.0);
+    #[derive(Deserialize)]
+    struct Secs {
+        s: f64,
+    }
+    let durations: Vec<f64> = db
+        .prepare("SELECT (finished_at - created_at) / 1000.0 AS s FROM serata WHERE status = 'done' AND finished_at IS NOT NULL ORDER BY 1 LIMIT 20000")
+        .all()
+        .await?
+        .results::<Secs>()?
+        .into_iter()
+        .map(|m| m.s)
+        .collect();
     json(
         &AdminMetrics {
             users: f("users"),
@@ -258,9 +316,42 @@ async fn metrics_inner(req: &Request, env: &Env) -> R<Response> {
             open_reports: f("reports"),
             cards_shared_7d: f("cards"),
             invites_shared_7d: f("invites"),
+            circle_within_7d: ratio(x("joined7"), x("cohort")),
+            circle_within_7d_cohort: f2("cohort"),
+            logs_per_active_circle_week: x("per_week"),
+            circles_using_lists: ratio(x("with_lists"), x("circles")),
+            serata_median_seconds: median_sorted(&durations),
+            serata_under_120: ratio(x("under120"), x("done")),
+            serata_finished: f2("done"),
+            serata_card_rate: ratio(x("card"), x("done")),
+            serata_invite_rate: ratio(x("invite"), x("done")),
+            retention_d7: ratio(x("kept7"), x("elig7")),
+            retention_d7_eligible: f2("elig7"),
+            retention_d30: ratio(x("kept30"), x("elig30")),
+            retention_d30_eligible: f2("elig30"),
+            now_watching_rate: ratio(x("watchers"), x("people")),
+            now_watching_people: f2("people"),
         },
         200,
     )
+}
+
+/// `part / whole`, or `None` (not enough data yet) when there is no whole or no part counted.
+fn ratio(part: Option<f64>, whole: Option<f64>) -> Option<f64> {
+    match (part, whole) {
+        (Some(p), Some(w)) if w > 0.0 => Some(p / w),
+        _ => None,
+    }
+}
+
+/// The median of values already sorted ascending; `None` for no values.
+fn median_sorted(v: &[f64]) -> Option<f64> {
+    let m = v.len() / 2;
+    match v.len() {
+        0 => None,
+        n if n % 2 == 1 => Some(v[m]),
+        _ => Some((v[m - 1] + v[m]) / 2.0),
+    }
 }
 
 #[derive(Deserialize)]
@@ -350,7 +441,19 @@ async fn unblock_inner(req: &Request, env: &Env, user: &str) -> R<Response> {
 
 #[cfg(test)]
 mod tests {
-    use super::in_operator_list;
+    use super::{in_operator_list, median_sorted, ratio};
+
+    #[test]
+    fn ratio_and_median() {
+        assert_eq!(ratio(Some(1.0), Some(4.0)), Some(0.25));
+        assert_eq!(ratio(Some(0.0), Some(4.0)), Some(0.0));
+        assert_eq!(ratio(Some(1.0), Some(0.0)), None);
+        assert_eq!(ratio(None, Some(2.0)), None);
+        assert_eq!(median_sorted(&[]), None);
+        assert_eq!(median_sorted(&[5.0]), Some(5.0));
+        assert_eq!(median_sorted(&[1.0, 3.0]), Some(2.0));
+        assert_eq!(median_sorted(&[1.0, 2.0, 9.0]), Some(2.0));
+    }
 
     #[test]
     fn operator_list_matching() {

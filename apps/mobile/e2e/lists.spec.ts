@@ -184,4 +184,31 @@ test.describe("lists", () => {
     await expect(page.getByTestId(`add-to-${target}`)).toHaveText(/Aggiunto/i);
     expect((await api<Detail>(owner, "GET", `/api/lists/${target}?locale=it`)).json.items.map((i) => i.media.title)).toEqual(["One Piece"]);
   });
+
+  test("a ranking card: strip with numbers and owner, then reorder, remove and delete in place", async () => {
+    const { page } = owner;
+    const ids = (await api<Detail>(owner, "GET", `/api/lists/${listId}?locale=it`)).json.items.map((x) => ({ id: x.media.id, title: x.media.title }));
+    const made = (await api<{ id: string }>(owner, "POST", "/api/lists", { name: "Top tre", kind: "ranking", circleId })).json.id;
+    for (const m of ids) await api(owner, "POST", `/api/lists/${made}/items`, { mediaId: m.id });
+    const first = ids[0].title;
+    const second = ids[1].title;
+    await page.goto(`/it/lists?circle=${circleId}`);
+    const card = page.getByTestId(`list-${made}`);
+    await expect(card).toContainText("Classifica, 3 titoli, di ");
+    await expect(card.getByTestId(`strip-${made}`).getByText(first, { exact: true })).toBeVisible();
+    await expect(card.getByTestId(`strip-${made}`).getByLabel("Posizione 3")).toBeVisible();
+    // manage in place: the second title goes up one place (ONE request), then the first one is taken out
+    await card.getByTestId(`manage-toggle-${made}`).click();
+    await card.getByRole("button", { name: `Sposta ${second} più in alto` }).click();
+    await expect.poll(async () => (await api<Detail>(owner, "GET", `/api/lists/${made}?locale=it`)).json.items[0].media.title).toBe(second);
+    await card.getByRole("button", { name: `Togli ${second} dalla lista` }).click();
+    await expect.poll(async () => (await api<Detail>(owner, "GET", `/api/lists/${made}?locale=it`)).json.items.length).toBe(2);
+    // the bin asks first
+    await card.getByRole("button", { name: "Elimina la lista Top tre" }).click();
+    await card.getByRole("button", { name: it.app.cancel }).click();
+    await expect(card).toBeVisible();
+    await card.getByRole("button", { name: "Elimina la lista Top tre" }).click();
+    await card.getByRole("button", { name: /^Elimina «Top tre» per sempre$/ }).click();
+    await expect(page.getByTestId(`list-${made}`)).toHaveCount(0);
+  });
 });

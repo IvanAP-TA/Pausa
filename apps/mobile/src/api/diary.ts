@@ -1,7 +1,11 @@
 import type {
   CandidateDto,
+  CircleExtras,
+  CircleMediaDto,
+  DiaryCounts,
   IdOnly,
   LogCreated,
+  LogDto,
   LogPage,
   LogThread,
   MediaDetailDto,
@@ -37,9 +41,29 @@ export type LogInput = {
   isRewatch?: boolean;
   watchedWith?: string[];
 };
-export type NewLogInput = LogInput & { mediaKey: string; circles: string[]; locale?: string };
+export type NewLogInput = LogInput & {
+  mediaKey: string;
+  circles: string[];
+  locale?: string;
+  /** A synopsis written by the person: kept only when the catalogue has none for the title. */
+  overview?: string | null;
+};
 
-export type FeedFilters = { person?: string; kind?: "movie" | "tv" | "anime"; year?: number; platform?: string; minRating?: number };
+export type FeedFilters = {
+  person?: string;
+  kind?: "movie" | "tv" | "anime";
+  /** Release year of the title. */
+  year?: number;
+  /** The year it was watched (v1 diary "Anno"). */
+  watchedYear?: number;
+  platform?: string;
+  minRating?: number;
+  /** Part of the title, any case. */
+  q?: string;
+  /** "Visto con": someone who was there. */
+  with?: string;
+  mediaId?: string;
+};
 
 export const REACTIONS = ["😭", "🍿", "❤️", "😂", "🤯"] as const;
 export const REPORT_REASONS = ["abuse", "spam", "privacy", "other"] as const;
@@ -50,15 +74,24 @@ export function diaryEndpoints(c: Client) {
     searchMedia: (q: string, locale: string, signal?: AbortSignal) => c.json<CandidateDto[]>("GET", `/api/media/search${query({ q, locale })}`, { signal }),
     media: (id: string, locale: string, signal?: AbortSignal) => c.json<MediaDetailDto>("GET", `/api/media/${e(id)}${query({ locale })}`, { signal }),
 
+    /** The stored id of a search result (the title is created from the catalogue the first time): "now watching" needs it. */
+    resolveMedia: (mediaKey: string, locale: string) => c.json<IdOnly>("POST", "/api/media/resolve", { body: { mediaKey, locale } }),
+
     /** `idempotencyKey` is sent as `Idempotency-Key`: the offline outbox repeats a request whose answer it never saw (see src/offline/outbox.ts). */
     createLog: (input: NewLogInput, idempotencyKey?: string) => c.json<LogCreated>("POST", "/api/logs", { body: input, headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined }),
+    /** One of my own viewings (author only; 404 for anyone else), with its tags and the Cerchie it is shared with. */
+    log: (id: string, locale: string, signal?: AbortSignal) => c.json<LogDto>("GET", `/api/logs/${e(id)}${query({ locale })}`, { signal }),
     updateLog: (id: string, input: LogInput) => c.none("PUT", `/api/logs/${e(id)}`, { body: input }),
     deleteLog: (id: string) => c.none("DELETE", `/api/logs/${e(id)}`),
     setShares: (id: string, circles: string[]) => c.none("PUT", `/api/logs/${e(id)}/shares`, { body: { circles } }),
 
     feed: (circleId: string, o: FeedFilters & { before?: string | null; locale: string }, signal?: AbortSignal) =>
       c.json<LogPage>("GET", `/api/circles/${e(circleId)}/feed${query({ ...o })}`, { signal }),
-    diary: (o: { before?: string | null; locale: string }, signal?: AbortSignal) => c.json<LogPage>("GET", `/api/me/diary${query({ ...o })}`, { signal }),
+    /** A title as one Cerchia sees it: original title, synopsis source, the Cerchia's average rating. */
+    circleMedia: (circleId: string, mediaId: string, locale: string, signal?: AbortSignal) =>
+      c.json<CircleMediaDto>("GET", `/api/circles/${e(circleId)}/media/${e(mediaId)}${query({ locale })}`, { signal }),
+    diary: (o: { before?: string | null; locale: string; only?: "private" }, signal?: AbortSignal) => c.json<LogPage>("GET", `/api/me/diary${query({ ...o })}`, { signal }),
+    diaryCounts: (signal?: AbortSignal) => c.json<DiaryCounts>("GET", "/api/me/diary/counts", { signal }),
     thread: (circleId: string, logId: string, o: { reveal?: boolean; locale: string }, signal?: AbortSignal) =>
       c.json<LogThread>("GET", `/api/circles/${e(circleId)}/logs/${e(logId)}${query({ reveal: o.reveal, locale: o.locale })}`, { signal }),
 
@@ -70,6 +103,7 @@ export function diaryEndpoints(c: Client) {
     report: (input: { kind: "log" | "comment"; targetId: string; reason: ReportReason; note?: string }) => c.none("POST", "/api/reports", { body: input }),
     withdraw: (circleId: string, confirm: string) => c.json<Removed>("POST", `/api/circles/${e(circleId)}/withdraw`, { body: { confirm } }),
 
+    extras: (circleId: string, locale: string, signal?: AbortSignal) => c.json<CircleExtras>("GET", `/api/circles/${e(circleId)}/extras${query({ locale })}`, { signal }),
     progress: (locale: string, signal?: AbortSignal) => c.json<ProgressDto[]>("GET", `/api/me/progress${query({ locale })}`, { signal }),
     setProgress: (mediaId: string, input: { season?: number; episode?: number; status?: "watching" | "paused" | "done" }) =>
       c.none("PUT", `/api/media/${e(mediaId)}/progress`, { body: input }),

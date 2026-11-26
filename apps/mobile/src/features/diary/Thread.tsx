@@ -1,9 +1,10 @@
-import type { CommentDto, LogDto, LogThread, ReactionCount } from "@pausa/api-types";
-import { Link, useLocalSearchParams, useRouter, type Href } from "expo-router";
+import type { CommentDto, LogDto, LogThread } from "@pausa/api-types";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { errorMessage } from "@/api/errors";
-import { diaryApi, REACTIONS, REPORT_REASONS, type ReportReason } from "@/api/diary";
+import { ApiFailure, errorMessage } from "@/api/errors";
+import { diaryApi, REPORT_REASONS, type ReportReason } from "@/api/diary";
+import { listsApi, LIST_CAP } from "@/api/lists";
 import { useAction } from "@/api/useAction";
 import { useResource } from "@/api/useResource";
 import { useI18n } from "@/i18n";
@@ -14,13 +15,14 @@ import { Button } from "@/ui/Button";
 import { Choice } from "@/ui/Choice";
 import { ConfirmButton } from "@/ui/ConfirmButton";
 import { Field } from "@/ui/Field";
-import { MediaPoster } from "@/ui/MediaPoster";
+import { Select } from "@/ui/Select";
 import { Sheet } from "@/ui/Sheet";
-import { Stars } from "@/ui/Stars";
 import { Toggle } from "@/ui/Toggle";
 import { Empty, ErrorState, Heading, Loading, Notice, Screen, Tag, Text, Title } from "@/ui";
 import { RequireSession, useMe } from "../session";
-import { KindTag, num, REACTION_NAME, useCircleScope, useEpisodeLabel, ymdToMs } from "./shared";
+import { relativeTime } from "./dates";
+import { CardList, LogCard, useCircleScope } from "./shared";
+import "../lists/lists.messages";
 import "./diary.messages";
 
 const MAX_COMMENT = 2000;
@@ -65,70 +67,6 @@ function ReportSheet({ target, onClose }: { target: Target; onClose: () => void 
         </>
       )}
     </Sheet>
-  );
-}
-
-/** The five reactions: each a toggle, counted, flipped at once and put back if the server says no. */
-function Reactions({ circleId, logId, initial }: { circleId: string; logId: string; initial: ReactionCount[] }) {
-  const { t } = useI18n();
-  const { c } = useTheme();
-  const [state, setState] = useState(initial);
-  const [error, setError] = useState<unknown>(null);
-  useEffect(() => setState(initial), [initial]);
-  const toggle = async (emoji: string) => {
-    const before = state;
-    const cur = before.find((r) => r.emoji === emoji);
-    const on = !cur?.mine;
-    const next = cur
-      ? before.map((r) => (r.emoji === emoji ? { ...r, mine: on, count: Math.max(0, r.count + (on ? 1 : -1)) } : r))
-      : [...before, { emoji, mine: true, count: 1 }];
-    setState(next);
-    setError(null);
-    try {
-      await diaryApi.react(circleId, logId, emoji);
-    } catch (e) {
-      setState(before);
-      setError(e);
-    }
-  };
-  return (
-    <View style={{ gap: space.xs }}>
-      <View role="group" aria-label={t("diary.thread.reactions")} style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs }}>
-        {REACTIONS.map((emoji) => {
-          const r = state.find((x) => x.emoji === emoji);
-          const mine = !!r?.mine;
-          const name = t(REACTION_NAME[emoji]);
-          return (
-            <Pressable
-              key={emoji}
-              role="button"
-              aria-pressed={mine}
-              aria-label={`${t("feed.react", { emoji: name })}${r?.count ? `, ${t("feed.reactCount", { name, count: r.count })}` : ""}`}
-              testID={`react-${emoji}`}
-              onPress={() => void toggle(emoji)}
-              style={StyleSheet.flatten([
-                { minHeight: control, minWidth: control, paddingHorizontal: space.sm, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space["2xs"], borderWidth: hair, borderColor: mine ? c.accent : c.rule, backgroundColor: mine ? c.paper3 : "transparent" },
-                web({ cursor: "pointer" }),
-              ])}
-            >
-              <Text aria-hidden style={{ fontSize: 20 }}>
-                {emoji}
-              </Text>
-              {r?.count ? (
-                <Text aria-hidden variant="small" tone={mine ? "ink" : "ink2"}>
-                  {r.count}
-                </Text>
-              ) : null}
-            </Pressable>
-          );
-        })}
-      </View>
-      {error ? (
-        <Text tone="error" role="alert">
-          {errorMessage(t, error)}
-        </Text>
-      ) : null}
-    </View>
   );
 }
 
@@ -189,7 +127,7 @@ function Comment({ comment, canDelete, shown, body, onReveal, onReply, onReport,
   const [spoiler, setSpoiler] = useState(comment.isSpoiler);
   const save = useAction();
   const del = useAction();
-  const when = useMemo(() => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(comment.createdAt)), [locale, comment.createdAt]);
+  const when = useMemo(() => relativeTime(Number(comment.createdAt), Date.now(), locale), [locale, comment.createdAt]);
   const gated = comment.isSpoiler && !comment.mine && !shown;
   return (
     <View testID={`comment-${comment.id}`} style={{ marginLeft: reply ? space.lg : 0, paddingVertical: space.sm, gap: space.xs, borderBottomWidth: hair, borderColor: c.rule }}>
@@ -272,81 +210,67 @@ function Comment({ comment, canDelete, shown, body, onReveal, onReply, onReport,
   );
 }
 
-function Header({ log, circleId, watchedWith, revealed, onReveal, mine, onReport }: { log: LogDto; circleId: string; watchedWith: LogThread["watchedWith"]; revealed: boolean; onReveal: () => void; mine: boolean; onReport: () => void }) {
-  const { t, href, date } = useI18n();
-  const router = useRouter();
-  const epLabel = useEpisodeLabel();
-  const del = useAction();
-  const ep = epLabel(num(log.season), num(log.episode));
-  const year = num(log.media.year);
+/** v1 "Aggiungi a una lista": the Cerchia's lists and my own, one select and a button. Hidden when there is none. */
+function AddToList({ circleId, mediaId }: { circleId: string; mediaId: string }) {
+  const { t } = useI18n();
+  const lists = useResource((signal) => listsApi.overview(circleId, signal), [circleId]);
+  const [listId, setListId] = useState("");
+  const [state, setState] = useState<"added" | "already" | null>(null);
+  const add = useAction();
+  const targets = lists.data ?? [];
+  if (targets.length === 0) return null;
+  const failure = add.error instanceof ApiFailure && add.error.code === "conflict" ? t("listsApp.full", { max: LIST_CAP }) : add.error ? errorMessage(t, add.error) : null;
   return (
-    <View style={{ gap: space.sm }}>
-      <View style={{ flexDirection: "row", gap: space.md }}>
-        <Link href={href(`/t/${log.media.id}`) as Href}>
-          <MediaPoster title={log.media.title} path={log.media.posterPath} width={96} decorative={false} />
-        </Link>
-        <View style={{ flex: 1, gap: space.xs }}>
-          <Heading level={1} style={{ fontSize: 40, lineHeight: 44 }}>
-            {log.media.title}
-          </Heading>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.xs }}>
-            {year ? (
-              <Text variant="small" tone="muted">
-                {year}
-              </Text>
-            ) : null}
-            <KindTag media={log.media} />
-            {log.isRewatch ? <Tag label={t("feed.rewatched")} /> : null}
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: space.xs }}>
-            <Avatar name={log.author.name} image={log.author.image} size={24} />
-            <Link href={href(`/c/${circleId}/people/${log.author.id}`) as Href} asChild>
-              <Pressable role="link" style={StyleSheet.flatten([{ flexShrink: 1, minHeight: control, justifyContent: "center" }, web({ cursor: "pointer" })])}>
-                <Text variant="strong">{log.author.name}</Text>
-              </Pressable>
-            </Link>
-          </View>
-          <Text variant="small" tone="muted">
-            {[date(ymdToMs(log.watchedOn)), ep, log.platform ? t("feed.on", { platform: log.platform }) : null].filter(Boolean).join(" · ")}
-          </Text>
-          <Stars halves={log.rating} size={20} />
-        </View>
+    <View style={{ gap: space.xs }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: space.xs }}>
+        <Select<string>
+          label={t("lists.addTo")}
+          value={listId}
+          testID="add-to-list"
+          onChange={(v) => {
+            setListId(v);
+            setState(null);
+          }}
+          options={[{ value: "", label: t("lists.addTo") }, ...targets.map((l) => ({ value: l.id, label: l.circleId === null ? `${l.name} (${t("lists.personal")})` : l.name }))]}
+        />
+        <Button
+          label={state === "added" ? t("listsApp.addedShort") : state === "already" ? t("listsApp.alreadyShort") : t("lists.add")}
+          disabled={listId === "" || state !== null}
+          busy={add.busy}
+          testID="add-to-list-go"
+          style={{ minHeight: control }}
+          onPress={async () => {
+            const res = await add.run(() => listsApi.addItem(listId, { mediaId }));
+            if (res) setState(res.value.added ? "added" : "already");
+          }}
+        />
       </View>
-      {log.reviewHidden && !revealed ? (
-        <Pressable role="button" testID="reveal-review" onPress={onReveal} style={StyleSheet.flatten([{ minHeight: control, justifyContent: "center", paddingHorizontal: space.sm, borderWidth: hair, borderColor: "transparent", backgroundColor: "transparent" }, web({ cursor: "pointer" })])}>
-          <Text tone="ink2">{t("feed.spoiler")}</Text>
-          <Text variant="strong" tone="accent">
-            {t("diary.thread.show")}
-          </Text>
-        </Pressable>
-      ) : log.review ? (
-        <Text selectable testID="review">
-          {log.review}
+      {failure ? (
+        <Text tone="error" role="alert">
+          {failure}
         </Text>
       ) : null}
-      {watchedWith.length > 0 ? (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.xs }}>
-          <Text variant="label" tone="ink2">
-            {t("feed.with")}
-          </Text>
-          {watchedWith.map((p) => (
-            <View key={p.id} style={{ flexDirection: "row", alignItems: "center", gap: space["2xs"] }}>
-              <Avatar name={p.name} image={p.image} size={22} />
-              <Text variant="small">{p.name}</Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
+    </View>
+  );
+}
+
+/** Under the card: edit (inside this Cerchia) and delete for the author, report for anyone else. */
+function Actions({ log, circleId, mine, onReport }: { log: LogDto; circleId: string; mine: boolean; onReport: () => void }) {
+  const { t, href } = useI18n();
+  const router = useRouter();
+  const del = useAction();
+  return (
+    <View style={{ gap: space.xs }}>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs }}>
         {mine ? (
           <>
-            <Button label={t("manage.edit")} variant="secondary" href={href(`/log/${log.id}`)} />
+            <Button label={t("manage.edit")} variant="secondary" href={href(`/c/${circleId}/log/${log.id}/edit`)} />
             <ConfirmButton
               label={t("manage.delete")}
               confirmLabel={t("manage.deleteConfirm")}
               busy={del.busy}
               onConfirm={async () => {
-                if (await del.run(() => diaryApi.deleteLog(log.id))) router.replace(href(`/c/${circleId}/feed`) as never);
+                if (await del.run(() => diaryApi.deleteLog(log.id))) router.replace(href(`/c/${circleId}`) as never);
               }}
             />
           </>
@@ -354,7 +278,11 @@ function Header({ log, circleId, watchedWith, revealed, onReveal, mine, onReport
           <Button label={t("manage.report.button")} variant="quiet" onPress={onReport} />
         )}
       </View>
-      {mine ? <Text variant="small" tone="muted">{t("manage.deleteLogWarn")}</Text> : null}
+      {mine ? (
+        <Text variant="small" tone="muted">
+          {t("manage.deleteLogWarn")}
+        </Text>
+      ) : null}
       {del.error ? (
         <Text tone="error" role="alert">
           {errorMessage(t, del.error)}
@@ -368,14 +296,13 @@ function ThreadBody({ circleId, logId, reveal }: { circleId: string; logId: stri
   const { t, href, locale } = useI18n();
   const me = useMe();
   useCircleScope(circleId);
-  const [revealed, setRevealed] = useState(reveal);
-  const [shown, setShown] = useState<Set<string>>(new Set());
+    const [shown, setShown] = useState<Set<string>>(new Set());
   const [bodies, setBodies] = useState<Record<string, string>>({});
   const [replyTo, setReplyTo] = useState<CommentDto | null>(null);
   const [report, setReport] = useState<Target>(null);
-  const thread = useResource((signal) => diaryApi.thread(circleId, logId, { reveal: revealed, locale }, signal), [circleId, logId, revealed, locale]);
+  const thread = useResource((signal) => diaryApi.thread(circleId, logId, { reveal, locale }, signal), [circleId, logId, reveal, locale]);
   const back = (
-    <BackLink to={href(`/c/${circleId}/feed`)} label={t("diary.thread.back")} />
+    <BackLink to={href(`/c/${circleId}`)} label={t("diary.thread.back")} />
   );
   if (thread.loading && !thread.data)
     return (
@@ -425,8 +352,14 @@ function ThreadBody({ circleId, logId, reveal }: { circleId: string; logId: stri
   return (
     <Screen>
       {back}
-      <Header log={log} circleId={circleId} watchedWith={watchedWith} revealed={revealed} onReveal={() => setRevealed(true)} mine={mine} onReport={() => setReport({ kind: "log", id: log.id })} />
-      <Reactions circleId={circleId} logId={logId} initial={log.reactions} />
+      <Heading level={1} style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 }}>
+        {log.media.title}
+      </Heading>
+      <CardList>
+        <LogCard log={{ ...log, watchedWith }} circleId={circleId} onThread />
+      </CardList>
+      <Actions log={log} circleId={circleId} mine={mine} onReport={() => setReport({ kind: "log", id: log.id })} />
+      <AddToList circleId={circleId} mediaId={log.media.id} />
       <View style={{ gap: space.xs }}>
         <Title>{t("comments.title")}</Title>
         {comments.length === 0 ? (

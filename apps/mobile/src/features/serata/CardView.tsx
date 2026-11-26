@@ -36,13 +36,16 @@ export function CardView({ variant, data, scale, viewRef }: { variant: Variant; 
   const unit = L.qr.w / modules;
   return (
     <View ref={viewRef} collapsable={false} accessibilityRole="image" aria-label={data.title} style={{ width: s(L.w), height: s(L.h), backgroundColor: CARD.ground, overflow: "hidden" }}>
-      <View style={{ position: "absolute", left: s(L.poster.x), top: s(L.poster.y) }}>
-        <MediaPoster title={data.title} path={data.posterPath} width={s(L.poster.w)} size="w500" />
+      {/* The print, "cover" in its box: a 2:3 poster is centred and the overflow cut (the story runs it edge to edge). */}
+      <View style={{ position: "absolute", left: s(L.poster.x), top: s(L.poster.y), width: s(L.poster.w), height: s(L.poster.h), overflow: "hidden" }}>
+        <View style={{ marginTop: -Math.max(0, (L.poster.w * 1.5 - L.poster.h) / 2) * scale }}>
+          <MediaPoster title={data.title} path={data.posterPath} width={s(L.poster.w)} size="w500" />
+        </View>
       </View>
       <Text style={{ position: "absolute", left: s(L.wordmark.x), top: s(L.wordmark.y), color: CARD.accent, fontFamily: fonts.display400, fontSize: s(L.wordmark.size), lineHeight: s(L.wordmark.size * 1.1), textTransform: "uppercase" }}>
         Pausa
       </Text>
-      <Text style={{ position: "absolute", left: s(L.kicker.x), top: s(L.kicker.y), width: s(L.kicker.width), color: CARD.muted, fontFamily: fonts.body600, fontSize: s(L.kicker.size), lineHeight: s(L.kicker.size * 1.3), letterSpacing: s(3), textTransform: "uppercase" }}>
+      <Text style={{ position: "absolute", left: s(L.kicker.x), top: s(L.kicker.y), width: s(L.kicker.width), color: CARD.ink, fontFamily: fonts.body600, fontSize: s(L.kicker.size), lineHeight: s(L.kicker.size * 1.3), letterSpacing: s(3), textTransform: "uppercase" }}>
         {data.kicker}
       </Text>
       <Text

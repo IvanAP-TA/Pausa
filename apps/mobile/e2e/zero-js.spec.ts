@@ -2,7 +2,7 @@
 // (other than JSON-LD, which is data). The app shell, in the same browser, does load JavaScript: so this cannot pass by accident.
 import { expect, test } from "@playwright/test";
 
-const PUBLIC = ["/", "/it", "/en", "/es", "/it/guide", "/it/guide/choose-a-movie-with-friends", "/en/privacy", "/es/terms", "/it/does-not-exist"];
+const PUBLIC = ["/", "/it", "/en", "/es", "/it/guide", "/it/guide/choose-a-movie-with-friends", "/en/privacy", "/es/terms", "/it/slow-down", "/it/does-not-exist"];
 
 for (const url of PUBLIC)
   test(`${url} downloads no script and runs none`, async ({ page }) => {

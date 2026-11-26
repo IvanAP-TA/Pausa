@@ -841,9 +841,65 @@ pub struct RoomView {
     pub server_now: i64,
 }
 
+/// A title that can go on a suggested roster.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RosterTitle {
+    pub id: String,
+    pub score: i64,
+}
+
+/// "Fill the roster for us" (v1's `buildRoster`): recommendations (best first) and watchlist titles take turns, so one source cannot
+/// crowd out the other; a title is dropped when half or more of the group has seen it, or when `blocked` says the shared services
+/// are known not to carry it. At most `max`, no repeats. The caller supplies `seen_by` (people who logged each title).
+pub fn build_roster(
+    watchlist: &[String],
+    recommended: &[RosterTitle],
+    seen_by: &HashMap<String, u32>,
+    people: u32,
+    blocked: &dyn Fn(&str) -> bool,
+    max: usize,
+) -> Vec<String> {
+    let too_seen = |id: &str| people > 0 && seen_by.get(id).copied().unwrap_or(0) * 2 >= people;
+    let ok = |id: &str| !too_seen(id) && !blocked(id);
+    let mut recs: Vec<&RosterTitle> = recommended.iter().collect();
+    recs.sort_by(|a, b| b.score.cmp(&a.score));
+    let recs: Vec<&str> = recs.into_iter().map(|r| r.id.as_str()).filter(|i| ok(i)).collect();
+    let lists: Vec<&str> = watchlist.iter().map(String::as_str).filter(|i| ok(i)).collect();
+    let mut out: Vec<String> = Vec::new();
+    let mut take = |id: Option<&&str>| {
+        if let Some(id) = id {
+            if out.len() < max && !out.iter().any(|o| o == id) {
+                out.push((*id).to_string());
+            }
+        }
+    };
+    let mut i = 0;
+    while i < recs.len() || i < lists.len() {
+        take(recs.get(i));
+        take(lists.get(i));
+        i += 1;
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn roster_alternates_sources_and_drops_what_is_seen_or_unstreamable() {
+        let seen: HashMap<String, u32> = [("seen".to_string(), 2)].into();
+        let recs = [
+            RosterTitle { id: "r1".into(), score: 9 },
+            RosterTitle { id: "seen".into(), score: 8 },
+            RosterTitle { id: "r2".into(), score: 7 },
+        ];
+        let list: Vec<String> = ["w1", "r1", "no", "w2"].map(String::from).to_vec();
+        let out = build_roster(&list, &recs, &seen, 4, &|id| id == "no", 8);
+        assert_eq!(out, ["r1", "w1", "r2", "w2"]);
+        let capped = build_roster(&list, &recs, &seen, 4, &|_| false, 2);
+        assert_eq!(capped, ["r1", "w1"]);
+    }
 
     const T: Timing = Timing {
         match_ms: 30_000,

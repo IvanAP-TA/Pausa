@@ -106,7 +106,7 @@ test("public pages, sign-in and the whole signed-in app run with no policy viola
     await page.goto(url);
     await page.waitForLoadState("networkidle");
   }
-  await page.goto("/it/home");
+  await page.goto("/it/me/circles");
   await expect(page.getByTestId(`circle-${cid}`)).toBeVisible();
   for (const url of [`/it/c/${cid}`, `/it/c/${cid}/feed`, `/it/c/${cid}/log/${logId}`, `/it/c/${cid}/ranking`, `/it/c/${cid}/insights`, "/it/diary", "/it/log", "/it/notifications", "/it/lists", "/it/imports", "/it/me", "/it/me/profile", "/it/me/settings", "/it/account", `/it/c/${cid}/settings`, `/it/c/${cid}/serate`]) {
     await page.goto(url);

@@ -111,6 +111,8 @@ async fn diary_csv(db: &D1Database, user_id: &str) -> R<Response> {
 #[derive(Deserialize)]
 struct DeleteIn {
     confirm: bool,
+    /// The account's email, typed by the person (the app asks for it); when present it has to match.
+    email: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -131,6 +133,21 @@ async fn delete_inner(req: &mut Request, env: &Env) -> R<Response> {
     let input: DeleteIn = body(req).await?;
     if !input.confirm {
         return Err(Fail::invalid());
+    }
+    if let Some(typed) = input.email.as_deref() {
+        #[derive(Deserialize)]
+        struct Mail {
+            email: String,
+        }
+        let row = db
+            .prepare("SELECT email FROM user WHERE id = ?1")
+            .bind(&[s.user_id.as_str().into()])?
+            .first::<Mail>(None)
+            .await?
+            .ok_or_else(Fail::unauthorized)?;
+        if !row.email.trim().eq_ignore_ascii_case(typed.trim()) {
+            return Err(Fail::invalid());
+        }
     }
     // Same order as `pausa_core::circles::next_owner`: admins first, then members, oldest first.
     let owned = db

@@ -1,4 +1,4 @@
-import type { CircleDetail, InviteDto, Locale, Me, Role, SessionInfo } from "@pausa/api-types";
+import type { CircleDetail, InviteDto, InvitePreview, Locale, Me, Role, SessionInfo } from "@pausa/api-types";
 import type { Client } from "./client";
 
 // Response bodies the Rust side builds with `json!{}` and does not export through ts-rs yet. Kept here, minimal and
@@ -11,6 +11,8 @@ export type InviteExpiry = "1d" | "7d" | "30d" | "never";
 export type CircleSettings = { name?: string; description?: string; cover?: string; liveWatching?: boolean };
 
 export const COVERS = ["popcorn", "clapper", "moon", "sofa", "star", "ghost", "rocket", "heart"] as const;
+/** v1 COVER_GLYPH: the glyph set before the name of a Cerchia that picked a cover. */
+export const COVER_GLYPH: Record<(typeof COVERS)[number], string> = { popcorn: "🍿", clapper: "🎬", moon: "🌙", sofa: "🛋️", star: "⭐", ghost: "👻", rocket: "🚀", heart: "❤️" };
 export const INVITE_MAX_USES = [1, 5, 10, 25] as const;
 const e = encodeURIComponent;
 
@@ -29,6 +31,8 @@ export function endpoints(c: Client) {
     nativeCode: () => c.json<{ code: string }>("POST", "/api/auth/native/code"),
 
     createCircle: (name: string) => c.json<CircleCreated>("POST", "/api/circles", { body: { name } }),
+    /** `GET /api/invites/:code`, no sign-in: who invites, and whether the link still works (404 = no such invite). */
+    invitePreview: (code: string, signal?: AbortSignal) => c.json<InvitePreview>("GET", `/api/invites/${e(code)}`, { auth: false, signal }),
     joinCircle: (code: string) => c.json<JoinResult>("POST", "/api/circles/join", { body: { code } }),
     circle: (id: string, signal?: AbortSignal) => c.json<CircleDetail>("GET", `/api/circles/${e(id)}`, { signal }),
     updateCircle: (id: string, s: CircleSettings) => c.none("PATCH", `/api/circles/${e(id)}`, { body: s }),
@@ -45,7 +49,7 @@ export function endpoints(c: Client) {
     sessions: (signal?: AbortSignal) => c.json<SessionInfo[]>("GET", "/api/account/sessions", { signal }),
     revokeSession: (id: string) => c.none("DELETE", `/api/account/sessions/${e(id)}`),
     exportData: async () => (await c.send("GET", "/api/account/export")).text(),
-    deleteAccount: () => c.none("DELETE", "/api/account", { body: { confirm: true } }),
+    deleteAccount: (email?: string) => c.none("DELETE", "/api/account", { body: { confirm: true, email } }),
   };
 }
 export type Api = ReturnType<typeof endpoints>;

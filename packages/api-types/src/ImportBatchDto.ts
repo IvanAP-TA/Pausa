@@ -11,4 +11,12 @@ status: string,
 /**
  * Rows handled so far: a resumed import starts again here.
  */
-cursor: number, total: number | null, imported: number, skipped: number, newTitles: number, lists: number, failedRows: number, createdAt: number, finishedAt: number | null, };
+cursor: number, total: number | null, imported: number, skipped: number, newTitles: number, lists: number, failedRows: number, 
+/**
+ * Viewings of this import that its Cerchia can still see (0 once it was taken out).
+ */
+inCircle: number, 
+/**
+ * Group lists of this import still in the Cerchia.
+ */
+listsInCircle: number, createdAt: number, finishedAt: number | null, };

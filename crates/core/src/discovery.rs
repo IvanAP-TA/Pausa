@@ -42,6 +42,9 @@ pub struct ForYouPick {
     pub poster_path: Option<String>,
     pub score: f64,
     pub because: Vec<Because>,
+    /// Which of the viewer's own streaming services carry it (empty when they set none, or it is on none of them).
+    #[serde(default)]
+    pub on: Vec<crate::streaming::Provider>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, TS)]
@@ -101,6 +104,7 @@ pub fn rank_discovery(
                 poster_path: c.poster_path.clone(),
                 score: 0.0,
                 because: Vec::new(),
+                on: Vec::new(),
             });
             e.score += weight / (1.0 + i as f64 * 0.08);
             if !e.because.iter().any(|b| b.media_id == seed.media_id) {

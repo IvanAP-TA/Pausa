@@ -2,6 +2,7 @@
 import type { Counted } from "./Counted";
 import type { PersonCount } from "./PersonCount";
 import type { RankedDto } from "./RankedDto";
+import type { TogetherDto } from "./TogetherDto";
 
 export type YearReview = { year: bigint, logs: number, titles: number, movies: number, series: number, anime: number, 
 /**
@@ -11,4 +12,8 @@ movieHours: number,
 /**
  * Average rating of rated viewings, in stars (0.5..5).
  */
-avgStars: number | null, mostActive: PersonCount | null, busiestMonth: Counted | null, topPlatform: Counted | null, titleOfTheYear: RankedDto | null, };
+avgStars: number | null, mostActive: PersonCount | null, busiestMonth: Counted | null, topPlatform: Counted | null, titleOfTheYear: RankedDto | null, 
+/**
+ * The pair that watched the most together (each title and day counted once per pair), null when nobody logged "with".
+ */
+togetherMost: TogetherDto | null, };

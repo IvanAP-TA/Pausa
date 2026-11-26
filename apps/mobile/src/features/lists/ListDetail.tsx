@@ -184,7 +184,7 @@ function Header({ data, onChanged }: { data: Detail; onChanged: () => void }) {
         </>
       )}
       <View style={{ flexDirection: "row", gap: space.xs, flexWrap: "wrap", alignItems: "center" }}>
-        <Tag label={t(`lists.kind.${list.kind as "watchlist" | "list"}`)} tone={list.kind === "watchlist" ? "accent" : "ink2"} />
+        <Tag label={t(`lists.kind.${list.kind as "watchlist" | "list" | "ranking"}`)} tone={list.kind === "watchlist" ? "accent" : "ink2"} />
         <Tag label={list.circleId ? t("lists.group") : t("lists.personal")} />
         <Text variant="small" tone="muted" testID="list-count">{t("listsApp.count", { count: list.items, max: LIST_CAP })}</Text>
       </View>

@@ -46,16 +46,11 @@ test.describe("the Cerchia hub", () => {
     await logApi(cara, { mediaKey: "tmdb:movie:603", rating: 9, circles: [cid] });
 
     const { page } = ann;
-    await page.goto(`/it/c/${cid}`);
-    const nav = page.getByRole("navigation", { name: "Sezioni della Cerchia" });
-    await expect(nav.getByRole("link", { name: "Feed" })).toHaveAttribute("href", `/it/c/${cid}/feed`);
-    await expect(nav.getByRole("link", { name: it.tabs.ranking })).toHaveAttribute("href", `/it/c/${cid}/ranking`);
-    await expect(nav.getByRole("link", { name: it.insights.title })).toHaveAttribute("href", `/it/c/${cid}/insights`);
-    await expect(nav.getByRole("link", { name: "Persone" })).toHaveAttribute("aria-current", "page");
-    await expect(nav.getByRole("link", { name: it.tabs.lists })).toHaveAttribute("href", `/it/lists?circle=${cid}`);
-    await expect(nav.getByRole("link", { name: it.tabs.serata })).toHaveAttribute("href", `/it/c/${cid}/serate`);
-    await expect(nav.getByRole("link", { name: it.app.circle.settings })).toHaveAttribute("href", `/it/c/${cid}/settings`);
-    await expect(page.getByTestId(/^log-/)).toHaveCount(3); // the three latest
+    await page.goto(`/it/c/${cid}/members`);
+    // v1: the members page is invites, people, then the pages a Cerchia leads to (no strip of sections)
+    await expect(page.getByRole("navigation", { name: "Sezioni della Cerchia" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: it.circle.insightsTitle })).toHaveAttribute("href", `/it/c/${cid}/insights`);
+    await expect(page.getByRole("link", { name: it.app.circle.settings })).toHaveAttribute("href", `/it/c/${cid}/settings`);
     await page.getByTestId(`member-${bobId}`).getByRole("link").click();
     await page.waitForURL(new RegExp(`/it/c/${cid}/people/${bobId}$`));
     await expect(page.getByRole("heading", { level: 1 })).toContainText(bob.name);
@@ -65,7 +60,7 @@ test.describe("the Cerchia hub", () => {
     const { page } = ann;
     const second = await circleWith(ann, [], "Altro Gruppo");
     await page.goto(`/it/c/${second}`);
-    const nav = page.getByRole("navigation", { name: it.app.nav.label });
+    const nav = page.getByRole("navigation", { name: "Pausa" });
     await expect(nav.getByRole("link", { name: it.tabs.serata })).toHaveAttribute("href", `/it/c/${second}/serate`);
     await page.goto(`/it/c/${cid}/feed`);
     await expect(nav.getByRole("link", { name: it.tabs.serata })).toHaveAttribute("href", `/it/c/${cid}/serate`);
@@ -176,7 +171,12 @@ test.describe("profile and preferences", () => {
     await page.goto("/it/account");
     await page.waitForURL("**/it/me/account");
     await expect(page.getByRole("heading", { level: 1 })).toContainText(it.account.title);
+    await expect(page.getByTestId("account-email")).toContainText("@"); // the email sits under the title (v1)
+    await expect(page.getByTestId("account-brought")).toContainText("2"); // ann brought bob and cara: "Ha portato 2 persone"
+    await expect(page.getByTestId("services-country")).toBeVisible();
+    await expect(page.getByTestId("me-settings")).toHaveAttribute("href", "/it/me/settings");
     await page.goto("/it/me");
+    await expect(page.getByTestId("me-logs")).toContainText("visioni"); // "N visioni" under the name (server count)
     await expect(page.getByTestId("me-account")).toBeVisible();
     await expect(page.getByTestId("me-lists")).toHaveAttribute("href", "/it/lists");
     await expect(page.getByTestId("me-import")).toHaveAttribute("href", "/it/import");
@@ -189,11 +189,16 @@ test.describe("the person page", () => {
     await page.goto(`/it/c/${cid}/people/${bobId}`);
     await expect(page.getByTestId("person-stats")).toContainText("3"); // three viewings
     await expect(page.getByTestId("person-stats")).toContainText("4,2"); // (7 + 8 + 10) / 3 = 8.33 half stars = 4.2 stars
+    await expect(page.getByTestId("person-kinds")).toContainText("Film 3"); // three distinct movies
+    await expect(page.getByTestId("person-loved")).toBeVisible(); // Se7en (10) and Inception (8), with stars
     // ann and bob rated Matrix 9/7 and Inception 8/8: only two titles in common, not enough to compare
     await expect(page.getByTestId("taste")).toContainText("Avete 2 titoli in comune");
     await page.getByRole("link", { name: "Se7en" }).first().waitFor();
-    await page.getByRole("link", { name: it.person.all }).click();
-    await page.waitForURL(new RegExp(`/feed\\?person=${bobId}`));
+    // the last viewings as cards; with five or fewer there is no "see all" (v1)
+    await expect(page.getByTestId(/^log-/)).toHaveCount(3);
+    await expect(page.getByRole("link", { name: it.person.all })).toHaveCount(0);
+    await page.goto(`/it/c/${cid}?person=${bobId}`);
+    await page.waitForURL(new RegExp(`/c/${cid}\\?person=${bobId}`));
     for (const t of await page.getByTestId(/^log-/).allInnerTexts()) expect(t).toContain(bob.name);
     await expect(page.getByTestId(/^log-/)).toHaveCount(3);
   });
@@ -208,10 +213,11 @@ test.describe("ranking", () => {
     // default: best average first: Se7en 5 (one vote), Inception 4 (two), Matrix (9+7+9)/3 = 8.33 half stars = 4.2
     await expect(rows.first()).toContainText(/se7en/i);
     await expect(rows.first()).toContainText("5");
-    await rows.filter({ hasText: /matrix/i }).getByRole("button").first().click();
-    await expect(page.getByText(it.ranking.who)).toBeVisible();
-    for (const n of [ANN_NOW, bob.name, cara.name]) await expect(page.getByText(n, { exact: true }).first()).toBeVisible();
-    await expect(page.getByRole("img", { name: "4,5 stelle su 5" }).first()).toBeVisible(); // ann and cara gave 9
+    // each person and their vote are always on the row (no expanding), as a tag with the first name; the mine one is outlined
+    const matrix = rows.filter({ hasText: /matrix/i });
+    for (const n of [ANN_NOW, bob.name, cara.name]) await expect(matrix.getByLabel(`${n}: `, { exact: false }).first()).toBeVisible();
+    await expect(matrix.getByLabel(`${ANN_NOW}: 4,5 stelle`)).toBeVisible(); // ann and cara gave 9
+    await expect(matrix.getByRole("link", { name: /matrix/i })).toHaveAttribute("href", new RegExp(`/it/c/${cid}/m/`));
 
     await page.getByRole("radio", { name: it.ranking.sort.votes }).click();
     await expect(rows.first()).toContainText(/matrix/i); // three votes
@@ -288,6 +294,10 @@ test.describe("insights and the year image", () => {
     await page.goto(`/it/c/${cid}/insights`);
     await expect(page.getByLabel("6 visioni")).toBeVisible(); // six viewings logged this year by the three
     await expect(page.getByText(it.insights.agree.title)).toBeVisible();
+    await expect(page.getByTestId("year-stats")).toBeVisible();
+    await expect(page.getByTestId("title-of-year")).toBeVisible();
+    await expect(page.getByRole("heading", { name: it.discover.title })).toBeVisible(); // "Per te", from the viewer's own ratings
+    await expect(page.getByText(it.discover.credit)).toBeVisible();
     await expect(page.getByTestId("pair")).toHaveCount(3); // three people, three pairs
     await expect(page.getByText(/titoli in comune su 3: votatene altri/)).toHaveCount(3); // nobody shares three rated titles yet: no percentage, and it says why
     await expect(page.getByText(it.insights.recs.title)).toBeVisible();

@@ -10,4 +10,12 @@ export type MySettings = { id: string, name: string, email: string, image: strin
 /**
  * Notification types switched off.
  */
-notifyOff: Array<string>, circles: Array<CircleMySettings>, };
+notifyOff: Array<string>, circles: Array<CircleMySettings>, 
+/**
+ * All my viewings, and how many of them are only mine (shared with no Cerchia).
+ */
+logs: number, privateLogs: number, 
+/**
+ * People who joined through an invite I made (Fondatore from three).
+ */
+brought: number, };

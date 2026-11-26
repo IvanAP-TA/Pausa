@@ -8,6 +8,7 @@ use crate::session;
 use pausa_core::discovery::{
     candidates_from_recommendations, rank_discovery, ForYou, Seed, MAX_SEEDS, SEED_MIN_RATING,
 };
+use pausa_core::streaming::{default_country, on_my_services, parse_watch_providers, Provider};
 use serde::Deserialize;
 use std::collections::HashSet;
 use worker::*;
@@ -19,6 +20,18 @@ struct SeedRow {
     rating: i64,
     tmdb_id: i64,
     kind: String,
+}
+
+#[derive(Deserialize)]
+struct MineRow {
+    provider_id: i64,
+    name: String,
+    logo_path: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct CountryRow {
+    country: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -105,11 +118,40 @@ async fn for_you_inner(req: &Request, env: &Env) -> R<Response> {
             Err(_) => {}
         }
     }
+    let mut picks = rank_discovery(&input, &exclude, 8);
+    // "On your services": only when they set some. One TMDB lookup per pick; a failure just leaves the pick without services.
+    let mine: Vec<Provider> = db
+        .prepare("SELECT provider_id, name, logo_path FROM user_provider WHERE user_id = ?1 ORDER BY name")
+        .bind(&[s.user_id.as_str().into()])?
+        .all()
+        .await?
+        .results::<MineRow>()?
+        .into_iter()
+        .map(|r| Provider { id: r.provider_id, name: r.name, logo_path: r.logo_path })
+        .collect();
+    if !mine.is_empty() {
+        let country = db
+            .prepare("SELECT country FROM user WHERE id = ?1")
+            .bind(&[s.user_id.as_str().into()])?
+            .first::<CountryRow>(None)
+            .await?
+            .and_then(|c| c.country)
+            .unwrap_or_else(|| default_country(catalog::locale_code(locale)).to_string());
+        for p in &mut picks {
+            let mut parts = p.key.split(':').skip(1);
+            let (Some(kind), Some(id)) = (parts.next(), parts.next()) else { continue };
+            match catalog::tmdb_get(env, &caller, &format!("/{kind}/{id}/watch/providers")).await {
+                Ok(v) => p.on = on_my_services(&parse_watch_providers(&v, &country), &mine),
+                Err(f) if f.status == 429 => break,
+                Err(_) => {}
+            }
+        }
+    }
     json(
         &ForYou {
             enabled: true,
             seeded: input.len() as u32,
-            picks: rank_discovery(&input, &exclude, 8),
+            picks,
         },
         200,
     )

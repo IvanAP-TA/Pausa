@@ -103,11 +103,13 @@ test("the registration form with a series picked, a filter sheet and a report sh
   await p.page.goto("/it/log");
   await p.page.getByLabel("Cerca un film, una serie, un anime…").fill("breaking");
   await p.page.getByRole("button", { name: /^Breaking Bad/ }).first().click();
-  await p.page.getByRole("radio", { name: "1", exact: true }).click();
+  // the details are folded (v1): open them, then the season is a select
+  if ((await p.page.getByTestId("log-details").getAttribute("aria-expanded")) !== "true") await p.page.getByTestId("log-details").click();
+  await p.page.getByTestId("season").selectOption("1");
   problems.form = await audit(p.page);
   await p.page.goto(`/it/c/${cid}/feed`);
   await p.page.getByTestId("open-filters").click();
-  await p.page.getByRole("dialog", { name: /Cerca e filtra|Segnala/ }).waitFor();
+  await p.page.getByTestId("filter-panel").waitFor();
   problems.filters = await audit(p.page);
   await p.page.goto(`/it/c/${cid}/log/${logId}`);
   await p.page.getByRole("button", { name: "Segnala" }).first().click();
@@ -131,8 +133,9 @@ test("desktop width: the rail and the header carry the same screens without side
     if (found.length) problems[name] = found;
   }
   expect(problems).toEqual({});
-  const nav = p.page.getByRole("navigation", { name: "Navigazione principale" });
-  await expect(nav.getByRole("link")).toHaveCount(6); // the wordmark and the five tabs
+  const nav = p.page.getByRole("navigation", { name: "Pausa" });
+  // v1 rail: the wordmark, Registra, then Diario, Serata, Classifica, Liste, Cerchia, Profilo
+  await expect(nav.getByRole("link")).toHaveCount(8);
   await p.ctx.close();
   await u.ctx.close();
 });

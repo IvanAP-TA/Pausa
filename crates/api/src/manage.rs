@@ -2,12 +2,13 @@
 //! Rule everywhere: someone who is not in the Cerchia gets 404 (its existence is private), a member without the right gets 403.
 
 use crate::http::{body, finish, json, new_id, no_content, now_ms, random, Fail, R};
-use crate::{limit, session};
+use crate::{catalog, limit, session};
+use crate::diary::locale_of;
 use pausa_core::circles::{
     can_remove, can_set_role, clean_description, clean_name, invite_code, leave_outcome,
     valid_cover, Denied, LeaveOutcome, EXPIRY_CHOICES, MAX_USES_CHOICES,
 };
-use pausa_core::dto::{CircleDetail, ErrorCode, InviteDto, MemberDto, Role};
+use pausa_core::dto::{CircleDetail, CircleExtras, ErrorCode, MemoryDto, InviteDto, MediaDto, MemberDto, PersonDto, Role, WatchingDto};
 use pausa_core::limits;
 use serde::Deserialize;
 use worker::wasm_bindgen::JsValue;
@@ -76,6 +77,22 @@ struct InviteRow {
     uses: i64,
 }
 
+#[derive(Deserialize)]
+struct WatchingRow {
+    user_id: String,
+    name: String,
+    image: Option<String>,
+    media_id: String,
+    season: Option<i64>,
+    episode: Option<i64>,
+    updated_at: i64,
+    kind: String,
+    original_title: String,
+    loc_title: Option<String>,
+    year: Option<i64>,
+    poster_path: Option<String>,
+}
+
 /// `GET /api/circles/:id`: one batch for the Cerchia, its people and its active invites.
 pub async fn detail(req: Request, env: Env, circle_id: &str) -> Result<Response> {
     finish(detail_inner(&req, &env, circle_id).await)
@@ -85,6 +102,8 @@ async fn detail_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response> 
     let db = env.d1("DB")?;
     let s = session::require(req, &db).await?;
     let now = now_ms();
+    let year: i64 = pausa_core::diary::date_of_ms(now)[..4].parse().unwrap_or(1970);
+    let loc = catalog::locale_code(locale_of(req));
     let results = db
         .batch(vec![
             db.prepare("SELECT id, name, description, cover, live_watching FROM circle WHERE id = ?1").bind(&[circle_id.into()])?,
@@ -98,8 +117,31 @@ async fn detail_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response> 
                  AND (expires_at IS NULL OR expires_at > ?2) AND (max_uses IS NULL OR uses < max_uses) ORDER BY created_at DESC",
             )
             .bind(&[circle_id.into(), num(now)])?,
+            db.prepare(
+                "SELECT COUNT(*) AS n FROM log_share s JOIN log l ON l.id = s.log_id                  JOIN circle_member m ON m.circle_id = s.circle_id AND m.user_id = l.user_id                  WHERE s.circle_id = ?1 AND l.watched_on >= ?2 AND l.watched_on < ?3",
+            )
+            .bind(&[circle_id.into(), format!("{year:04}-01-01").into(), format!("{:04}-01-01", year + 1).into()])?,
+            // Newest first; the first row of each person is the one shown. Off when the Cerchia or I switched it off.
+            db.prepare(
+                "SELECT w.user_id, u.name, u.image, w.media_id, w.season, w.episode, w.updated_at,                  e.kind, e.original_title, mt.title AS loc_title, e.year, e.poster_path                  FROM watch_progress w                  JOIN circle c ON c.id = ?1 AND c.live_watching = 1                  JOIN circle_member m ON m.circle_id = ?1 AND m.user_id = w.user_id AND m.hide_watching = 0                  JOIN user u ON u.id = w.user_id JOIN media_entity e ON e.id = w.media_id                  LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?3                  WHERE w.status = 'watching' AND NOT EXISTS                    (SELECT 1 FROM circle_member me WHERE me.circle_id = ?1 AND me.user_id = ?2 AND me.hide_watching = 1)                  ORDER BY w.updated_at DESC LIMIT 200",
+            )
+            .bind(&[circle_id.into(), s.user_id.as_str().into(), loc.into()])?,
         ])
         .await?;
+    let logs_this_year = results[3].results::<CountRow>()?.first().map(|r| r.n).unwrap_or(0);
+    let mut seen = std::collections::HashSet::new();
+    let watching: Vec<WatchingDto> = results[4]
+        .results::<WatchingRow>()?
+        .into_iter()
+        .filter(|r| seen.insert(r.user_id.clone()))
+        .map(|r| WatchingDto {
+            user: PersonDto { id: r.user_id, name: r.name, image: r.image },
+            media: MediaDto { id: r.media_id, kind: r.kind, title: r.loc_title.unwrap_or(r.original_title), year: r.year, poster_path: r.poster_path },
+            season: r.season,
+            episode: r.episode,
+            updated_at: r.updated_at,
+        })
+        .collect();
     let members: Vec<MemberDto> = results[1]
         .results::<MemberRow>()?
         .into_iter()
@@ -144,6 +186,105 @@ async fn detail_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response> 
             my_role,
             members,
             invites,
+            logs_this_year,
+            watching,
+        },
+        200,
+    )
+}
+
+#[derive(Deserialize)]
+struct StepsRow {
+    mine: i64,
+    members: i64,
+    serate: i64,
+}
+
+#[derive(Deserialize)]
+struct MemoryRow {
+    log_id: String,
+    watched_on: String,
+    rating: Option<i64>,
+    review: Option<String>,
+    contains_spoilers: i64,
+    user_id: String,
+    name: String,
+    image: Option<String>,
+    media_id: String,
+    kind: String,
+    original_title: String,
+    loc_title: Option<String>,
+    year: Option<i64>,
+    poster_path: Option<String>,
+}
+
+/// `GET /api/circles/:id/extras`: "Per cominciare" and "Un anno fa… e oltre" under the diary head. Its own call, so the head
+/// does not wait for it and the other screens that read the Cerchia detail do not pay for it.
+pub async fn extras(req: Request, env: Env, circle_id: &str) -> Result<Response> {
+    finish(extras_inner(&req, &env, circle_id).await)
+}
+
+async fn extras_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response> {
+    let db = env.d1("DB")?;
+    let s = session::require(req, &db).await?;
+    my_role(&db, circle_id, &s.user_id).await?;
+    let today = pausa_core::diary::date_of_ms(now_ms());
+    let this_year: i64 = today[..4].parse().unwrap_or(1970);
+    let days = pausa_core::diary::memory_days(&today, 3);
+    let days_json = serde_json::to_string(&days).map_err(|_| Fail::invalid())?;
+    let loc = catalog::locale_code(locale_of(req));
+    let res = db
+        .batch(vec![
+            db.prepare(
+                "SELECT (SELECT COUNT(*) FROM log WHERE user_id = ?2) AS mine, \
+                 (SELECT COUNT(*) FROM circle_member WHERE circle_id = ?1) AS members, \
+                 (SELECT COUNT(*) FROM serata WHERE circle_id = ?1 AND status = 'done') AS serate",
+            )
+            .bind(&[circle_id.into(), s.user_id.as_str().into()])?,
+            // Shared here, by someone still here and not blocked by me, on one of the days around today, in an earlier year.
+            db.prepare(
+                "SELECT l.id AS log_id, l.watched_on, l.rating, l.review, l.contains_spoilers, u.id AS user_id, u.name, u.image, \
+                 e.id AS media_id, e.kind, e.original_title, mt.title AS loc_title, e.year, e.poster_path \
+                 FROM log_share sh JOIN log l ON l.id = sh.log_id \
+                 JOIN circle_member m ON m.circle_id = sh.circle_id AND m.user_id = l.user_id \
+                 JOIN user u ON u.id = l.user_id JOIN media_entity e ON e.id = l.media_id \
+                 LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?3 \
+                 WHERE sh.circle_id = ?1 AND l.user_id NOT IN (SELECT blocked_id FROM user_block WHERE blocker_id = ?2) \
+                 AND substr(l.watched_on, 6, 5) IN (SELECT value FROM json_each(?4)) \
+                 AND CAST(substr(l.watched_on, 1, 4) AS INTEGER) < ?5 \
+                 ORDER BY l.watched_on DESC LIMIT 60",
+            )
+            .bind(&[circle_id.into(), s.user_id.as_str().into(), loc.into(), days_json.into(), num(this_year)])?,
+        ])
+        .await?;
+    let steps = res[0].results::<StepsRow>()?.into_iter().next().unwrap_or(StepsRow { mine: 0, members: 1, serate: 0 });
+    let mut rows = res[1].results::<MemoryRow>()?;
+    // Closest to today's date first, then the most recent year (v1 memoriesFor).
+    rows.sort_by_key(|r| {
+        (
+            pausa_core::diary::memory_distance(&days, r.watched_on.get(5..).unwrap_or("")),
+            this_year - r.watched_on.get(..4).and_then(|y| y.parse::<i64>().ok()).unwrap_or(0),
+        )
+    });
+    let memories = rows
+        .into_iter()
+        .take(3)
+        .map(|r| MemoryDto {
+            years_ago: this_year - r.watched_on.get(..4).and_then(|y| y.parse::<i64>().ok()).unwrap_or(this_year),
+            log_id: r.log_id,
+            media: MediaDto { id: r.media_id, kind: r.kind, title: r.loc_title.unwrap_or(r.original_title), year: r.year, poster_path: r.poster_path },
+            author: PersonDto { id: r.user_id, name: r.name, image: r.image },
+            watched_on: r.watched_on,
+            rating: r.rating,
+            review: if r.contains_spoilers != 0 { None } else { r.review },
+        })
+        .collect();
+    json(
+        &CircleExtras {
+            has_log: steps.mine > 0,
+            has_company: steps.members > 1,
+            has_serata: steps.serate > 0,
+            memories,
         },
         200,
     )

@@ -17,6 +17,7 @@ const it = {
     },
     thread: {
       back: "Il feed",
+      backToLog: "La visione",
       reactions: "Reazioni",
       replyingTo: "Rispondi a {name}",
       replyLabel: "La tua risposta",
@@ -32,6 +33,7 @@ const it = {
       yesterday: "Ieri",
       dateInvalid: "Scrivi la data così: 2026-11-25.",
       dateFuture: "La data non può essere nel futuro.",
+      dateRequired: "Scegli la data.",
       numberInvalid: "Un numero da 1 a {max}.",
       episodeNeedsSeason: "Per l'episodio serve la stagione.",
       optional: "Facoltativo.",
@@ -71,6 +73,7 @@ const en = {
     },
     thread: {
       back: "The feed",
+      backToLog: "The viewing",
       reactions: "Reactions",
       replyingTo: "Replying to {name}",
       replyLabel: "Your reply",
@@ -86,6 +89,7 @@ const en = {
       yesterday: "Yesterday",
       dateInvalid: "Write the date like this: 2026-11-25.",
       dateFuture: "The date cannot be in the future.",
+      dateRequired: "Pick the date.",
       numberInvalid: "A number from 1 to {max}.",
       episodeNeedsSeason: "An episode needs its season.",
       optional: "Optional.",
@@ -125,6 +129,7 @@ const es = {
     },
     thread: {
       back: "El feed",
+      backToLog: "La visión",
       reactions: "Reacciones",
       replyingTo: "Respondes a {name}",
       replyLabel: "Tu respuesta",
@@ -140,6 +145,7 @@ const es = {
       yesterday: "Ayer",
       dateInvalid: "Escribe la fecha así: 2026-11-25.",
       dateFuture: "La fecha no puede ser futura.",
+      dateRequired: "Elige la fecha.",
       numberInvalid: "Un número del 1 al {max}.",
       episodeNeedsSeason: "Para el episodio hace falta la temporada.",
       optional: "Opcional.",

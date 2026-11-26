@@ -210,6 +210,14 @@ describe("pure helpers", () => {
     expect(px.classify("it/(app)/home.html").kind).toBe("junk");
     expect(px.classify("fr/index.html").kind).toBe("unknown");
   });
+  it("the slow-down page is quiet: static like a public page, never indexed", () => {
+    expect(px.classify("es/slow-down.html")).toEqual({ kind: "quiet", locale: "es" });
+    const ok = '<!DOCTYPE html><html lang="it"><head><title>Piano, piano · Pausa</title><meta name="robots" content="noindex, nofollow"/></head><body><h1>x</h1></body></html>';
+    expect(px.checkQuietPage(ok, { locale: "it" })).toEqual([]);
+    expect(px.checkQuietPage(ok.replace("noindex, nofollow", "index, follow"), { locale: "it" }).join()).toContain("noindex");
+    expect(px.checkQuietPage(ok.replace("</body>", '<script src="/a.js"></script></body>'), { locale: "it" }).join()).toContain("JavaScript");
+    expect(px.robotsTxt()).toContain("Disallow: /*/slow-down");
+  });
 });
 
 describe("budget script", () => {

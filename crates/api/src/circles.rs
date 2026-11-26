@@ -312,10 +312,12 @@ async fn preview_inner(req: &Request, env: &Env, code: &str) -> R<Response> {
         InviteState::Expired => "expired",
         InviteState::Exhausted => "exhausted",
     };
+    // A link that no longer works says why and nothing else: no name, no head count of a Cerchia the visitor cannot enter.
+    let active = state == "active";
     json(
         &InvitePreview {
-            circle_name: row.name,
-            members: row.members as u32,
+            circle_name: if active { row.name } else { String::new() },
+            members: if active { row.members as u32 } else { 0 },
             state: state.into(),
         },
         200,

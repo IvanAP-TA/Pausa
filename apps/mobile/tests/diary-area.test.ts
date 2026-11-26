@@ -7,6 +7,7 @@ import { lookup, registeredAreas } from "../src/i18n/messages";
 import "../src/features/diary/diary.messages";
 import "../src/features/people/people.messages";
 import "../src/features/stats/stats.messages";
+import "../src/features/lists/lists.messages";
 import { createClient } from "../src/api/client";
 import { dedupeCandidates, isYmd, msToYmd, num, ymdToMs } from "../src/features/diary/dates";
 import { noticeHref } from "../src/features/diary/notice-href";

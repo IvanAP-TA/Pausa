@@ -1,5 +1,5 @@
 import type { CircleSummary } from "@pausa/api-types";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { api } from "@/api";
@@ -8,6 +8,7 @@ import { useAction } from "@/api/useAction";
 import { useI18n } from "@/i18n";
 import { hair, space, useTheme } from "@/theme";
 import { Button, Chevron, Empty, Field, Heading, Poster, Row, RowList, Screen, Stagger, Tag, Text, Title } from "@/ui";
+import { useCurrentCircle } from "./current-circle";
 import { inviteCodeFrom } from "./next";
 import { RequireSession, useMe, useSession } from "./session";
 
@@ -128,6 +129,23 @@ export function Home() {
   return (
     <RequireSession>
       <HomeBody />
+    </RequireSession>
+  );
+}
+
+function Entry() {
+  const me = useMe();
+  const { circleId } = useCurrentCircle();
+  const { href } = useI18n();
+  if (me.circles.length > 0 && circleId) return <Redirect href={href(`/c/${circleId}`) as never} />;
+  return <HomeBody />;
+}
+
+/** `/home`, as in v1: the diary of the last Cerchia I used; with no Cerchia yet, the page to join or create one. */
+export function HomeEntry() {
+  return (
+    <RequireSession>
+      <Entry />
     </RequireSession>
   );
 }

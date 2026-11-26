@@ -1,4 +1,4 @@
-import type { ChunkResult, IdOnly, ImportBatchDto, ImportUndone, ListChunkResult } from "@pausa/api-types";
+import type { BulkDayDto, BulkDayUndone, ChunkResult, ImportConfig, IdOnly, ImportBatchDto, ImportUndone, ListChunkResult } from "@pausa/api-types";
 import { client } from "@/api";
 import type { Client } from "./client";
 
@@ -30,9 +30,13 @@ export function importEndpoints(c: Client) {
     lists: (id: string, input: ListRowsInput, signal?: AbortSignal) => c.json<ListChunkResult>("POST", `/api/imports/${e(id)}/lists`, { body: input, signal }),
     finish: (id: string, how: { cancel?: boolean; failed?: boolean } = {}) => c.json<ImportBatchDto>("POST", `/api/imports/${e(id)}/finish`, { body: how }),
     list: (signal?: AbortSignal) => c.json<ImportBatchDto[]>("GET", "/api/imports", { signal }),
+    config: (signal?: AbortSignal) => c.json<ImportConfig>("GET", "/api/imports/config", { signal }),
     status: (id: string, signal?: AbortSignal) => c.json<ImportBatchDto>("GET", `/api/imports/${e(id)}`, { signal }),
     removeFromCircle: (id: string) => c.json<ImportUndone>("POST", `/api/imports/${e(id)}/remove-from-circle`, { body: {} }),
     remove: (id: string, withLists: boolean) => c.json<ImportUndone>("DELETE", `/api/imports/${e(id)}${withLists ? "?lists=1" : ""}`),
+    bulkDays: (signal?: AbortSignal) => c.json<BulkDayDto[]>("GET", "/api/imports/bulk-days", { signal }),
+    hideBulkDay: (day: string) => c.json<BulkDayUndone>("POST", `/api/imports/bulk-days/${e(day)}/hide`, { body: {} }),
+    deleteBulkDay: (day: string) => c.json<BulkDayUndone>("DELETE", `/api/imports/bulk-days/${e(day)}`),
   };
 }
 export const importApi = importEndpoints(client);

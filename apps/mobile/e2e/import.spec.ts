@@ -344,6 +344,69 @@ test.describe("destination, stop and resume, limits, refused rows", () => {
   });
 });
 
+test.describe("drop zone and the way back", () => {
+  test("a file dropped on the zone is read like a picked one; a private import ends on the diary's 'Only private' tab", async ({ browser }) => {
+    const p = await person(browser, "impdrop");
+    await signIn(p.page, p.email);
+    const { page } = p;
+    await page.goto("/it/import");
+    await expect(page.getByRole("link", { name: it.common.back })).toBeVisible();
+    await expect(page.getByTestId("drop-zone")).toBeVisible();
+    const dt = await page.evaluateHandle((csv) => {
+      const d = new DataTransfer();
+      d.items.add(new File([csv], "diary.csv", { type: "text/csv" }));
+      return d;
+    }, CSV_DIARY);
+    await page.getByTestId("drop-zone").dispatchEvent("drop", { dataTransfer: dt });
+    await expect(page.getByTestId("summary")).toBeVisible();
+    await runToEnd(page);
+    await page.getByRole("link", { name: it.import.done.toSpace }).click();
+    await page.waitForURL(/\/it\/diary\?only=private/);
+    await expect(page.getByTestId("tab-private")).toHaveAttribute("aria-current", "page");
+    await expect(page.getByTestId("tab-private")).toContainText("(2)");
+    await p.ctx.close();
+  });
+});
+
+test.describe("older imports: a day with many viewings and no run", () => {
+  test("they are listed as a day; hide them from the Cerchie, then delete them; a small day is not offered", async ({ browser }) => {
+    const p = await person(browser, "impold");
+    await signIn(p.page, p.email);
+    const c = await circleOf(p, "Vecchie importazioni");
+    for (let i = 0; i < 11; i++) {
+      const day = String(i + 1).padStart(2, "0");
+      expect((await api(p, "POST", "/api/logs", { mediaKey: "tmdb:movie:603", watchedOn: `2025-01-${day}`, locale: "it", circles: i < 3 ? [c.id] : [] })).status).toBe(201);
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const days = (await api<Array<{ day: string; logs: number; inCircles: number }>>(p, "GET", "/api/imports/bulk-days")).json;
+    expect(days).toEqual([{ day: today, logs: 11, inCircles: 3 }]);
+    expect((await api(p, "POST", "/api/imports/bulk-days/2020-01-01/hide", {})).status).toBe(404); // not a block
+    expect((await api(p, "DELETE", "/api/imports/bulk-days/not-a-day")).status).toBe(404);
+
+    const { page } = p;
+    await page.goto("/it/imports");
+    await expect(page.getByRole("link", { name: it.common.back })).toBeVisible();
+    const card = page.getByTestId(`day-${today}`);
+    await expect(card).toContainText("11 visioni aggiunte quel giorno");
+    await expect(page.getByTestId(`day-where-${today}`)).toContainText("3 visibili nelle tue Cerchie");
+    await page.getByTestId(`hide-${today}`).click();
+    await page.getByRole("button", { name: it.imports.cancel }).click(); // asked, not done
+    expect((await api<Array<{ inCircles: number }>>(p, "GET", "/api/imports/bulk-days")).json[0]!.inCircles).toBe(3);
+    await page.getByTestId(`hide-${today}`).click();
+    await page.getByTestId("confirm-hide-day").click();
+    await expect(page.getByText(/3 visioni tolte dal gruppo/)).toBeVisible();
+    await expect(page.getByTestId(`hide-${today}`)).toHaveCount(0);
+    expect((await api<{ all: number; private: number }>(p, "GET", "/api/me/diary/counts")).json).toEqual({ all: 11, private: 11 });
+
+    await page.getByTestId(`delete-day-${today}`).click();
+    await page.getByTestId("confirm-delete-day").click();
+    await expect(page.getByText("11 visioni eliminate.")).toBeVisible();
+    await expect(page.getByTestId(`day-${today}`)).toHaveCount(0);
+    expect((await api<{ all: number }>(p, "GET", "/api/me/diary/counts")).json.all).toBe(0);
+    await p.ctx.close();
+  });
+});
+
 test.describe("looks", () => {
   test("the import and manage screens at 390x844 dark and light, and wide", async ({ browser }) => {
     test.skip(!process.env.CLIENTB_SHOTS, "set CLIENTB_SHOTS to a folder to write the screenshots");

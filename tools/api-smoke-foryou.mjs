@@ -30,6 +30,7 @@ await mk(incep, { rating: 3 });
 r = await call("GET", "/api/me/for-you", { cookie: ann.cookie });
 const keys = (r.json?.picks ?? []).map((p) => p.key);
 check("one seed (Matrix); Inception is logged so it is not suggested; obscure and poster-less titles are dropped", r.status === 200 && r.json.seeded === 1 && keys.join() === "tmdb:movie:807,tmdb:movie:1003", r.text);
+check("each pick carries `on` (the viewer's own services that stream it; none set yet, so empty)", r.json.picks.every((p) => Array.isArray(p.on) && p.on.length === 0));
 check("each pick says why", r.json.picks.every((p) => p.because.length === 1 && p.because[0].mediaId === matrix) && r.json.picks[0].score > r.json.picks[1].score);
 
 // The latest rating decides: a rewatch rated 5 takes Matrix out of the seeds.

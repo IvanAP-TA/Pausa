@@ -2,18 +2,21 @@ import type { MediaDto } from "@pausa/api-types";
 import { Link, useLocalSearchParams, type Href } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 import { api } from "@/api";
+import { diaryApi } from "@/api/diary";
 import { peopleApi } from "@/api/people";
 import { useResource } from "@/api/useResource";
 import { useI18n } from "@/i18n";
-import { control, space, web } from "@/theme";
+import { control, hair, space, useTheme, web } from "@/theme";
 import { Avatar } from "@/ui/Avatar";
 import { BackLink } from "@/ui/BackLink";
 import { Button } from "@/ui/Button";
 import { MediaPoster } from "@/ui/MediaPoster";
 import { Section } from "@/ui/Section";
+import { Chapter, Well } from "@/ui/Surfaces";
 import { Stars } from "@/ui/Stars";
 import { ErrorState, Heading, Loading, Screen, Tag, Text, Title } from "@/ui";
-import { useCircleScope } from "../diary/shared";
+import { CardList, LogCard, useCircleScope } from "../diary/shared";
+import { formatPosition } from "../diary/CircleHead";
 import { RequireSession, useMe } from "../session";
 import "./people.messages";
 
@@ -40,8 +43,10 @@ function PersonBody({ id, userId }: { id: string; userId: string }) {
   const me = useMe();
   useCircleScope(id);
   const person = useResource((signal) => peopleApi.person(id, userId, locale, signal), [id, userId, locale]);
+  const recent = useResource((signal) => diaryApi.feed(id, { person: userId, locale }, signal), [id, userId, locale]);
+  const { c } = useTheme();
   const circle = useResource((signal) => api.circle(id, signal), [id]);
-  const back = <BackLink to={href(`/c/${id}`)} label={circle.data?.name ?? t("person.back")} />;
+  const back = <BackLink to={href(`/c/${id}/members`)} label={circle.data?.name ?? t("person.back")} />;
   if (person.loading && !person.data)
     return (
       <Screen>
@@ -60,6 +65,13 @@ function PersonBody({ id, userId }: { id: string; userId: string }) {
   const mine = p.person.id === me.id;
   const role = circle.data?.members.find((m) => m.userId === userId)?.role;
   const common = p.tasteCommon;
+  const loved = p.loved.slice(0, 5);
+  const stars = p.avgRating ? new Intl.NumberFormat(locale, { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(p.avgRating / 2) : null;
+  const figures: Array<{ label: string; value: string | number | null }> = [
+    { label: t("person.logs"), value: p.logs },
+    { label: t("person.titles"), value: p.titles },
+    { label: t("person.avg"), value: stars },
+  ];
   return (
     <Screen>
       {back}
@@ -87,39 +99,91 @@ function PersonBody({ id, userId }: { id: string; userId: string }) {
         </View>
       ) : null}
 
-      <Section title={t("person.stats")}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.lg }} testID="person-stats">
-          <View role="group" aria-label={`${p.logs} ${t("person.logs")}`}>
-            <Title aria-hidden style={{ fontSize: 40, lineHeight: 42 }}>
-              {p.logs}
+      {p.watching ? (
+        <Link href={href(`/t/${p.watching.media.id}`) as Href} asChild>
+          <Pressable role="link" testID="person-watching" style={StyleSheet.flatten([web({ cursor: "pointer" })])}>
+            <Well style={{ flexDirection: "row", alignItems: "center", gap: space.sm, padding: space.sm, minHeight: control }}>
+              <MediaPoster title={p.watching.media.title} path={p.watching.media.posterPath} width={56} />
+              <Text style={[{ flex: 1, minWidth: 0 }, web({ overflowWrap: "anywhere" })]}>
+                {t("person.watching", { title: p.watching.media.title })}
+                {formatPosition(p.watching.season, p.watching.episode) ? (
+                  <Text tone="muted" style={web({ fontVariant: ["tabular-nums"] })}>
+                    {" "}
+                    {formatPosition(p.watching.season, p.watching.episode)}
+                  </Text>
+                ) : null}
+              </Text>
+            </Well>
+          </Pressable>
+        </Link>
+      ) : null}
+
+      {/* The figures: three large numbers parted by vertical hairlines, the label under each. */}
+      <View
+        role="group"
+        aria-label={t("person.stats")}
+        testID="person-stats"
+        style={{ flexDirection: "row", borderTopWidth: hair, borderBottomWidth: hair, borderColor: c.rule, paddingVertical: space.md }}
+      >
+        {figures.map((f, i) => (
+          <View
+            key={f.label}
+            style={{ flex: 1, minWidth: 0, gap: space["2xs"], paddingLeft: i === 0 ? 0 : space.sm, paddingRight: i === figures.length - 1 ? 0 : space.sm, borderLeftWidth: i === 0 ? 0 : hair, borderColor: c.rule }}
+          >
+            <Title style={{ fontSize: 40, lineHeight: 42 }} tone={f.value === null ? "muted" : undefined}>
+              {f.value ?? "-"}
             </Title>
-            <Text aria-hidden variant="small" tone="ink2">
-              {t("person.logs")}
+            <Text variant="small" tone="muted">
+              {f.label}
             </Text>
           </View>
-          {p.avgRating ? (
-            <View role="group" aria-label={`${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(p.avgRating / 2)} ${t("person.avg")}`}>
-              <Title aria-hidden style={{ fontSize: 40, lineHeight: 42 }}>
-                {new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(p.avgRating / 2)}
-              </Title>
-              <Stars halves={Math.round(p.avgRating)} size={14} />
-              <Text aria-hidden variant="small" tone="ink2">
-                {t("person.avg")}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-        {!mine ? (
-          <Text testID="taste">{p.tasteMatch !== null ? t("person.taste", { percent: Math.round(p.tasteMatch * 100), count: common }) : t("person.tasteNone", { count: common })}</Text>
-        ) : null}
-        <Button label={t("person.all")} variant="secondary" href={`${href(`/c/${id}/feed`)}?person=${p.person.id}`} />
-      </Section>
+        ))}
+      </View>
 
-      {p.loved.length > 0 ? (
-        <Section title={t("person.loved")}>
-          <Shelf items={p.loved} label={t("person.loved")} />
-        </Section>
+      {p.kinds.length > 0 ? (
+        <Text variant="small" tone="muted" testID="person-kinds">
+          {p.kinds.map((k) => `${t(`kind.${k.kind as "movie" | "tv" | "anime"}`)} ${k.count}`).join(", ")}
+        </Text>
       ) : null}
+
+      {!mine ? (
+        <Text tone="ink2" testID="taste">
+          {p.tasteMatch !== null ? t("person.taste", { percent: Math.round(p.tasteMatch * 100), count: common }) : t("person.tasteNone", { count: common })}
+        </Text>
+      ) : null}
+
+      {loved.length > 0 ? (
+        <View style={{ gap: space.sm }} testID="person-loved">
+          <Chapter>{t("person.loved")}</Chapter>
+          <View role="list" aria-label={t("person.loved")} style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+            {loved.map((m) => (
+              <View key={m.id} role="listitem" style={{ width: 104, gap: space.xs }}>
+                <Link href={href(`/t/${m.id}`) as Href} asChild>
+                  <Pressable role="link" aria-label={m.title} style={web({ cursor: "pointer" })}>
+                    <MediaPoster title={m.title} path={m.posterPath} width={104} decorative={false} />
+                  </Pressable>
+                </Link>
+                <Stars halves={p.lovedRatings[p.loved.indexOf(m)]} size={16} />
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      <View style={{ gap: space.sm }}>
+        <Chapter>{t("person.recent")}</Chapter>
+        {recent.loading && !recent.data ? <Loading rows={2} /> : null}
+        {recent.data && recent.data.items.length === 0 ? <Text tone="ink2">{t("person.noLogs")}</Text> : null}
+        {recent.data && recent.data.items.length > 0 ? (
+          <CardList>
+            {recent.data.items.slice(0, 5).map((log) => (
+              <LogCard key={log.id} log={log} circleId={id} />
+            ))}
+          </CardList>
+        ) : null}
+        {p.logs > 5 ? <Button label={t("person.all")} variant="secondary" href={`${href(`/c/${id}`)}?person=${p.person.id}`} /> : null}
+      </View>
+
       {p.favorites.length > 0 ? (
         <Section title={t("profile.favorites")}>
           <Shelf items={p.favorites} label={t("profile.favorites")} />

@@ -14,7 +14,8 @@ describe("the card layout", () => {
         expect(r.x + r.w).toBeLessThanOrEqual(L.w);
         expect(r.y + r.h).toBeLessThanOrEqual(L.h);
       }
-      expect(L.poster.h / L.poster.w).toBeCloseTo(1.5); // 2:3, like a poster
+      if (v === "og") expect(L.poster.h / L.poster.w).toBeCloseTo(1.5); // 2:3, like a poster (the story runs the print edge to edge and crops it)
+      else expect(L.poster.w).toBe(L.w);
       expect(L.title.x + L.title.width).toBeLessThanOrEqual(L.w);
     }
   });

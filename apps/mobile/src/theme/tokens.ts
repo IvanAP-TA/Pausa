@@ -110,7 +110,7 @@ export const fallbackSans = "ui-sans-serif, system-ui, sans-serif";
 export const motion = { micro: 120, short: 220, long: 420, easeOut: [0.16, 1, 0.3, 1] as const };
 
 /** Breakpoints in dp: tokens.css uses 40rem and 60rem for the gutter, 64rem for the rail. */
-export const breakpoints = { phone: 640, tablet: 960, rail: 1024 } as const;
+export const breakpoints = { phone: 640, tablet: 960, rail: 1024, aside: 1280 } as const;
 
 /** Layout (`--container`, `--gutter`). */
 export const layout = { container: 1440, gutter: { phone: 16, tablet: 24, wide: 64 } } as const;

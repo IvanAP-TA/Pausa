@@ -15,10 +15,12 @@ use serde::Deserialize;
 use worker::wasm_bindgen::JsValue;
 use worker::*;
 
-const SUMMARY_COLS: &str = "l.id, l.name, l.kind, l.description, l.circle_id, l.owner_id, \
-    (SELECT COUNT(*) FROM list_item WHERE list_id = l.id) AS items, \
-    (SELECT group_concat(poster_path, '|') FROM (SELECT e.poster_path FROM list_item i JOIN media_entity e ON e.id = i.media_id \
-       WHERE i.list_id = l.id AND e.poster_path IS NOT NULL ORDER BY i.position LIMIT 4)) AS posters";
+/// The columns of a list summary. `loc` is the placeholder (like `?3`) that carries the locale for the strip's titles.
+fn summary_cols(loc: &str) -> String {
+    format!(
+        "l.id, l.name, l.kind, l.description, l.circle_id, l.owner_id,     (SELECT name FROM user WHERE id = l.owner_id) AS owner_name,     (SELECT COUNT(*) FROM list_item WHERE list_id = l.id) AS items,     (SELECT group_concat(poster_path, '|') FROM (SELECT e.poster_path FROM list_item i JOIN media_entity e ON e.id = i.media_id        WHERE i.list_id = l.id AND e.poster_path IS NOT NULL ORDER BY i.position LIMIT 4)) AS posters,     (SELECT json_group_array(json_object('id', id, 'title', title, 'posterPath', poster_path)) FROM        (SELECT e.id AS id, COALESCE(mt.title, e.original_title) AS title, e.poster_path AS poster_path FROM list_item i           JOIN media_entity e ON e.id = i.media_id LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = {loc}         WHERE i.list_id = l.id ORDER BY i.position, i.added_at LIMIT 8)) AS strip"
+    )
+}
 
 #[derive(Deserialize)]
 struct SummaryRow {
@@ -28,8 +30,10 @@ struct SummaryRow {
     description: Option<String>,
     circle_id: Option<String>,
     owner_id: String,
+    owner_name: Option<String>,
     items: i64,
     posters: Option<String>,
+    strip: Option<String>,
 }
 
 impl SummaryRow {
@@ -41,10 +45,15 @@ impl SummaryRow {
             description: self.description,
             circle_id: self.circle_id,
             owner_id: self.owner_id,
+            owner_name: self.owner_name.unwrap_or_default(),
             items: self.items as u32,
             posters: self
                 .posters
                 .map(|p| p.split('|').map(str::to_string).collect())
+                .unwrap_or_default(),
+            strip: self
+                .strip
+                .and_then(|s| serde_json::from_str(&s).ok())
                 .unwrap_or_default(),
         }
     }
@@ -64,10 +73,15 @@ async fn overview_inner(req: &Request, env: &Env) -> R<Response> {
     }
     let rows = db
         .prepare(format!(
-            "SELECT {SUMMARY_COLS} FROM list l WHERE (l.circle_id IS NULL AND l.owner_id = ?1) OR (l.circle_id IS NOT NULL AND l.circle_id = ?2) \
-             ORDER BY (l.circle_id IS NOT NULL), CASE l.kind WHEN 'watchlist' THEN 0 ELSE 1 END, l.created_at DESC LIMIT 200"
+            "SELECT {} FROM list l WHERE (l.circle_id IS NULL AND l.owner_id = ?1) OR (l.circle_id IS NOT NULL AND l.circle_id = ?2) \
+             ORDER BY (l.circle_id IS NOT NULL), CASE l.kind WHEN 'watchlist' THEN 0 ELSE 1 END, l.created_at DESC LIMIT 200",
+            summary_cols("?3")
         ))
-        .bind(&[s.user_id.as_str().into(), circle.as_deref().map_or(JsValue::NULL, JsValue::from)])?
+        .bind(&[
+            s.user_id.as_str().into(),
+            circle.as_deref().map_or(JsValue::NULL, JsValue::from),
+            catalog::locale_code(locale_of(req)).into(),
+        ])?
         .all()
         .await?
         .results::<SummaryRow>()?;
@@ -178,7 +192,7 @@ async fn detail_inner(req: &Request, env: &Env, list_id: &str) -> R<Response> {
     let loc = catalog::locale_code(locale_of(req));
     let res = db
         .batch(vec![
-            db.prepare(format!("SELECT {SUMMARY_COLS} FROM list l WHERE l.id = ?1")).bind(&[list_id.into()])?,
+            db.prepare(format!("SELECT {} FROM list l WHERE l.id = ?1", summary_cols("?2"))).bind(&[list_id.into(), loc.into()])?,
             db.prepare(
                 "SELECT e.id, e.kind, e.original_title, mt.title AS loc_title, e.year, e.poster_path, i.note, i.priority, i.position, \
                    u.id AS by_id, u.name AS by_name, u.image AS by_image FROM list_item i JOIN media_entity e ON e.id = i.media_id \

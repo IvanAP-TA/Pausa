@@ -1,4 +1,4 @@
-import type { RoomView, SerataPublicResult } from "@pausa/api-types";
+import type { RoomView } from "@pausa/api-types";
 import { Redirect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Platform, Pressable, View } from "react-native";
@@ -11,13 +11,14 @@ import { useI18n } from "@/i18n";
 import { control, hair, space, useTheme, web } from "@/theme";
 import { Button } from "@/ui/Button";
 import { Field } from "@/ui/Field";
+import { Wordmark } from "@/ui/Brand";
 import { Screen } from "@/ui/Screen";
 import { Empty, ErrorState, Loading, Notice } from "@/ui/Status";
 import { Arrive } from "@/ui/motion";
 import { Heading, Text } from "@/ui/Text";
 import { Bracket, Lobby, People, Table } from "./RoomPhases";
 import { RoomResult } from "./RoomResult";
-import { ShareCardSheet } from "./ShareCardSheet";
+import { PublicResult } from "./SerataCardPage";
 import { codeFrom, withBallot, withPick } from "./room-logic";
 import "./serata.messages";
 import { useRoom, type Connection } from "./useRoom";
@@ -68,7 +69,7 @@ function PickAvatar({ value, onChange }: { value: string; onChange: (v: string) 
             aria-checked={value === a}
             aria-label={a}
             onPress={() => onChange(a)}
-            style={[{ width: control, height: control, alignItems: "center", justifyContent: "center", borderWidth: value === a ? 2 : hair, borderColor: value === a ? c.accent : c.rule, backgroundColor: value === a ? c.paper3 : "transparent" }, web({ cursor: "pointer" })]}
+            style={[{ width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", backgroundColor: value === a ? c.paper3 : c.paper2, transform: [{ scale: value === a ? 1.1 : 1 }] }, value === a ? web({ outline: `2px solid ${c.accent}`, outlineOffset: 2 }) : null, web({ cursor: "pointer" })]}
           >
             <Text style={{ fontSize: 24, lineHeight: 30 }} aria-hidden>{a}</Text>
           </Pressable>
@@ -82,16 +83,15 @@ function PickAvatar({ value, onChange }: { value: string; onChange: (v: string) 
 function GuestEntry({ code }: { code: string }) {
   const { t, href, locale } = useI18n();
   const { reload } = useSession();
-  const [pub, setPub] = useState<{ state: "loading" } | { state: "open" } | { state: "done"; result: SerataPublicResult }>({ state: "loading" });
+  const [pub, setPub] = useState<{ state: "loading" } | { state: "open" } | { state: "done" }>({ state: "loading" });
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<string>(GUEST_AVATARS[0]);
-  const [card, setCard] = useState(false);
   const join = useAction();
 
   useEffect(() => {
     const ctl = new AbortController();
     serataApi.publicResult(code, ctl.signal).then(
-      (result) => setPub({ state: "done", result }),
+      () => setPub({ state: "done" }),
       () => setPub({ state: "open" }),
     );
     return () => ctl.abort();
@@ -114,24 +114,9 @@ function GuestEntry({ code }: { code: string }) {
         <Loading rows={2} />
       </Screen>
     );
-  if (pub.state === "done") {
-    const r = pub.result;
-    return (
-      <Screen width={560}>
-        <Text variant="label" tone="accent" style={{ letterSpacing: 2 }}>{t("serata.result.kicker")}</Text>
-        <Heading level={1} testID="public-winner" style={{ fontSize: 48, lineHeight: 52 }}>{r.winner.title}</Heading>
-        <Text tone="ink2">{t("serata.result.subtitle")}</Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs }}>
-          <Button label={t("serata.result.share")} onPress={() => setCard(true)} />
-          <Button label={t("serata.result.ctaButton")} variant="secondary" href={`${href("/sign-in")}?next=${encodeURIComponent(`/${locale}/home`)}`} />
-        </View>
-        <Text variant="small" tone="muted">{t("serata.result.cta")}</Text>
-        <ShareCardSheet code={code} open={card} onClose={() => setCard(false)} />
-      </Screen>
-    );
-  }
+  if (pub.state === "done") return <PublicResult code={code} />;
   return (
-    <Screen width={560}>
+    <Screen width={480}>
       <Heading level={1}>{t("serata.join.title")}</Heading>
       <Text variant="lead" tone="ink2">{t("serata.join.bodyGuest")}</Text>
       <Field label={t("serata.join.name")} value={name} onChangeText={(v) => setName(v.slice(0, 24))} maxLength={24} autoComplete="name" returnKeyType="go" onSubmitEditing={enter} testID="guest-name" />
@@ -143,6 +128,7 @@ function GuestEntry({ code }: { code: string }) {
       ) : null}
       <Button label={t("serata.join.cta")} onPress={enter} busy={join.busy} disabled={!name.trim()} fullWidth testID="guest-join" />
       <Text variant="small" tone="muted">{t("serataApp.gate.code", { code })}</Text>
+      <Wordmark />
     </Screen>
   );
 }
@@ -260,11 +246,12 @@ function Room({ code, isGuest, meId }: { code: string; isGuest: boolean; meId: s
   const phaseKey = `${status}-${view.bracket ? `${view.bracket.roundName}-${view.bracket.done}` : ""}`;
 
   return (
-    <Screen width={640}>
+    <Screen width={480}>
       <View style={{ gap: space["2xs"] }}>
-        <Heading level={1} style={{ fontSize: 44, lineHeight: 48 }}>{t("serata.title")}</Heading>
+        {/* Once the winner is out the head steps down and the winner's title takes the display voice. */}
+        <Heading level={status === "done" ? 3 : 1}>{t("serata.title")}</Heading>
         <Text variant="small" tone="muted">
-          {t(`serata.mode.${view.mode}`)} · {status === "lobby" ? t("serata.status.lobby") : status === "voting" ? t("serata.status.voting") : status === "done" ? t("serataApp.room.finished") : t("serataApp.room.expiredShort")}
+          Pausa, {t(`serata.mode.${view.mode}`)} · {status === "lobby" ? t("serata.status.lobby") : status === "voting" ? t("serata.status.voting") : status === "done" ? t("serataApp.room.finished") : t("serataApp.room.expiredShort")}
         </Text>
         <ConnectionNote connection={connection} />
       </View>

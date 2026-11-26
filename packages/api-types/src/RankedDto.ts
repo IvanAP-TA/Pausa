@@ -9,4 +9,8 @@ export type RankedDto = { media: MediaDto,
 /**
  * Average rating in half stars (1..10), null when nobody rated it.
  */
-avg: number | null, votes: number, watchers: number, lastWatched: string, ratings: Array<PersonRating>, };
+avg: number | null, votes: number, watchers: number, lastWatched: string, ratings: Array<PersonRating>, 
+/**
+ * Everyone in the Cerchia who logged it (rated or not): the ones missing from `ratings` saw it without a vote.
+ */
+watchedBy: Array<string>, };

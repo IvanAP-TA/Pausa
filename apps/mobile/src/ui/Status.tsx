@@ -5,6 +5,7 @@ import { errorMessage } from "@/api/errors";
 import { hair, space, useTheme } from "@/theme";
 import { Button } from "./Button";
 import { Skeleton } from "./motion";
+import { EmptyMark } from "./Surfaces";
 import { Heading, Text } from "./Text";
 
 /** Loading state: bars where the rows will be, announced once as "loading". */
@@ -31,11 +32,12 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   );
 }
 
-/** Empty state: the plain statement and what to do about it. The pause mark of the old app is not ported (T8). */
+/** Empty state (v1 `.well .empty`): the pause mark's two bars, the plain statement and what to do about it. */
 export function Empty({ title, body, children }: { title: string; body?: string; children?: ReactNode }) {
   const { c } = useTheme();
   return (
     <View style={{ gap: space.sm, backgroundColor: c.paper2, padding: space.lg }}>
+      <EmptyMark />
       <Heading level={3}>{title}</Heading>
       {body ? <Text tone="ink2">{body}</Text> : null}
       {children}

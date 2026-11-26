@@ -101,7 +101,7 @@ const afterFirst = total(await stats());
 r = await chunk(U, B, { rows: first, offset: 0 });
 check("sending the same chunk again adds nothing (idempotent)", r.json.imported === 0 && r.json.already === 2 && r.json.newTitles === 0 && sql(`SELECT COUNT(*) AS n FROM log WHERE user_id='${U.id}'`)[0].n === 2, JSON.stringify(r.json));
 check("and costs no catalogue call: the titles are already known", total(await stats()) === afterFirst);
-check("the title lookups of the first chunk used the catalogue", afterFirst > s0);
+check("the title lookups of the first chunk used the catalogue (when there was a title to make)", expectFirstNew === 0 || afterFirst > s0);
 
 // ═════════ matching ═════════
 const s1 = total(await stats());
@@ -219,5 +219,51 @@ r = await call("POST", `/api/imports/${BL}/lists`, { cookie: U.cookie, body: { n
 check("a list offset beyond 5000 is refused", r.status === 400);
 r = await call("POST", `/api/imports/${BL}/lists`, { cookie: U.cookie, body: { name: "Watchlist", kind: "watchlist", offset: 0, rows: [row("Matrix", { year: 1999 }), { kind: "book", title: "x" }, row("Death Note", { kind: "anime", malId: 1535 })] } });
 check("a personal watchlist; a bad row is named; an anime row is treated as a series (lists hold films and series)", r.status === 200 && r.json.rejected.length === 1 && r.json.rejected[0].index === 1 && sql(`SELECT kind, circle_id FROM list WHERE id='${r.json.listId}'`)[0].kind === "watchlist", r.text);
+
+
+// ═════════ imports from before runs were tracked: a day with many viewings and no run ═════════
+const Z = await signIn(mail("oldday"));
+const ZC = (await call("POST", "/api/circles", { cookie: Z.cookie, body: { name: "Vecchi" } })).json;
+const zlog = (n, circles) => call("POST", "/api/logs", { cookie: Z.cookie, body: { mediaKey: "tmdb:movie:603", watchedOn: `2025-02-${String(n).padStart(2, "0")}`, circles, locale: "it" } });
+for (let n = 1; n <= 9; n++) await zlog(n, n <= 2 ? [ZC.id] : []);
+const todayUtc = new Date().toISOString().slice(0, 10);
+r = await call("GET", "/api/imports/bulk-days");
+check("bulk days need a session", r.status === 401);
+r = await call("GET", "/api/imports/bulk-days", { cookie: Z.cookie });
+check("nine viewings in a day is not a block", r.status === 200 && r.json.length === 0, r.text);
+r = await call("POST", `/api/imports/bulk-days/${todayUtc}/hide`, { cookie: Z.cookie, body: {} });
+check("hiding a small day is 404", r.status === 404, r.text);
+await zlog(10, []);
+r = await call("GET", "/api/imports/bulk-days", { cookie: Z.cookie });
+check("ten make a day, with how many a Cerchia still sees", r.json.length === 1 && r.json[0].day === todayUtc && r.json[0].logs === 10 && r.json[0].inCircles === 2, r.text);
+r = await call("GET", "/api/imports/bulk-days", { cookie: V.cookie });
+check("another person has none of it", r.json.length === 0);
+r = await call("POST", `/api/imports/bulk-days/${todayUtc}/hide`, { cookie: V.cookie, body: {} });
+check("somebody else cannot hide it (404)", r.status === 404);
+r = await call("POST", "/api/imports/bulk-days/not-a-day/hide", { cookie: Z.cookie, body: {} });
+check("a malformed day is 404", r.status === 404);
+r = await call("POST", `/api/imports/bulk-days/${todayUtc}/hide`, { cookie: Z.cookie, body: {} });
+check("hide takes it out of the Cerchie: 2 viewings, nothing deleted", r.status === 200 && r.json.viewings === 2 && sql(`SELECT COUNT(*) AS n FROM log WHERE user_id='${Z.id}'`)[0].n === 10 && sql(`SELECT COUNT(*) AS n FROM log_share s JOIN log l ON l.id = s.log_id WHERE l.user_id='${Z.id}'`)[0].n === 0, r.text);
+r = await call("GET", "/api/imports/bulk-days", { cookie: Z.cookie });
+check("the day is still listed, now private", r.json[0]?.inCircles === 0, r.text);
+r = await call("DELETE", `/api/imports/bulk-days/${todayUtc}`, { cookie: V.cookie });
+check("somebody else cannot delete it (404)", r.status === 404);
+r = await call("DELETE", `/api/imports/bulk-days/${todayUtc}`, { cookie: Z.cookie });
+check("delete removes the ten viewings", r.status === 200 && r.json.viewings === 10 && sql(`SELECT COUNT(*) AS n FROM log WHERE user_id='${Z.id}'`)[0].n === 0, r.text);
+r = await call("GET", "/api/imports/bulk-days", { cookie: Z.cookie });
+check("and the day is gone", r.json.length === 0);
+
+// ═════════ import config and where an import went ═════════
+r = await call("GET", "/api/imports/config", { cookie: Z.cookie });
+check("config says whether TMDB is on", r.status === 200 && r.json.tmdb === true, r.text);
+r = await call("GET", "/api/imports/config");
+check("config needs a session", r.status === 401);
+const BX = (await start(Z, { source: "imdb", circleId: ZC.id })).json.id;
+await chunk(Z, BX, { rows: [row("Matrix", { year: 1999 })], offset: 0, includeReviews: true, includeUndated: false, locale: "it" });
+r = await call("GET", "/api/imports", { cookie: Z.cookie });
+check("the list says how many viewings the Cerchia still sees", r.json.find((b) => b.id === BX)?.inCircle === 1, r.text);
+await call("POST", `/api/imports/${BX}/remove-from-circle`, { cookie: Z.cookie });
+r = await call("GET", "/api/imports", { cookie: Z.cookie });
+check("and none once it was taken out", r.json.find((b) => b.id === BX)?.inCircle === 0 && r.json.find((b) => b.id === BX)?.listsInCircle === 0, r.text);
 
 finish();

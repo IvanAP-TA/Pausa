@@ -1277,6 +1277,8 @@
       "diarySoon": "Qui arriverà il diario della Cerchia: cosa avete visto, cosa ne pensate."
     },
     "account": {
+      "alertsTitle": "Avvisi, paese e silenzi",
+      "alertsBody": "Che notifiche ricevere, il paese e le Cerchie da silenziare.",
       "sessionsTitle": "Dispositivi connessi",
       "sessionsBody": "Dove hai fatto l'accesso. Se non riconosci un dispositivo, disconnettilo.",
       "current": "Questo dispositivo",
@@ -1442,6 +1444,7 @@
     "updated": "Aggiornato",
     "back": "Tutte le guide",
     "more": "Altre guide",
+    "breadcrumb": "Percorso",
     "updatedOn": "2026-11-17",
     "items": {
       "choose-a-movie-with-friends": {

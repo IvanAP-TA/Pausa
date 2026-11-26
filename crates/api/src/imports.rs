@@ -13,7 +13,7 @@ use crate::http::{body, finish, json, new_id, now_ms, Fail, R};
 use crate::{limit, manage, session};
 use pausa_core::catalog::{Key, Kind};
 use pausa_core::dto::{
-    ChunkResult, ErrorCode, IdOnly, ImportBatchDto, ImportUndone, ListChunkResult, Locale,
+    BulkDayDto, BulkDayUndone, ChunkResult, ErrorCode, IdOnly, ImportBatchDto, ImportConfig, ImportUndone, ListChunkResult, Locale,
     RejectedRow,
 };
 use pausa_core::import::{
@@ -710,11 +710,13 @@ struct BatchFullRow {
     new_titles: i64,
     lists: i64,
     failed_rows: i64,
+    in_circle: i64,
+    lists_in_circle: i64,
     created_at: i64,
     finished_at: Option<i64>,
 }
 
-const BATCH_COLS: &str = "b.id, b.source, b.circle_id, c.name AS circle_name, b.status, b.cursor, b.total, b.imported, b.skipped, b.new_titles, b.lists, b.failed_rows, b.created_at, b.finished_at";
+const BATCH_COLS: &str = "b.id, b.source, b.circle_id, c.name AS circle_name, b.status, b.cursor, b.total, b.imported, b.skipped, b.new_titles, b.lists, b.failed_rows, b.created_at, b.finished_at, \n    (SELECT COUNT(*) FROM log_share bs WHERE bs.import_batch_id = b.id) AS in_circle, \n    (SELECT COUNT(*) FROM list bl WHERE bl.import_batch_id = b.id AND bl.circle_id IS NOT NULL) AS lists_in_circle";
 
 fn batch_dto(r: BatchFullRow) -> ImportBatchDto {
     ImportBatchDto {
@@ -730,6 +732,8 @@ fn batch_dto(r: BatchFullRow) -> ImportBatchDto {
         new_titles: r.new_titles as u32,
         lists: r.lists as u32,
         failed_rows: r.failed_rows as u32,
+        in_circle: r.in_circle as u32,
+        lists_in_circle: r.lists_in_circle as u32,
         created_at: r.created_at,
         finished_at: r.finished_at,
     }
@@ -916,4 +920,157 @@ async fn delete_inner(req: &Request, env: &Env, batch_id: &str) -> R<Response> {
         },
         200,
     )
+}
+
+// ───────────── Imports from before runs were tracked ─────────────
+// Older imports left no mark on their viewings. What still gives them away is that they were all written on the same day (UTC):
+// a day with BULK_MIN or more viewings and no run is offered as one block, to take out of the Cerchie or to delete.
+
+/// A day with fewer viewings than this is hand-written, not a block: the single buttons are for those.
+const BULK_MIN: i64 = 10;
+const DAY_OF: &str = "date(l.created_at / 1000, 'unixepoch')";
+
+#[derive(Deserialize)]
+struct BulkRow {
+    day: String,
+    logs: i64,
+    in_circles: i64,
+}
+
+/// `GET /api/imports/bulk-days`: my days with at least ten viewings added and no import run, newest first.
+pub async fn bulk_days(req: Request, env: Env) -> Result<Response> {
+    finish(bulk_days_inner(&req, &env).await)
+}
+
+async fn bulk_days_inner(req: &Request, env: &Env) -> R<Response> {
+    let db = env.d1("DB")?;
+    let s = session::require(req, &db).await?;
+    let rows = db
+        .prepare(format!(
+            "SELECT {DAY_OF} AS day, COUNT(*) AS logs, \
+               COALESCE(SUM(CASE WHEN EXISTS (SELECT 1 FROM log_share ps WHERE ps.log_id = l.id) THEN 1 ELSE 0 END), 0) AS in_circles \
+             FROM log l WHERE l.user_id = ?1 AND l.import_batch_id IS NULL \
+             GROUP BY day HAVING COUNT(*) >= {BULK_MIN} ORDER BY day DESC"
+        ))
+        .bind(&[s.user_id.as_str().into()])?
+        .all()
+        .await?
+        .results::<BulkRow>()?;
+    let days: Vec<BulkDayDto> = rows
+        .into_iter()
+        .map(|r| BulkDayDto {
+            day: r.day,
+            logs: r.logs as u32,
+            in_circles: r.in_circles as u32,
+        })
+        .collect();
+    json(&days, 200)
+}
+
+fn valid_day(day: &str) -> bool {
+    let b = day.as_bytes();
+    b.len() == 10
+        && b.iter()
+            .enumerate()
+            .all(|(i, c)| if i == 4 || i == 7 { *c == b'-' } else { c.is_ascii_digit() })
+}
+
+/// The viewings of a bulk day, or `not_found` when the day is not a block (or does not exist).
+async fn bulk_day_count(db: &D1Database, user_id: &str, day: &str) -> R<i64> {
+    if !valid_day(day) {
+        return Err(Fail::new(ErrorCode::NotFound, 404));
+    }
+    let n = db
+        .prepare(format!(
+            "SELECT COUNT(*) AS n FROM log l WHERE l.user_id = ?1 AND l.import_batch_id IS NULL AND {DAY_OF} = ?2"
+        ))
+        .bind(&[user_id.into(), day.into()])?
+        .first::<CountRow>(None)
+        .await?
+        .map_or(0, |c| c.n);
+    if n < BULK_MIN {
+        return Err(Fail::new(ErrorCode::NotFound, 404));
+    }
+    Ok(n)
+}
+
+async fn bulk_day_circles(db: &D1Database, user_id: &str, day: &str) -> R<Vec<String>> {
+    Ok(db
+        .prepare(format!(
+            "SELECT DISTINCT s.circle_id FROM log_share s JOIN log l ON l.id = s.log_id \
+             WHERE l.user_id = ?1 AND l.import_batch_id IS NULL AND {DAY_OF} = ?2"
+        ))
+        .bind(&[user_id.into(), day.into()])?
+        .all()
+        .await?
+        .results::<CircleRow>()?
+        .into_iter()
+        .map(|c| c.circle_id)
+        .collect())
+}
+
+const BULK_LOGS: &str =
+    "SELECT l.id FROM log l WHERE l.user_id = ?1 AND l.import_batch_id IS NULL AND date(l.created_at / 1000, 'unixepoch') = ?2";
+
+/// `POST /api/imports/bulk-days/:day/hide`: takes a bulk day out of every Cerchia (the viewings stay in my diary, private).
+pub async fn hide_bulk_day(req: Request, env: Env, day: &str) -> Result<Response> {
+    finish(hide_bulk_inner(&req, &env, day).await)
+}
+
+async fn hide_bulk_inner(req: &Request, env: &Env, day: &str) -> R<Response> {
+    let db = env.d1("DB")?;
+    let s = session::require(req, &db).await?;
+    bulk_day_count(&db, &s.user_id, day).await?;
+    let circles = bulk_day_circles(&db, &s.user_id, day).await?;
+    let viewings = db
+        .prepare(format!(
+            "SELECT COUNT(*) AS n FROM log l WHERE l.user_id = ?1 AND l.import_batch_id IS NULL AND {DAY_OF} = ?2 \
+               AND EXISTS (SELECT 1 FROM log_share ps WHERE ps.log_id = l.id)"
+        ))
+        .bind(&[s.user_id.as_str().into(), day.into()])?
+        .first::<CountRow>(None)
+        .await?
+        .map_or(0, |c| c.n as u32);
+    let args = [s.user_id.as_str().into(), day.into()];
+    let mut stmts = vec![
+        db.prepare(format!("DELETE FROM comment WHERE (log_id, circle_id) IN (SELECT log_id, circle_id FROM log_share WHERE log_id IN ({BULK_LOGS}))")).bind(&args)?,
+        db.prepare(format!("DELETE FROM reaction WHERE (log_id, circle_id) IN (SELECT log_id, circle_id FROM log_share WHERE log_id IN ({BULK_LOGS}))")).bind(&args)?,
+        db.prepare(format!("DELETE FROM log_share WHERE log_id IN ({BULK_LOGS})")).bind(&args)?,
+    ];
+    for c in &circles {
+        stmts.extend(crate::diary::rebuild_ratings(&db, &s.user_id, c)?);
+    }
+    db.batch(stmts).await?;
+    json(&BulkDayUndone { viewings }, 200)
+}
+
+/// `DELETE /api/imports/bulk-days/:day`: deletes for good every viewing of a bulk day.
+pub async fn delete_bulk_day(req: Request, env: Env, day: &str) -> Result<Response> {
+    finish(delete_bulk_inner(&req, &env, day).await)
+}
+
+async fn delete_bulk_inner(req: &Request, env: &Env, day: &str) -> R<Response> {
+    let db = env.d1("DB")?;
+    let s = session::require(req, &db).await?;
+    let n = bulk_day_count(&db, &s.user_id, day).await?;
+    let circles = bulk_day_circles(&db, &s.user_id, day).await?;
+    let mut stmts = vec![db
+        .prepare(format!("DELETE FROM log WHERE id IN ({BULK_LOGS})"))
+        .bind(&[s.user_id.as_str().into(), day.into()])?];
+    for c in &circles {
+        stmts.extend(crate::diary::rebuild_ratings(&db, &s.user_id, c)?);
+    }
+    db.batch(stmts).await?;
+    json(&BulkDayUndone { viewings: n as u32 }, 200)
+}
+
+/// `GET /api/imports/config`: what the server can do for an import (today: whether TMDB is on, so films come with their posters).
+pub async fn config(req: Request, env: Env) -> Result<Response> {
+    finish(config_inner(&req, &env).await)
+}
+
+async fn config_inner(req: &Request, env: &Env) -> R<Response> {
+    let db = env.d1("DB")?;
+    session::require(req, &db).await?;
+    json(&ImportConfig { tmdb: catalog::tmdb_enabled(env) }, 200)
 }

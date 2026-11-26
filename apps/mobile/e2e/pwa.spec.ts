@@ -82,7 +82,7 @@ test("scene: a signed-in person with a Cerchia", async ({ browser }) => {
 
 test("after one online visit the shell opens with no network, and the API's failure lands in the screens' own error states", async () => {
   const { page, ctx } = u;
-  await page.goto("/it/home");
+  await page.goto("/it/me/circles");
   await expect(page.getByTestId(`circle-${cid}`)).toBeVisible();
   await controlled(page);
   await page.reload(); // from now on the worker controls the page
@@ -169,6 +169,7 @@ async function pickMatrix(page: Page, day: string) {
   await page.goto("/it/log");
   await page.getByLabel("Cerca un film, una serie, un anime…").fill("matrix");
   await page.getByRole("button", { name: /^Matrix/ }).first().click();
+  await page.getByTestId("log-details").click(); // the date waits behind "Aggiungi dettagli"
   await page.getByTestId("watched-on").fill(day);
 }
 

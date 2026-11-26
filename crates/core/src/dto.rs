@@ -109,6 +109,57 @@ pub struct CircleDetail {
     pub my_role: Role,
     pub members: Vec<MemberDto>,
     pub invites: Vec<InviteDto>,
+    /// Viewings shared here this (UTC) year by people still in the Cerchia: "4 membri, 37 visioni quest'anno".
+    #[ts(type = "number")]
+    pub logs_this_year: i64,
+    /// "Sta guardando": each member's latest title in progress, most recent first. Empty when the Cerchia has it
+    /// switched off or I hide it for myself; members who hide it are left out.
+    pub watching: Vec<WatchingDto>,
+}
+
+/// `GET /api/circles/:id/extras`: what brings a Cerchia back, under the diary head (v1 retention.ts).
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CircleExtras {
+    /// "Per cominciare": I logged something, someone else is in the Cerchia, a Serata here ended with a winner.
+    pub has_log: bool,
+    pub has_company: bool,
+    pub has_serata: bool,
+    /// "Un anno fa… e oltre": up to three viewings shared here on this calendar day (±3) of earlier years.
+    pub memories: Vec<MemoryDto>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct MemoryDto {
+    pub log_id: String,
+    pub media: MediaDto,
+    pub author: PersonDto,
+    /// YYYY-MM-DD
+    pub watched_on: String,
+    #[ts(type = "number")]
+    pub years_ago: i64,
+    #[ts(type = "number | null")]
+    pub rating: Option<i64>,
+    /// Null when the review warns of spoilers: a memory is read in passing.
+    pub review: Option<String>,
+}
+
+/// One entry of the "sta guardando" strip on a Cerchia's diary.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct WatchingDto {
+    pub user: PersonDto,
+    pub media: MediaDto,
+    #[ts(type = "number | null")]
+    pub season: Option<i64>,
+    #[ts(type = "number | null")]
+    pub episode: Option<i64>,
+    #[ts(type = "number")]
+    pub updated_at: i64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -250,6 +301,27 @@ pub struct LogDto {
     pub reactions: Vec<ReactionCount>,
     /// The Cerchie this viewing is shared with. Filled only in the author's own diary; empty in a Cerchia's feed.
     pub shared_in: Vec<String>,
+    /// Minutes, from the catalogue (films; a series' runtime is per episode).
+    #[ts(type = "number | null")]
+    pub runtime_min: Option<i64>,
+    /// Up to the catalogue's genres in the viewer's language.
+    pub genres: Vec<String>,
+    /// What the title is about, in the viewer's language (shown when the viewing has no review).
+    pub overview: Option<String>,
+    /// "Visto con": in a Cerchia only its members.
+    pub watched_with: Vec<PersonDto>,
+    /// The latest comment in this Cerchia (feed only), so the diary reads as a conversation.
+    pub last_comment: Option<LastCommentDto>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct LastCommentDto {
+    pub author: PersonDto,
+    /// Null when it is marked as a spoiler (the text does not travel), cut to 180 characters otherwise.
+    pub body: Option<String>,
+    pub is_spoiler: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -327,6 +399,11 @@ pub struct MySettings {
     /// Notification types switched off.
     pub notify_off: Vec<String>,
     pub circles: Vec<CircleMySettings>,
+    /// All my viewings, and how many of them are only mine (shared with no Cerchia).
+    pub logs: u32,
+    pub private_logs: u32,
+    /// People who joined through an invite I made (Fondatore from three).
+    pub brought: u32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -359,6 +436,23 @@ pub struct PersonProfile {
     pub taste_common: u32,
     #[ts(type = "number")]
     pub joined_at: i64,
+    /// Distinct titles they shared here.
+    pub titles: u32,
+    /// Distinct titles shared here per kind (movie / tv / anime), kinds with none left out.
+    pub kinds: Vec<KindCount>,
+    /// The rating (half stars, 1..10) behind each title of `loved`, in the same order.
+    pub loved_ratings: Vec<u8>,
+    /// What they are watching now; null when the Cerchia or either of you keeps live watching off.
+    pub watching: Option<WatchingDto>,
+}
+
+/// How many distinct titles of one kind.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct KindCount {
+    pub kind: String,
+    pub count: u32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -404,6 +498,20 @@ pub struct ListSummary {
     pub owner_id: String,
     pub items: u32,
     pub posters: Vec<String>,
+    /// Who made it (the name shown as "di {name}").
+    pub owner_name: String,
+    /// The first eight titles in order, for the strip of posters on a card.
+    pub strip: Vec<ListStripItem>,
+}
+
+/// One title of a list card's strip.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ListStripItem {
+    pub id: String,
+    pub title: String,
+    pub poster_path: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -439,6 +547,8 @@ pub struct RankedDto {
     pub watchers: u32,
     pub last_watched: String,
     pub ratings: Vec<PersonRating>,
+    /// Everyone in the Cerchia who logged it (rated or not): the ones missing from `ratings` saw it without a vote.
+    pub watched_by: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -498,6 +608,17 @@ pub struct YearReview {
     pub busiest_month: Option<Counted>,
     pub top_platform: Option<Counted>,
     pub title_of_the_year: Option<RankedDto>,
+    /// The pair that watched the most together (each title and day counted once per pair), null when nobody logged "with".
+    pub together_most: Option<TogetherDto>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct TogetherDto {
+    pub a: PersonDto,
+    pub b: PersonDto,
+    pub times: u32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -668,6 +789,8 @@ pub struct SerataPublicResult {
     pub drew: bool,
     #[ts(type = "number")]
     pub finished_at: i64,
+    /// An open invitation to the Serata's Cerchia (for a guest who wants to join after the result); `None` when there is none.
+    pub invite_code: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -675,6 +798,27 @@ pub struct SerataPublicResult {
 #[ts(export)]
 pub struct SerataCreated {
     pub code: String,
+}
+
+/// `GET /api/circles/:id/serate/services`: what the Cerchia can stream together (the services every member who set theirs has).
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CircleServices {
+    pub names: Vec<String>,
+    /// How many members have said which services they have.
+    pub set_by: u32,
+    pub members: u32,
+}
+
+/// `GET /api/circles/:id/serate/suggest`: a roster the group would want (watchlist + what it would love, minus what most have seen
+/// and what it cannot stream together), and for each title which of the shared services carry it.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct SerataSuggest {
+    pub titles: Vec<MediaDto>,
+    pub on: std::collections::HashMap<String, Vec<String>>,
 }
 /// One import run (one press of "Importa", possibly resumed over several requests).
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -695,6 +839,10 @@ pub struct ImportBatchDto {
     pub new_titles: u32,
     pub lists: u32,
     pub failed_rows: u32,
+    /// Viewings of this import that its Cerchia can still see (0 once it was taken out).
+    pub in_circle: u32,
+    /// Group lists of this import still in the Cerchia.
+    pub lists_in_circle: u32,
     #[ts(type = "number")]
     pub created_at: i64,
     #[ts(type = "number | null")]
@@ -746,6 +894,44 @@ pub struct ImportUndone {
     pub viewings: u32,
     /// Group lists turned personal, or deleted.
     pub lists: u32,
+}
+
+/// What the server can do for an import.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ImportConfig {
+    /// TMDB is on: films come with their poster. Off: they are imported without one.
+    pub tmdb: bool,
+}
+
+/// The two tabs of the personal diary: everything, and what no Cerchia sees.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct DiaryCounts {
+    pub all: u32,
+    pub private: u32,
+}
+
+/// A day (UTC) on which many viewings were added with no import run: older imports are only recognisable like this.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct BulkDayDto {
+    /// YYYY-MM-DD, UTC.
+    pub day: String,
+    pub logs: u32,
+    /// How many of those viewings some Cerchia can still see.
+    pub in_circles: u32,
+}
+
+/// What a bulk day lost: viewings taken out of the Cerchie (hide) or deleted.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct BulkDayUndone {
+    pub viewings: u32,
 }
 /// Every error body the API returns. `code` is stable and machine-readable; the client translates it.
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -854,6 +1040,29 @@ pub struct AdminMetrics {
     pub open_reports: f64,
     pub cards_shared_7d: f64,
     pub invites_shared_7d: f64,
+    /// The early success numbers (rates are 0..1; `null` = not enough data yet, which is not the same as zero).
+    /// Share of people signed up 7+ days ago who created or joined a Cerchia within 7 days of signing up.
+    pub circle_within_7d: Option<f64>,
+    pub circle_within_7d_cohort: f64,
+    /// Viewings per Cerchia per week, over the Cerchie that logged something that week (last 4 weeks).
+    pub logs_per_active_circle_week: Option<f64>,
+    /// Share of Cerchie with at least one group list.
+    pub circles_using_lists: Option<f64>,
+    /// Seconds from opening a Serata to its result: the median, the share under 120 s, and how many finished.
+    pub serata_median_seconds: Option<f64>,
+    pub serata_under_120: Option<f64>,
+    pub serata_finished: f64,
+    /// Share of finished Serate whose Card / invite link was shared at least once.
+    pub serata_card_rate: Option<f64>,
+    pub serata_invite_rate: Option<f64>,
+    /// Share of Cerchie (old enough to measure) with activity in the week that starts 7 / 30 days after creation.
+    pub retention_d7: Option<f64>,
+    pub retention_d7_eligible: f64,
+    pub retention_d30: Option<f64>,
+    pub retention_d30_eligible: f64,
+    /// Share of people in a Cerchia who ever used "Sto guardando".
+    pub now_watching_rate: Option<f64>,
+    pub now_watching_people: f64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -870,4 +1079,18 @@ pub struct BlockedUser {
 #[ts(export)]
 pub struct BlockedUsers {
     pub blocked: Vec<BlockedUser>,
+}
+
+/// A title as one Cerchia sees it (title page inside a Cerchia): the original name, where its text came from, and what the
+/// Cerchia's current ratings add up to.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CircleMediaDto {
+    pub original_title: String,
+    /// `tmdb`, `anilist`, `user` or `none`: who wrote the synopsis (decides the catalogue credit and "added by a member").
+    pub source: String,
+    /// Mean of the members' current ratings of the title, in half stars (1..10), rounded; `None` when nobody rated it.
+    pub average: Option<i64>,
+    pub rated: i64,
 }

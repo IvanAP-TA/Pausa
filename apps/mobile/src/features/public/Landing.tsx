@@ -1,35 +1,19 @@
-import type { ReactNode } from "react";
-import { View } from "react-native";
+// The landing, exported with NO JavaScript. Everything legacy did with a script is CSS or native HTML here (see landing-css.ts):
+// theme toggle, the Serata demo, FAQ, install help, progress line, reveal, how-it-works crossfade, sticky CTA.
+import type { CSSProperties } from "react";
+import { Platform } from "react-native";
 import { useI18n, type Locale } from "@/i18n";
 import { SITE_URL, publicUrl } from "@/seo/site";
 import { JsonLd, orgNode, websiteNode } from "@/seo/jsonld";
-import { hair, space, useTheme } from "@/theme";
-import { Button } from "@/ui/Button";
-import { Heading, Text, Title } from "@/ui/Text";
-import { Container, PublicPage } from "./PublicPage";
+import { Footer, Header, InstallApp, Plus, StickyCta } from "./LandingChrome";
+import { MockInvite, MockLogCard, MockMatchup, MockResultCard } from "./LandingMocks";
+import { LANDING_CSS } from "./landing-css";
+import { PublicPage } from "./PublicPage";
+import { TryDemo } from "./TryDemo";
 
 type Step = { title: string; body: string };
 type Faq = { q: string; a: string };
-
-function Section({ id, children }: { id?: string; children: ReactNode }) {
-  const { c } = useTheme();
-  return (
-    <View nativeID={id} style={{ borderTopWidth: hair, borderColor: c.rule, marginTop: space["2xl"], paddingTop: space.xl }}>
-      <Container style={{ gap: space.lg }}>{children}</Container>
-    </View>
-  );
-}
-
-/** One row: a title in display type and the sentence beside or under it. Rows are parted by hairlines, not boxed. */
-function Item({ title, body }: Step) {
-  const { c } = useTheme();
-  return (
-    <View style={{ borderBottomWidth: hair, borderColor: c.rule, paddingVertical: space.md, gap: space.xs }}>
-      <Heading level={3}>{title}</Heading>
-      <Text tone="ink2" style={{ maxWidth: 640 }}>{body}</Text>
-    </View>
-  );
-}
+const delay = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
 /** The landing's structured data: the four nodes of INVENTORY 1.3 (Organization, WebSite, WebApplication, FAQPage). */
 export function landingNodes(locale: Locale, description: string, faq: Faq[]) {
@@ -59,81 +43,183 @@ export function landingNodes(locale: Locale, description: string, faq: Faq[]) {
 
 export function LandingBody({ locale }: { locale: Locale }) {
   const { t, raw, href } = useI18n();
+  if (Platform.OS !== "web") return null; // public pages exist only as static HTML
+  const signIn = href("/sign-in");
   const steps = raw<Step[]>("landing.how.steps");
   const features = raw<Step[]>("landing.features.items");
   const guestSteps = raw<string[]>("landing.guest.steps");
   const privacy = raw<Step[]>("landing.privacy.items");
   const faq = raw<Faq[]>("landing.faq.items");
+  const visuals = [<MockInvite key="1" />, <MockLogCard key="2" />, <MockMatchup key="3" />];
   return (
-    <>
+    <div className="lp lp-root">
+      <style dangerouslySetInnerHTML={{ __html: LANDING_CSS }} />
       <JsonLd nodes={landingNodes(locale, t("landing.meta.description"), faq)} />
-      <Container style={{ paddingTop: space["2xl"], gap: space.lg }}>
-        <Heading level={1} hero>{t("landing.hero.title")}</Heading>
-        <Text variant="lead" tone="ink2" style={{ maxWidth: 620 }}>{t("landing.hero.lede")}</Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-          <Button label={t("landing.hero.cta")} href={href("/sign-in")} />
-          <Button label={t("landing.footer.guides")} href={href("/guide")} variant="secondary" />
-        </View>
-        <Text variant="small" tone="muted" style={{ maxWidth: 560 }}>{t("landing.hero.note")}</Text>
-      </Container>
+      <Header locale={locale} signIn={signIn} />
 
-      <Section>
-        <Heading level={2} style={{ maxWidth: 900 }}>{t("landing.problem.title")}</Heading>
-        <Text variant="lead" tone="ink2" style={{ maxWidth: 640 }}>{t("landing.problem.body")}</Text>
-      </Section>
+      <main id="main">
+        {/* hero: the headline, one sentence, the actions; the app's own plates beside it */}
+        <section id="hero" className="lp-hero lp-sec" aria-labelledby="hero-title">
+          <div className="lp-wrap lp-cols lp-hero-grid">
+            <div className="lp-min0 lp-s8">
+              <h1 id="hero-title" className="lp-rise" style={delay(40)}>{t("landing.hero.title")}</h1>
+              <p className="lp-rise lp-lead" style={{ ...delay(120), marginTop: 20, maxWidth: "62ch" }}>{t("landing.hero.lede")}</p>
+              <div className="lp-rise lp-hero-actions" style={delay(200)}>
+                <a href={signIn} className="lp-btn lp-btn-primary lp-btn-lg lp-btn-block">{t("landing.hero.cta")}</a>
+                <InstallApp variant="button" />
+              </div>
+              <p className="lp-rise lp-note" style={delay(280)}>{t("landing.hero.note")}</p>
+            </div>
+            <div className="lp-rise lp-min0 lp-s4" style={delay(160)} aria-hidden="true">
+              <MockLogCard />
+              <div className="lp-mhead">
+                <MockMatchup />
+                <div className="lp-mres"><MockResultCard /></div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-      <Section id="how">
-        <Heading level={2}>{t("landing.how.title")}</Heading>
-        <View>{steps.map((s, i) => <Item key={i} title={`${i + 1}. ${s.title}`} body={s.body} />)}</View>
-      </Section>
+        {/* problem: a statement on a grained well */}
+        <section className="lp-well lp-grained lp-problem" aria-labelledby="problem">
+          <div className="lp-wrap" data-reveal>
+            <h2 id="problem" className="lp-head" style={{ maxWidth: "68rem" }}>{t("landing.problem.title")}</h2>
+            <div className="lp-cols">
+              <p className="lp-lead lp-s6 lp-st7">{t("landing.problem.body")}</p>
+            </div>
+          </div>
+        </section>
 
-      <Section>
-        <Heading level={2} style={{ maxWidth: 900 }}>{t("landing.features.title")}</Heading>
-        <View>{features.map((f, i) => <Item key={i} {...f} />)}</View>
-      </Section>
+        {/* how it works: a pinned plate beside the three steps (crossfade driven by scroll where the browser can) */}
+        <section id="how" className="lp-how lp-sec" aria-labelledby="how-title">
+          <div className="lp-wrap">
+            <h2 id="how-title" className="lp-head" data-reveal style={{ maxWidth: "60rem" }}>{t("landing.how.title")}</h2>
+            <div className="lp-how-grid">
+              <ol className="lp-how-steps">
+                {steps.map((s, i) => (
+                  <li key={i} className={`lp-step lp-s${i + 1}`}>
+                    <div className="lp-step-row" data-reveal>
+                      <span aria-hidden="true" className="lp-figure lp-poster">{i + 1}</span>
+                      <div style={{ minWidth: 0 }}>
+                        <h3 className="lp-title">{s.title}</h3>
+                        <p>{s.body}</p>
+                      </div>
+                    </div>
+                    <div className="lp-step-vis" aria-hidden="true">{visuals[i]}</div>
+                  </li>
+                ))}
+              </ol>
+              <div className="lp-how-side" aria-hidden="true">
+                <div className="lp-how-pin">
+                  {visuals.map((v, i) => (
+                    <div key={i} className={`lp-how-vis lp-v${i + 1}`}><div>{v}</div></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-      <Section>
-        <Heading level={2}>{t("landing.guest.title")}</Heading>
-        <Text tone="ink2" style={{ maxWidth: 640 }}>{t("landing.guest.body")}</Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.md }}>
-          {guestSteps.map((s, i) => (
-            <View key={i} style={{ flexDirection: "row", alignItems: "baseline", gap: space.xs }}>
-              <Title tone="accent">{i + 1}</Title>
-              <Text tone="ink2">{s}</Text>
-            </View>
-          ))}
-        </View>
-      </Section>
+        {/* features: a collector's sheet, rows under full-width hairlines */}
+        <section className="lp-features" aria-labelledby="features">
+          <div className="lp-wrap">
+            <h2 id="features" className="lp-head" data-reveal style={{ maxWidth: "60rem" }}>{t("landing.features.title")}</h2>
+            <ul className="lp-rows">
+              {features.map((f, i) => (
+                <li key={i} data-reveal>
+                  <h3 className="lp-title">{f.title}</h3>
+                  <p>{f.body}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
 
-      <Section id="privacy">
-        <Heading level={2}>{t("landing.privacy.title")}</Heading>
-        <View>{privacy.map((p, i) => <Item key={i} {...p} />)}</View>
-      </Section>
+        {/* try it: the head beside the working Serata, on a well */}
+        <section id="try" className="lp-well lp-try lp-sec" aria-labelledby="try-title">
+          <div className="lp-wrap lp-cols">
+            <div className="lp-min0 lp-s5" data-reveal>
+              <h2 id="try-title" className="lp-head">{t("landing.try.title")}</h2>
+              <p className="lp-lead" style={{ marginTop: 24, maxWidth: "44ch" }}>{t("landing.try.body")}</p>
+            </div>
+            <div className="lp-min0 lp-s6 lp-st7" data-reveal>
+              <TryDemo ctaHref={signIn} />
+            </div>
+          </div>
+        </section>
 
-      <Section id="faq">
-        <Heading level={2}>{t("landing.faq.title")}</Heading>
-        <View>
-          {faq.map((f, i) => (
-            <View key={i} style={{ paddingVertical: space.md, gap: space.xs }}>
-              <Heading level={3}>{f.q}</Heading>
-              <Text tone="ink2" style={{ maxWidth: 640 }}>{f.a}</Text>
-            </View>
-          ))}
-        </View>
-      </Section>
+        {/* guests: a contact strip, numerals parted by vertical hairlines */}
+        <section className="lp-guest" aria-labelledby="guest">
+          <div className="lp-wrap">
+            <div className="lp-cols">
+              <h2 id="guest" className="lp-head lp-s7" data-reveal>{t("landing.guest.title")}</h2>
+              <p className="lp-lead lp-s4 lp-st9" data-reveal>{t("landing.guest.body")}</p>
+            </div>
+            <ol>
+              {guestSteps.map((s, i) => (
+                <li key={i} data-reveal>
+                  <span aria-hidden="true" className="lp-figure lp-poster">{i + 1}</span>
+                  <span className="lp-title">{s}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
 
-      <Section>
-        <Heading level={2}>{t("landing.final.title")}</Heading>
-        <Text variant="lead" tone="ink2" style={{ maxWidth: 560 }}>{t("landing.final.body")}</Text>
-        <Button label={t("landing.hero.cta")} href={href("/sign-in")} />
-      </Section>
-    </>
+        {/* privacy: the head held on the left, the facts as rows */}
+        <section id="privacy" className="lp-privacy lp-sec" aria-labelledby="privacy-title">
+          <div className="lp-wrap lp-cols">
+            <h2 id="privacy-title" className="lp-head lp-privacy-head lp-s4" data-reveal>{t("landing.privacy.title")}</h2>
+            <ul className="lp-rows lp-s7 lp-st6">
+              {privacy.map((p, i) => (
+                <li key={i} data-reveal>
+                  <h3 className="lp-title">{p.title}</h3>
+                  <p>{p.body}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* FAQ: hairline rows, a plus that turns */}
+        <section id="faq" className="lp-faq lp-sec" aria-labelledby="faq-title">
+          <div className="lp-wrap">
+            <h2 id="faq-title" className="lp-head" data-reveal>{t("landing.faq.title")}</h2>
+            <div className="lp-rows" data-reveal>
+              {faq.map((f, i) => (
+                <details key={i}>
+                  <summary>
+                    <span className="lp-title">{f.q}</span>
+                    <Plus />
+                  </summary>
+                  <p>{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* final call: a grained well, the one amber control */}
+        <section id="final" className="lp-well lp-grained lp-final" aria-labelledby="final-title">
+          <div className="lp-wrap lp-cols" data-reveal>
+            <h2 id="final-title" className="lp-head lp-s8">{t("landing.final.title")}</h2>
+            <div className="lp-final-side lp-s4">
+              <p className="lp-lead">{t("landing.final.body")}</p>
+              <a href={signIn} className="lp-btn lp-btn-primary lp-btn-lg lp-btn-block">{t("landing.hero.cta")}</a>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <Footer locale={locale} />
+      <StickyCta href={signIn} />
+    </div>
   );
 }
 
 export function Landing({ locale }: { locale: Locale }) {
   return (
-    <PublicPage locale={locale}>
+    <PublicPage locale={locale} ownLandmarks>
       <LandingBody locale={locale} />
     </PublicPage>
   );

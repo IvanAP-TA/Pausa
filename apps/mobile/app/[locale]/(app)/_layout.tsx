@@ -1,7 +1,8 @@
-import { Redirect, Slot, useLocalSearchParams } from "expo-router";
+import { Redirect, Slot, useLocalSearchParams, type ErrorBoundaryProps } from "expo-router";
 import { useEffect } from "react";
 import { DEFAULT_LOCALE, I18nProvider, LOCALES, isLocale } from "@/i18n";
 import { Shell } from "@/features/Shell";
+import { ErrorPage } from "@/features/public/ErrorPage";
 import { OutboxProvider } from "@/features/offline/OutboxProvider";
 import { SessionProvider } from "@/features/session";
 import { ShellFallback } from "@/features/ShellFallback";
@@ -10,6 +11,12 @@ import { loadMotion } from "@/ui/motion";
 
 /** Expo Router expands the dynamic segment at the layout that owns it: every private screen is exported once per language. */
 export const generateStaticParams = () => LOCALES.map((locale) => ({ locale }));
+
+/** A screen threw: the quiet "something jammed" page with a retry (legacy error.tsx). It replaces the whole layout, so it brings its own strings. */
+export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
+  const { locale } = useLocalSearchParams<{ locale: string }>();
+  return <ErrorPage locale={isLocale(locale) ? locale : DEFAULT_LOCALE} kind="error" deferred onRetry={() => void retry()} />;
+}
 
 /**
  * The private app shell: the person's own screens. Strings load on demand (one chunk per locale), the session is checked once,

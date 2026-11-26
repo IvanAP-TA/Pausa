@@ -4,9 +4,10 @@ use crate::catalog;
 use crate::diary::{locale_of, num, query_param};
 use crate::http::{body, finish, json, no_content, now_ms, Fail, R};
 use crate::session;
+use pausa_core::catalog::Key;
 use pausa_core::diary::{advance, clamp_position};
 use pausa_core::dto::{
-    CastDto, ErrorCode, MediaDetailDto, MediaDto, Position, ProgressDto, ProgressNext, SeasonDto,
+    CastDto, ErrorCode, IdOnly, Locale, MediaDetailDto, MediaDto, Position, ProgressDto, ProgressNext, SeasonDto,
 };
 use serde::Deserialize;
 use worker::wasm_bindgen::JsValue;
@@ -25,6 +26,36 @@ async fn search_inner(req: &Request, env: &Env) -> R<Response> {
         &catalog::search(env, &db, &s.user_id, &q, locale_of(req)).await?,
         200,
     )
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ResolveIn {
+    media_key: String,
+    locale: Option<String>,
+}
+
+/// `POST /api/media/resolve {mediaKey, locale?}`: the stored id of a chosen search result, creating the title from the
+/// catalogue the first time (what "now watching" needs before it can write a position).
+pub async fn resolve(mut req: Request, env: Env) -> Result<Response> {
+    finish(resolve_inner(&mut req, &env).await)
+}
+
+async fn resolve_inner(req: &mut Request, env: &Env) -> R<Response> {
+    let db = env.d1("DB")?;
+    let s = session::require(req, &db).await?;
+    if s.is_anonymous {
+        return Err(Fail::new(ErrorCode::Forbidden, 403));
+    }
+    let input: ResolveIn = body(req).await?;
+    let key = Key::parse(&input.media_key).ok_or_else(Fail::invalid)?;
+    let locale = input
+        .locale
+        .as_deref()
+        .and_then(Locale::from_code)
+        .unwrap_or_else(|| locale_of(req));
+    let id = catalog::resolve(env, &db, &s.user_id, &key, locale).await?;
+    json(&IdOnly { id }, 200)
 }
 
 #[derive(Deserialize)]

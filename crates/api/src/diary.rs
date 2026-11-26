@@ -9,7 +9,7 @@ use pausa_core::diary::{
     clamp_position, clean_log, date_of_ms, sets_title_rating, LogError, LogInput, MAX_WATCHED_WITH,
 };
 use pausa_core::dto::{
-    CommentDto, ErrorCode, Locale, LogCreated, LogDto, LogPage, LogThread, MediaDto, PersonDto,
+    CommentDto, DiaryCounts, ErrorCode, LastCommentDto, Locale, LogCreated, LogDto, LogPage, LogThread, MediaDto, PersonDto,
     ReactionCount, Removed,
 };
 use pausa_core::limits;
@@ -179,6 +179,8 @@ struct CreateIn {
     #[serde(default)]
     circles: Vec<String>,
     locale: Option<String>,
+    /// A synopsis written by the person, kept only when the catalogue has none for the title in that language.
+    overview: Option<String>,
 }
 
 impl LogIn {
@@ -227,6 +229,15 @@ async fn create_inner(req: &mut Request, env: &Env) -> R<Response> {
         return Err(Fail::invalid());
     }
     let key = Key::parse(&input.media_key).ok_or_else(Fail::invalid)?;
+    let user_overview = input
+        .overview
+        .as_deref()
+        .map(str::trim)
+        .filter(|o| !o.is_empty())
+        .map(str::to_string);
+    if user_overview.as_ref().is_some_and(|o| o.chars().count() > 1200) {
+        return Err(Fail::invalid());
+    }
     let locale = input
         .locale
         .as_deref()
@@ -316,6 +327,17 @@ async fn create_inner(req: &mut Request, env: &Env) -> R<Response> {
                    AND NOT EXISTS (SELECT 1 FROM notification_off o WHERE o.user_id = m.user_id AND o.type = 'log')",
             )
             .bind(&[s.user_id.as_str().into(), c.as_str().into(), log_id.as_str().into(), media_id.as_str().into(), num(now)])?,
+        );
+    }
+    if let Some(o) = &user_overview {
+        let loc = catalog::locale_code(locale);
+        stmts.push(
+            db.prepare("INSERT OR IGNORE INTO media_detail(media_id, locale, overview, genres, \"cast\", source, fetched_at) VALUES (?1, ?2, ?3, '[]', '[]', 'user', ?4)")
+                .bind(&[media_id.as_str().into(), loc.into(), o.as_str().into(), num(now)])?,
+        );
+        stmts.push(
+            db.prepare("UPDATE media_detail SET overview = ?3, source = 'user' WHERE media_id = ?1 AND locale = ?2 AND (overview IS NULL OR trim(overview) = '')")
+                .bind(&[media_id.as_str().into(), loc.into(), o.as_str().into()])?,
         );
     }
     if sets_title_rating(season, episode) && clean.rating.is_some() {
@@ -631,6 +653,20 @@ struct LogRow {
     comments: i64,
     reactions: String,
     shared_in: String,
+    runtime_min: Option<i64>,
+    overview: Option<String>,
+    genres: Option<String>,
+    watched_with: String,
+    last_comment: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct LastCommentJson {
+    id: String,
+    name: String,
+    image: Option<String>,
+    body: Option<String>,
+    sp: i64,
 }
 
 #[derive(Deserialize)]
@@ -641,7 +677,8 @@ struct ReactionJson {
 }
 
 const LOG_COLS: &str = "l.id, l.user_id, u.name AS user_name, u.image AS user_image, l.media_id, e.kind, e.original_title, mt.title AS loc_title, \
-    e.year, e.poster_path, l.watched_on, l.rating, l.review, l.contains_spoilers, l.platform, l.season, l.episode, l.is_rewatch";
+    e.year, e.poster_path, l.watched_on, l.rating, l.review, l.contains_spoilers, l.platform, l.season, l.episode, l.is_rewatch, \
+    e.runtime_min, md.overview, md.genres";
 
 fn to_dto(r: LogRow, viewer: &str, reveal: bool) -> LogDto {
     let hidden = r.contains_spoilers != 0 && r.user_id != viewer && !reveal && r.review.is_some();
@@ -680,6 +717,21 @@ fn to_dto(r: LogRow, viewer: &str, reveal: bool) -> LogDto {
             })
             .collect(),
         shared_in: serde_json::from_str(&r.shared_in).unwrap_or_default(),
+        runtime_min: r.runtime_min,
+        genres: r.genres.as_deref().and_then(|g| serde_json::from_str(g).ok()).unwrap_or_default(),
+        overview: r.overview.filter(|o| !o.trim().is_empty()),
+        watched_with: serde_json::from_str(&r.watched_with).unwrap_or_default(),
+        last_comment: r.last_comment.as_deref().and_then(|j| serde_json::from_str::<LastCommentJson>(j).ok()).map(|c| LastCommentDto {
+            author: PersonDto { id: c.id, name: c.name, image: c.image },
+            body: c.body.map(|b| {
+                if b.chars().count() > 180 {
+                    format!("{}…", b.chars().take(180).collect::<String>().trim_end())
+                } else {
+                    b
+                }
+            }),
+            is_spoiler: c.sp != 0,
+        }),
     }
 }
 
@@ -706,14 +758,17 @@ async fn my_diary_inner(req: &Request, env: &Env) -> R<Response> {
     };
     let sql = format!(
         "SELECT {LOG_COLS}, l.created_at AS arrived_at, 0 AS comments, '[]' AS reactions, \
-           (SELECT json_group_array(circle_id) FROM log_share WHERE log_id = l.id) AS shared_in \
+           (SELECT json_group_array(circle_id) FROM log_share WHERE log_id = l.id) AS shared_in, \
+           (SELECT json_group_array(json_object('id', wu.id, 'name', wu.name, 'image', wu.image)) FROM (SELECT u2.id, u2.name, u2.image FROM log_watched_with w JOIN user u2 ON u2.id = w.user_id WHERE w.log_id = l.id ORDER BY u2.name) wu) AS watched_with, NULL AS last_comment \
          FROM log l JOIN user u ON u.id = l.user_id JOIN media_entity e ON e.id = l.media_id \
-         LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?2 \
+         LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?2 LEFT JOIN media_detail md ON md.media_id = e.id AND md.locale = ?2 \
          WHERE l.user_id = ?1 AND (?3 IS NULL OR l.watched_on < ?3 OR (l.watched_on = ?3 AND (l.created_at < ?4 OR (l.created_at = ?4 AND l.id < ?5)))) AND (?6 IS NULL OR l.media_id = ?6) \
+           AND (?7 = 0 OR NOT EXISTS (SELECT 1 FROM log_share ps WHERE ps.log_id = l.id)) \
          ORDER BY l.watched_on DESC, l.created_at DESC, l.id DESC LIMIT {}",
         PAGE + 1
     );
     let media = query_param(req, "mediaId");
+    let only_private = query_param(req, "only").as_deref() == Some("private");
     let rows = db
         .prepare(sql)
         .bind(&[
@@ -723,6 +778,7 @@ async fn my_diary_inner(req: &Request, env: &Env) -> R<Response> {
             c_at,
             c_id,
             media.as_deref().map_or(JsValue::NULL, JsValue::from),
+            num(i64::from(only_private)),
         ])?
         .all()
         .await?
@@ -740,6 +796,58 @@ async fn my_diary_inner(req: &Request, env: &Env) -> R<Response> {
         .map(|r| to_dto(r, &s.user_id, true))
         .collect();
     json(&LogPage { items, next }, 200)
+}
+
+#[derive(Deserialize)]
+struct DiaryCountRow {
+    all_n: i64,
+    private_n: i64,
+}
+
+/// `GET /api/me/diary/counts`: how many viewings I have, and how many of them no Cerchia sees (the diary's two tabs).
+pub async fn my_diary_counts(req: Request, env: Env) -> Result<Response> {
+    finish(my_diary_counts_inner(&req, &env).await)
+}
+
+async fn my_diary_counts_inner(req: &Request, env: &Env) -> R<Response> {
+    let db = env.d1("DB")?;
+    let s = session::require(req, &db).await?;
+    let row = db
+        .prepare(
+            "SELECT COUNT(*) AS all_n, \
+               COALESCE(SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM log_share ps WHERE ps.log_id = l.id) THEN 1 ELSE 0 END), 0) AS private_n \
+             FROM log l WHERE l.user_id = ?1",
+        )
+        .bind(&[s.user_id.as_str().into()])?
+        .first::<DiaryCountRow>(None)
+        .await?;
+    let (all, private) = row.map_or((0, 0), |r| (r.all_n as u32, r.private_n as u32));
+    json(&DiaryCounts { all, private }, 200)
+}
+
+/// `GET /api/logs/:id?locale=`: one of my own viewings (shared or not), with everyone tagged and every Cerchia it is shared with.
+/// Only the author can read it this way; for anyone else the viewing does not exist.
+pub async fn get_own(req: Request, env: Env, log_id: &str) -> Result<Response> {
+    finish(get_own_inner(&req, &env, log_id).await)
+}
+
+async fn get_own_inner(req: &Request, env: &Env, log_id: &str) -> R<Response> {
+    let db = env.d1("DB")?;
+    let s = session::require(req, &db).await?;
+    let locale = locale_of(req);
+    let sql = format!(
+        "SELECT {LOG_COLS}, l.created_at AS arrived_at, 0 AS comments, '[]' AS reactions,            (SELECT json_group_array(circle_id) FROM log_share WHERE log_id = l.id) AS shared_in,            (SELECT json_group_array(json_object('id', wu.id, 'name', wu.name, 'image', wu.image)) FROM (SELECT u2.id, u2.name, u2.image FROM log_watched_with w JOIN user u2 ON u2.id = w.user_id WHERE w.log_id = l.id ORDER BY u2.name) wu) AS watched_with, NULL AS last_comment          FROM log l JOIN user u ON u.id = l.user_id JOIN media_entity e ON e.id = l.media_id          LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?3 LEFT JOIN media_detail md ON md.media_id = e.id AND md.locale = ?3          WHERE l.id = ?1 AND l.user_id = ?2"
+    );
+    let row = db
+        .prepare(sql)
+        .bind(&[log_id.into(), s.user_id.as_str().into(), catalog::locale_code(locale).into()])?
+        .all()
+        .await?
+        .results::<LogRow>()?
+        .into_iter()
+        .next()
+        .ok_or_else(Fail::not_found)?;
+    json(&to_dto(row, &s.user_id, true), 200)
 }
 
 /// `GET /api/circles/:id/feed?before=&person=&kind=&year=&platform=&minRating=&locale=`: what this Cerchia was shown, newest
@@ -799,6 +907,39 @@ async fn feed_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response> {
     if let Some(y) = query_param(req, "year").and_then(|y| y.parse::<i64>().ok()) {
         add(&mut filters, &mut args, " AND e.year = ?", num(y));
     }
+    // v1 "Anno" in the diary filters: the year it was WATCHED (`year` above is the release year, kept for the API).
+    if let Some(y) = query_param(req, "watchedYear")
+        .and_then(|y| y.parse::<i64>().ok())
+        .filter(|y| (1900..2200).contains(y))
+    {
+        add(&mut filters, &mut args, " AND l.watched_on >= ?", format!("{y:04}-01-01").into());
+        add(&mut filters, &mut args, " AND l.watched_on < ?", format!("{:04}-01-01", y + 1).into());
+    }
+    // "Visto con": one person who was there.
+    if let Some(w) = query_param(req, "with") {
+        add(
+            &mut filters,
+            &mut args,
+            " AND EXISTS (SELECT 1 FROM log_watched_with ww WHERE ww.log_id = l.id AND ww.user_id = ?)",
+            w.as_str().into(),
+        );
+    }
+    // One title (its page inside the Cerchia).
+    if let Some(m) = query_param(req, "mediaId") {
+        add(&mut filters, &mut args, " AND l.media_id = ?", m.as_str().into());
+    }
+    // Text search on the title: the localized one or the original, any part, any case (v1: LIKE with % _ \ escaped).
+    if let Some(q) = query_param(req, "q")
+        .map(|q| q.trim().to_lowercase().chars().take(80).collect::<String>())
+        .filter(|q| !q.is_empty())
+    {
+        let pat = format!("%{}%", q.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_"));
+        args.push(pat.into());
+        let n = args.len();
+        filters.push_str(&format!(
+            " AND (lower(COALESCE(mt.title, '')) LIKE ?{n} ESCAPE '\\' OR lower(e.original_title) LIKE ?{n} ESCAPE '\\')"
+        ));
+    }
     if let Some(p) = query_param(req, "platform") {
         add(
             &mut filters,
@@ -818,11 +959,13 @@ async fn feed_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response> {
            (SELECT COUNT(*) FROM comment WHERE log_id = l.id AND circle_id = ?1) AS comments, \
            (SELECT json_group_array(json_object('e', emoji, 'c', cnt, 'm', mine)) FROM \
               (SELECT emoji, COUNT(*) AS cnt, MAX(user_id = ?2) AS mine FROM reaction WHERE log_id = l.id AND circle_id = ?1 GROUP BY emoji)) AS reactions, \
-           '[]' AS shared_in \
+           '[]' AS shared_in, \
+           (SELECT json_group_array(json_object('id', wu.id, 'name', wu.name, 'image', wu.image)) FROM (SELECT u2.id, u2.name, u2.image FROM log_watched_with w JOIN user u2 ON u2.id = w.user_id JOIN circle_member m2 ON m2.user_id = w.user_id AND m2.circle_id = ?1 WHERE w.log_id = l.id ORDER BY u2.name) wu) AS watched_with, \
+           (SELECT json_object('id', cu.id, 'name', cu.name, 'image', cu.image, 'body', CASE WHEN c.is_spoiler THEN NULL ELSE substr(c.body, 1, 181) END, 'sp', c.is_spoiler) FROM comment c JOIN user cu ON cu.id = c.user_id WHERE c.log_id = l.id AND c.circle_id = ?1 AND c.user_id NOT IN (SELECT blocked_id FROM user_block WHERE blocker_id = ?2) ORDER BY c.created_at DESC, c.id DESC LIMIT 1) AS last_comment \
          FROM log_share s JOIN log l ON l.id = s.log_id \
            JOIN circle_member m ON m.circle_id = s.circle_id AND m.user_id = l.user_id \
            JOIN user u ON u.id = l.user_id JOIN media_entity e ON e.id = l.media_id \
-           LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?3 \
+           LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?3 LEFT JOIN media_detail md ON md.media_id = e.id AND md.locale = ?3 \
          WHERE s.circle_id = ?1 AND l.user_id NOT IN (SELECT blocked_id FROM user_block WHERE blocker_id = ?2){filters} ORDER BY s.created_at DESC, l.id DESC LIMIT {}",
         PAGE + 1
     );
@@ -885,10 +1028,11 @@ async fn thread_inner(req: &Request, env: &Env, circle_id: &str, log_id: &str) -
                    (SELECT COUNT(*) FROM comment WHERE log_id = l.id AND circle_id = ?1) AS comments, \
                    (SELECT json_group_array(json_object('e', emoji, 'c', cnt, 'm', mine)) FROM \
                       (SELECT emoji, COUNT(*) AS cnt, MAX(user_id = ?2) AS mine FROM reaction WHERE log_id = l.id AND circle_id = ?1 GROUP BY emoji)) AS reactions, \
-                   '[]' AS shared_in \
+                   '[]' AS shared_in, \
+                   (SELECT json_group_array(json_object('id', wu.id, 'name', wu.name, 'image', wu.image)) FROM (SELECT u2.id, u2.name, u2.image FROM log_watched_with w JOIN user u2 ON u2.id = w.user_id JOIN circle_member m2 ON m2.user_id = w.user_id AND m2.circle_id = ?1 WHERE w.log_id = l.id ORDER BY u2.name) wu) AS watched_with, NULL AS last_comment \
                  FROM log_share s JOIN log l ON l.id = s.log_id JOIN circle_member m ON m.circle_id = s.circle_id AND m.user_id = l.user_id \
                    JOIN user u ON u.id = l.user_id JOIN media_entity e ON e.id = l.media_id \
-                   LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?4 WHERE s.circle_id = ?1 AND l.id = ?3 AND l.user_id NOT IN (SELECT blocked_id FROM user_block WHERE blocker_id = ?2)"
+                   LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?4 LEFT JOIN media_detail md ON md.media_id = e.id AND md.locale = ?4 WHERE s.circle_id = ?1 AND l.id = ?3 AND l.user_id NOT IN (SELECT blocked_id FROM user_block WHERE blocker_id = ?2)"
             ))
             .bind(&[circle_id.into(), s.user_id.as_str().into(), log_id.into(), catalog::locale_code(locale).into()])?,
             db.prepare(
@@ -989,4 +1133,47 @@ pub fn rebuild_ratings(
         )
         .bind(&[user_id.into(), circle_id.into()])?,
     ])
+}
+
+#[derive(Deserialize)]
+struct CircleMediaRow {
+    original_title: String,
+    source: Option<String>,
+    average: Option<f64>,
+    rated: i64,
+}
+
+/// `GET /api/circles/:id/media/:mediaId?locale=`: the original title, the source of the synopsis and the Cerchia's average
+/// rating (members only, blocked authors left out). The viewings themselves come from the feed with `mediaId`.
+pub async fn circle_media(req: Request, env: Env, circle_id: &str, media_id: &str) -> Result<Response> {
+    finish(circle_media_inner(&req, &env, circle_id, media_id).await)
+}
+
+async fn circle_media_inner(req: &Request, env: &Env, circle_id: &str, media_id: &str) -> R<Response> {
+    let db = env.d1("DB")?;
+    let s = session::require(req, &db).await?;
+    crate::manage::my_role(&db, circle_id, &s.user_id).await?;
+    let loc = catalog::locale_code(locale_of(req));
+    let row = db
+        .prepare(
+            "SELECT e.original_title, md.source AS source, \
+               (SELECT AVG(r.rating) FROM rating_current r JOIN circle_member m ON m.circle_id = r.circle_id AND m.user_id = r.user_id \
+                WHERE r.circle_id = ?2 AND r.media_id = e.id AND r.user_id NOT IN (SELECT blocked_id FROM user_block WHERE blocker_id = ?4)) AS average, \
+               (SELECT COUNT(*) FROM rating_current r JOIN circle_member m ON m.circle_id = r.circle_id AND m.user_id = r.user_id \
+                WHERE r.circle_id = ?2 AND r.media_id = e.id AND r.user_id NOT IN (SELECT blocked_id FROM user_block WHERE blocker_id = ?4)) AS rated \
+             FROM media_entity e LEFT JOIN media_detail md ON md.media_id = e.id AND md.locale = ?3 WHERE e.id = ?1",
+        )
+        .bind(&[media_id.into(), circle_id.into(), loc.into(), s.user_id.as_str().into()])?
+        .first::<CircleMediaRow>(None)
+        .await?
+        .ok_or_else(Fail::not_found)?;
+    json(
+        &pausa_core::dto::CircleMediaDto {
+            original_title: row.original_title,
+            source: row.source.unwrap_or_else(|| "none".into()),
+            average: row.average.map(|a| a.round() as i64),
+            rated: row.rated,
+        },
+        200,
+    )
 }

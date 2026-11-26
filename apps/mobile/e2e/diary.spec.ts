@@ -19,8 +19,14 @@ const NEW = {
   rateLess: "Mezza stella in meno",
   needTwo: "Scrivi almeno due lettere.",
   future: "La data non può essere nel futuro.",
+  dateRequired: "Scegli la data.",
   spoilerGate: "Contiene spoiler · tocca per leggere",
   commentGate: "Commento con spoiler: apri per leggerlo",
+};
+/** Registra folds date, platform, episode and the rest behind "Aggiungi dettagli": open it (an edit starts open). */
+const openDetails = async (page: import("@playwright/test").Page) => {
+  const d = page.getByTestId("log-details");
+  if ((await d.getAttribute("aria-expanded")) !== "true") await d.click();
 };
 const ymd = (offsetDays: number) => {
   const d = new Date(Date.now() + offsetDays * 86_400_000);
@@ -76,7 +82,8 @@ test.describe("Registra", () => {
     await page.getByRole("button", { name: "Mezza stella in più" }).click();
     await expect(slider).toHaveAttribute("aria-valuenow", "7");
 
-    await page.getByRole("radio", { name: "2", exact: true }).click();
+    await openDetails(page);
+    await page.getByLabel(it.log.seasonLogged).selectOption("2");
     await page.getByLabel(it.log.episode, { exact: true }).fill("5");
     await page.getByLabel(it.log.review).fill("Bellissima stagione");
     await page.getByRole("checkbox", { name: "Netflix" }).click();
@@ -84,8 +91,8 @@ test.describe("Registra", () => {
     await page.waitForURL(new RegExp(`/it/c/${cid}/log/[^/?]+$`));
     threadUrl = new URL(page.url()).pathname;
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Breaking Bad");
-    await expect(page.getByTestId("review")).toHaveText("Bellissima stagione");
-    await expect(page.getByText("Stagione 2 · episodio 5")).toBeVisible();
+    await expect(page.locator('[data-testid^="review-"]')).toHaveText("Bellissima stagione");
+    await expect(page.getByText("S2·E5")).toBeVisible(); // the card says the facts on one line: "Serie, 2008, S2·E5, su Netflix"
     await expect(page.getByText("su Netflix")).toBeVisible();
     await expect(page.getByRole("img", { name: "3,5 stelle su 5" })).toBeVisible();
   });
@@ -95,10 +102,12 @@ test.describe("Registra", () => {
     await page.goto("/it/log");
     await page.getByLabel(it.log.search).fill("breaking");
     await page.getByRole("button", { name: /^Breaking Bad/ }).first().click();
-    await expect(page.getByRole("radio", { name: "2", exact: true })).toBeVisible(); // the season picker, from GET /api/media/:id
-    await expect(page.getByRole("radio", { name: "3", exact: true })).toHaveCount(0); // the mock series has two seasons
-    await page.getByRole("radio", { name: "2", exact: true }).click();
-    await expect(page.getByText("Stagione 2 (13 ep.)")).toBeVisible();
+    await openDetails(page);
+    const seasonSelect = page.getByLabel(it.log.seasonLogged);
+    await expect(seasonSelect.locator("option")).toHaveCount(3); // the season menu, from GET /api/media/:id: the whole show, 1 and 2 (the mock series has two seasons)
+    await expect(seasonSelect.locator("option").nth(2)).toHaveText("Stagione 2 (13 ep.)");
+    await seasonSelect.selectOption("2");
+    await expect(page.getByLabel(it.log.episode, { exact: true })).toHaveAttribute("placeholder", "1 / 13");
     await page.getByLabel(it.log.episode, { exact: true }).fill("14");
     await expect(page.getByText("Un numero da 1 a 13.")).toBeVisible();
     await page.getByTestId("submit-log").click();
@@ -107,8 +116,8 @@ test.describe("Registra", () => {
     await page.getByLabel(it.log.episode, { exact: true }).fill("3");
     await page.getByLabel(it.log.watchedOn).fill(ymd(2));
     await expect(page.getByText(NEW.future)).toBeVisible();
-    await page.getByLabel(it.log.watchedOn).fill("2026-02-30");
-    await expect(page.getByText("Scrivi la data così: 2026-11-25.")).toBeVisible();
+    await page.getByLabel(it.log.watchedOn).fill(""); // the browser's date picker cannot hold an impossible day, only an empty one
+    await expect(page.getByText(NEW.dateRequired)).toBeVisible();
     await page.getByRole("button", { name: "Ieri" }).click();
     await expect(page.getByText(NEW.future)).toHaveCount(0);
     await page.getByTestId("submit-log").click();
@@ -117,6 +126,7 @@ test.describe("Registra", () => {
     await page.goto("/it/log");
     await page.getByLabel(it.log.search).fill("breaking");
     await page.getByRole("button", { name: /^Breaking Bad/ }).first().click();
+    await openDetails(page);
     await expect(page.getByRole("checkbox", { name: "Netflix" })).toHaveAttribute("aria-checked", "true");
     await expect(page.getByLabel("Un'altra piattaforma")).toHaveValue("Netflix");
   });
@@ -126,13 +136,35 @@ test.describe("Registra", () => {
     await page.goto("/it/log");
     await page.getByLabel(it.log.search).fill("death note");
     await page.getByRole("button", { name: /^Death Note/ }).click();
-    await expect(page.getByRole("radio", { name: "1", exact: true })).toHaveCount(0); // no season list before the title exists
+    await openDetails(page);
+    await expect(page.getByLabel(it.log.seasonLogged)).toHaveCount(0); // no season menu before the title exists
     await page.getByLabel(it.log.season, { exact: true }).fill("1");
     await page.getByLabel(it.log.episode, { exact: true }).fill("2");
     await page.getByTestId("submit-log").click();
     await page.waitForURL(new RegExp(`/it/c/${cid}/log/`));
-    await expect(page.getByText("Stagione 1 · episodio 2")).toBeVisible();
-    await expect(page.getByText(it.kind.anime, { exact: true })).toBeVisible();
+    await expect(page.getByText("S1·E2")).toBeVisible();
+    await expect(page.getByText(it.kind.anime)).toBeVisible();
+  });
+
+  test("'Sto guardando' writes the position and no viewing; the synopsis shows; the way to the import is there", async () => {
+    const { page } = ann;
+    type Prog = Array<{ media: { id: string; title: string }; season: number | null; episode: number | null; status: string }>;
+    const before = (await api<Prog>(ann, "GET", "/api/me/progress")).json.find((x) => x.media.title === "Breaking Bad");
+    const logsBefore = (await api<{ items: unknown[] }>(ann, "GET", "/api/me/diary?locale=it")).json.items.length;
+    await page.goto("/it/log");
+    await expect(page.getByTestId("log-import")).toHaveAttribute("href", "/it/import");
+    await page.getByLabel(it.log.search).fill("breaking");
+    await page.getByRole("button", { name: /^Breaking Bad/ }).first().click();
+    await expect(page.getByTestId("overview")).toContainText("chimica"); // the synopsis of the catalogue, folded to two lines
+    await page.getByRole("radio", { name: it.log.modeWatching }).click();
+    await page.getByLabel(it.log.seasonLogged).selectOption("1");
+    await page.getByLabel(it.log.episode, { exact: true }).fill("4");
+    await page.getByTestId("submit-log").click();
+    await page.waitForURL(new RegExp(`/it/c/${cid}$`));
+    const after = (await api<Prog>(ann, "GET", "/api/me/progress")).json.find((x) => x.media.title === "Breaking Bad");
+    expect([after?.season, after?.episode, after?.status]).toEqual([1, 4, "watching"]);
+    expect((await api<{ items: unknown[] }>(ann, "GET", "/api/me/diary?locale=it")).json.items.length, "no viewing is written").toBe(logsBefore);
+    if (before && after) await api(ann, "PUT", `/api/media/${after.media.id}/progress`, { season: before.season ?? undefined, episode: before.episode ?? undefined, status: before.status }); // leave the scene as it was
   });
 
   test("the server's refusal is shown in words and the form keeps what was typed", async () => {
@@ -153,7 +185,7 @@ test.describe("feed, spoilers, reactions, comments", () => {
   let spoilerLog = "";
   let matrixLog = "";
 
-  test("a spoiler review does not travel to the other person; 'mostra' opens the thread with it", async () => {
+  test("a spoiler review does not travel to the other person; tapping it opens it in place (v1)", async () => {
     const s = await logApi(ann, { mediaKey: "tmdb:movie:603", rating: 9, review: "Neo è l'eletto SEGRETO", containsSpoilers: true, circles: [cid] });
     spoilerLog = s.json.id;
     const m = await logApi(ann, { mediaKey: "tmdb:movie:603", watchedOn: "2026-10-20", rating: 8, review: "Un classico", circles: [cid] });
@@ -164,8 +196,8 @@ test.describe("feed, spoilers, reactions, comments", () => {
     await expect(page.getByTestId(`spoiler-${spoilerLog}`)).toBeVisible();
     expect(await page.content(), "the spoiler text must not be in the page").not.toContain("SEGRETO");
     await page.getByTestId(`spoiler-${spoilerLog}`).click();
-    await page.waitForURL(/reveal=1/);
-    await expect(page.getByTestId("review")).toContainText("SEGRETO");
+    await expect(page.getByTestId(`review-${spoilerLog}`)).toContainText("SEGRETO");
+    expect(page.url(), "it stays on the diary").toMatch(new RegExp(`/c/${cid}(/feed)?$`));
   });
 
   test("reactions: toggled at once, kept after a reload, put back when the server refuses", async () => {
@@ -254,6 +286,18 @@ test.describe("feed, spoilers, reactions, comments", () => {
     await ann.page.goto(`/it/c/${cid}/log/${matrixLog}`);
     await expect(ann.page.getByRole("link", { name: it.manage.edit })).toBeVisible();
   });
+
+  test("the author edits inside the Cerchia (v1 l/:logId/edit); a stranger finds nothing there", async () => {
+    const { page } = ann;
+    await page.goto(`/it/c/${cid}/log/${matrixLog}`);
+    await page.getByRole("link", { name: it.manage.edit }).click();
+    await page.waitForURL(new RegExp(`/it/c/${cid}/log/${matrixLog}/edit$`));
+    await expect(page.getByLabel(it.log.review)).toBeVisible();
+    await page.getByTestId("submit-log").click();
+    await page.waitForURL(new RegExp(`/it/c/${cid}/log/${matrixLog}$`));
+    await bob.page.goto(`/it/c/${cid}/log/${matrixLog}/edit`);
+    await expect(bob.page.getByLabel(it.log.review)).toHaveCount(0);
+  });
 });
 
 test.describe("the feed paginates and filters", () => {
@@ -288,18 +332,22 @@ test.describe("the feed paginates and filters", () => {
   test("filters: by kind and by minimum rating; empty result says so and 'azzera' brings everything back", async () => {
     const { page } = bob;
     await page.goto(`/it/c/${cid}/feed`);
+    // v1: "Cerca e filtra" is a disclosure in the page, not a sheet; type, year and stars are selects
     await page.getByTestId("open-filters").click();
-    await page.getByRole("radio", { name: it.kind.tv }).click();
+    await expect(page.getByTestId("open-filters")).toHaveAttribute("aria-expanded", "true");
+    await page.getByTestId("filter-kind").selectOption("tv");
     await page.getByTestId("apply-filters").click();
     await expect(page.getByTestId(/^log-/).first()).toContainText(/breaking bad/i);
     const rows = await page.getByTestId(/^log-/).count();
     expect(rows).toBeGreaterThan(0);
     for (const t of await page.getByTestId(/^log-/).allInnerTexts()) expect(t.toLowerCase()).toContain("breaking bad"); // display capitals: compare without case
-    await expect(page.getByText("1 filtro")).toBeVisible();
+    await expect(page.getByTestId("filter-count")).toHaveText(new RegExp(`^${rows}\+?$`));
+    // first steps and memories are for the plain diary only
+    await expect(page.getByTestId("first-steps")).toHaveCount(0);
 
-    await page.getByTestId("open-filters").click();
-    await page.getByRole("radio", { name: it.kind.movie }).click();
-    await page.getByRole("radio", { name: "4 stelle o più" }).click();
+    // the panel stays open while filters are active
+    await page.getByTestId("filter-kind").selectOption("movie");
+    await page.getByTestId("filter-rating").selectOption("8");
     await page.getByTestId("apply-filters").click();
     await expect(page.getByTestId(/^log-/).first()).toContainText(/matrix/i); // the list was replaced
     const films = await page.getByTestId(/^log-/).allInnerTexts();
@@ -309,12 +357,32 @@ test.describe("the feed paginates and filters", () => {
     expect(stars.length).toBeGreaterThan(2);
     expect(Math.min(...stars), "every row has at least four stars").toBeGreaterThanOrEqual(4);
 
-    await page.getByTestId("open-filters").click();
     await page.getByLabel(it.log.platform).fill("Piattaforma-inesistente");
     await page.getByTestId("apply-filters").click();
-    await expect(page.getByText(it.feed.filter.none)).toBeVisible();
+    await expect(page.getByTestId("filter-none")).toHaveText(it.feed.filter.none);
     await page.getByRole("button", { name: it.feed.filter.clear }).first().click();
     await expect(page.getByTestId(/^log-/).first()).toBeVisible();
+    await expect(page.getByTestId("filter-count")).toHaveCount(0);
+  });
+
+  test("search by title and 'visto con'", async () => {
+    const r = await logApi(bob, { mediaKey: "tmdb:movie:27205", watchedOn: ymd(-1), rating: 7, circles: [cid], watchedWith: [annId] });
+    expect(r.status).toBe(201);
+    const { page } = bob;
+    await page.goto(`/it/c/${cid}/feed`);
+    await page.getByTestId("open-filters").click();
+    await page.getByTestId("filter-q").fill("INCEP");
+    await page.getByTestId("apply-filters").click();
+    await expect(page.getByTestId(/^log-/).first()).toContainText(/inception/i);
+    for (const t of await page.getByTestId(/^log-/).allInnerTexts()) expect(t.toLowerCase()).toContain("inception");
+    await page.getByTestId("filter-q").fill("");
+    // "Visto con": a person chip, one of the group; the first member is ann
+    const withGroup = page.getByRole("radiogroup", { name: it.feed.filter.with });
+    await withGroup.getByRole("radio").nth(1).click();
+    await expect(withGroup.getByRole("radio").nth(1)).toHaveAttribute("aria-checked", "true");
+    await page.getByTestId("apply-filters").click();
+    await expect(page.getByTestId(/^log-/)).toHaveCount(1);
+    await expect(page.getByTestId(/^log-/).first()).toContainText(/inception/i);
   });
 });
 
@@ -332,7 +400,9 @@ test.describe("when the network fails", () => {
     await expect(page.getByTestId(/^log-/)).toHaveCount(20);
 
     failing = true; // the second page fails: what is on screen stays
-    await page.getByTestId("load-more").click();
+    // pressed without scrolling to it: scrolling near the end loads the next page by itself (and the button gives way to it)
+    await page.getByTestId("load-more").focus();
+    await page.keyboard.press("Enter");
     await expect(page.getByRole("alert")).toContainText(it.app.apiErrors.network);
     await expect(page.getByTestId(/^log-/)).toHaveCount(20);
     failing = false;
@@ -357,7 +427,8 @@ test.describe("the title page", () => {
     await page.getByTestId("log-this").click();
     await page.waitForURL(new RegExp(`/it/log\\?media=${bb}`));
     await expect(page.getByTestId("picked-title")).toContainText(/breaking bad/i); // no search needed
-    await expect(page.getByRole("radio", { name: "2", exact: true })).toBeVisible();
+    await openDetails(page);
+    await expect(page.getByTestId("season").locator('option[value="2"]')).toHaveCount(1); // the seasons of the title came with it
   });
 });
 
@@ -399,36 +470,62 @@ test.describe("my diary: continue watching, edit, sharing, delete", () => {
     await page.keyboard.press("ArrowRight");
     await page.getByTestId("submit-log").click();
     await page.waitForURL(new RegExp(`/it/c/${cid}/log/${mine}`));
-    await expect(page.getByTestId("review")).toHaveText("MODIFICATO");
+    await expect(page.locator('[data-testid^="review-"]')).toHaveText("MODIFICATO");
     await expect(page.getByRole("img", { name: "3,5 stelle su 5" })).toBeVisible();
     const t = (await api<{ watchedWith: Array<{ id: string }>; log: { platform: string } }>(bob, "GET", `/api/circles/${cid}/logs/${mine}`)).json;
     expect(t.watchedWith.map((p) => p.id)).toEqual([bobId]);
     expect(t.log.platform).toBe("Prime Video");
   });
 
-  test("sharing: take it out of the Cerchia (the other person stops seeing it), put it back", async () => {
+  test("sharing: take it out of the Cerchia with its X (the other person stops seeing it), add it back", async () => {
     const { page } = ann;
     await page.goto("/it/diary");
-    const card = page.getByTestId(`log-${mine}`);
     await expect(page.getByTestId(`shared-${mine}`)).toContainText("Cineforum");
-    await card.getByTestId(`share-toggle-${mine}`).click();
-    await page.getByTestId(`share-${mine}-${cid}`).click();
-    await page.getByTestId(`share-save-${mine}`).click();
+    await page.getByTestId(`unshare-${mine}-${cid}`).click();
     await expect(page.getByTestId(`shared-${mine}`)).toContainText(it.space.onlyYou);
+    await expect(page.getByText(it.space.notice.unshared)).toBeVisible();
     expect((await api(bob, "GET", `/api/circles/${cid}/logs/${mine}`)).status).toBe(404);
-    await card.getByTestId(`share-toggle-${mine}`).click();
-    await page.getByTestId(`share-${mine}-${cid}`).click();
-    await page.getByTestId(`share-save-${mine}`).click();
+    const pick = page.getByTestId(`add-to-${mine}`); // a list when there are several Cerchie to add it to, a single button for one
+    if (await pick.count()) await pick.selectOption(cid);
+    await page.getByTestId(`add-${mine}`).click();
     await expect(page.getByTestId(`shared-${mine}`)).toContainText("Cineforum");
     expect((await api(bob, "GET", `/api/circles/${cid}/logs/${mine}`)).status).toBe(200);
   });
 
-  test("delete needs a second press and removes the viewing everywhere", async () => {
+  test("the tabs: 'All (n)' and 'Only private (n)' count, and 'Only mine' makes a viewing private for good", async () => {
     const { page } = ann;
-    const card = page.getByTestId(`log-${mine}`);
-    await card.getByRole("button", { name: it.manage.delete }).click(); // asks
+    const counts = async () => (await api<{ all: number; private: number }>(ann, "GET", "/api/me/diary/counts")).json;
+    const before = await counts();
+    await page.goto("/it/diary");
+    await expect(page.getByTestId("tab-all")).toContainText(`(${before.all})`);
+    await expect(page.getByTestId("tab-private")).toContainText(`(${before.private})`);
+    await page.getByTestId(`private-${mine}`).click();
+    await expect(page.getByTestId(`shared-${mine}`)).toContainText(it.space.onlyYou);
+    await expect(page.getByTestId("tab-private")).toContainText(`(${before.private + 1})`);
+    expect((await api(bob, "GET", `/api/circles/${cid}/logs/${mine}`)).status).toBe(404);
+    await page.getByTestId("tab-private").click();
+    await page.waitForURL(/\/it\/diary\?only=private/);
     await expect(page.getByTestId(`log-${mine}`)).toBeVisible();
-    await card.getByRole("button", { name: it.space.deleteCta }).click(); // does
+    const priv = (await api<{ items: Array<{ id: string; sharedIn: string[] }> }>(ann, "GET", "/api/me/diary?only=private")).json.items;
+    expect(priv.length).toBe(before.private + 1);
+    expect(priv.every((l) => l.sharedIn.length === 0)).toBe(true);
+    // put it back in the Cerchia: on the private tab it leaves the list
+    const pick = page.getByTestId(`add-to-${mine}`);
+    if (await pick.count()) await pick.selectOption(cid);
+    await page.getByTestId(`add-${mine}`).click();
+    await expect(page.getByTestId(`log-${mine}`)).toHaveCount(0);
+    await page.getByTestId("tab-all").click();
+    await expect(page.getByTestId(`shared-${mine}`)).toContainText("Cineforum");
+  });
+
+  test("delete asks in a dialog (cancel changes nothing), then removes the viewing everywhere", async () => {
+    const { page } = ann;
+    await page.getByTestId(`delete-${mine}`).click();
+    await expect(page.getByRole("dialog")).toContainText(it.space.deleteBodyShared.slice(0, 30));
+    await page.getByRole("button", { name: it.space.cancel }).click(); // asked, not done
+    await expect(page.getByTestId(`log-${mine}`)).toBeVisible();
+    await page.getByTestId(`delete-${mine}`).click();
+    await page.getByTestId("confirm-delete").click();
     await expect(page.getByTestId(`log-${mine}`)).toHaveCount(0);
     expect((await api(bob, "GET", `/api/circles/${cid}/logs/${mine}`)).status).toBe(404);
   });
@@ -445,7 +542,7 @@ test.describe("my diary: continue watching, edit, sharing, delete", () => {
 });
 
 test.describe("notifications", () => {
-  test("the bell counts unread across Cerchie; the inbox reads them per Cerchia and all at once", async () => {
+  test("the bell counts unread across Cerchie; opening the inbox reads them all", async () => {
     const other = await circleWith(ann, [bob], "Secondo gruppo");
     await logApi(ann, { mediaKey: "tmdb:movie:603", watchedOn: "2026-08-08", circles: [other] });
     const sum = async () => ((await api<{ circles: Array<{ unread: number }> }>(bob, "GET", "/api/me")).json.circles.reduce((n, c) => n + c.unread, 0));
@@ -453,24 +550,21 @@ test.describe("notifications", () => {
     expect(total).toBeGreaterThan(2);
     const { page } = bob;
     await page.goto("/it/home");
-    await expect(page.getByTestId("bell-badge")).toHaveText(total > 99 ? "99+" : String(total));
+    await expect(page.getByTestId("bell-badge").locator("[data-glyph]")).toHaveAttribute("data-glyph", total > 9 ? "9+" : String(total));
     await expect(page.getByTestId("bell")).toHaveAttribute("aria-label", new RegExp(`${it.notifications.title}: ${total} notifiche non lette`));
     await page.getByTestId("bell").click();
     await page.waitForURL("**/it/notifications");
     await expect(page.getByTestId(/^notice-/).first()).toHaveAccessibleName(/^Non letta/);
 
-    // "Segna lette" for one Cerchia leaves the other's unread
-    await page.getByRole("radio", { name: "Secondo gruppo" }).click();
-    await page.getByTestId("read-circle").click();
-    await expect.poll(sum, { timeout: 8000 }).toBeLessThan(total);
-    await expect.poll(async () => (await api<{ circles: Array<{ id: string; unread: number }> }>(bob, "GET", "/api/me")).json.circles.find((c) => c.id === other)?.unread).toBe(0);
-    expect(await sum()).toBeGreaterThan(0); // the first Cerchia still has some
-    await expect(page.getByTestId("bell-badge")).toHaveText(String(await sum()));
-
-    await page.getByRole("radio", { name: it.feed.filter.any }).click();
-    await page.getByTestId("read-all").click();
+    // v1: opening the inbox reads everything; this visit still draws what was unread as unread, filters included
     await expect.poll(sum, { timeout: 8000 }).toBe(0);
     await expect(page.getByTestId("bell-badge")).toHaveCount(0);
+    await page.getByRole("radio", { name: "Secondo gruppo" }).click();
+    await expect(page.getByTestId(/^notice-/).first()).toHaveAccessibleName(/^Non letta/);
+    await page.getByRole("radio", { name: it.feed.filter.any }).click();
+
+    // the next visit sees them read
+    await page.reload();
     await expect(page.getByTestId(/^notice-/).first()).not.toHaveAccessibleName(/^Non letta/);
   });
 
@@ -482,5 +576,35 @@ test.describe("notifications", () => {
     await page.waitForURL(/\/it\/c\/[^/]+\/log\/[^/?]+/);
     await ann.ctx.close();
     await bob.ctx.close();
+  });
+});
+
+test.describe("the title page inside a Cerchia", () => {
+  test("a card opens it: original title, everyone's viewings, the Cerchia average, the way to log and to a list", async ({ browser }) => {
+    const zed = await person(browser, "zed");
+    const yan = await person(browser, "yan");
+    await signIn(zed);
+    await signIn(yan);
+    const circle = await circleWith(zed, [yan], "Titoli");
+    const a = await logApi(zed, { mediaKey: "tmdb:movie:603", rating: 8, circles: [circle] });
+    await logApi(yan, { mediaKey: "tmdb:movie:603", watchedOn: "2026-11-02", rating: 6, circles: [circle] });
+    const mediaId = a.json.mediaId;
+
+    const info = await api<{ originalTitle: string; source: string; average: number; rated: number }>(zed, "GET", `/api/circles/${circle}/media/${mediaId}`);
+    expect(info.json.rated).toBe(2);
+    expect(info.json.average).toBe(7);
+
+    const { page } = yan;
+    await page.goto(`/it/c/${circle}/feed`);
+    await page.getByTestId(/^log-/).first().getByRole("link", { name: /matrix/i }).last().click();
+    await page.waitForURL(new RegExp(`/it/c/${circle}/m/${mediaId}`));
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(/matrix/i);
+    await expect(page.getByTestId("circle-average")).toBeVisible();
+    await expect(page.getByTestId(/^log-(?!this$)/)).toHaveCount(2); // both members' viewings (not the "log-this" button)
+    await expect(page.getByTestId("log-this")).toHaveAttribute("href", new RegExp(`/it/log\\?media=${mediaId}`));
+    await expect(page.getByRole("link", { name: it.lists.addTo })).toHaveAttribute("href", `/it/lists?circle=${circle}&add=${mediaId}`);
+
+    await zed.ctx.close();
+    await yan.ctx.close();
   });
 });

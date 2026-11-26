@@ -25,13 +25,14 @@ export function cardLayout(variant: Variant): CardLayout {
   if (variant === "story") {
     return {
       w: 1080, h: 1920,
-      poster: { x: 220, y: 300, w: 640, h: 960 },
-      wordmark: { x: 96, y: 96, size: 72 },
-      kicker: { x: 96, y: 224, size: 40, width: 888 },
-      title: { x: 96, y: 1300, width: 888, maxLines: 2, align: "left" },
-      meta: { x: 96, y: 1596, size: 42, width: 888 },
-      qr: { x: 96, y: 1716, w: 168, h: 168 },
-      qrCaption: { x: 296, y: 1770, size: 36, width: 688 },
+      // v1's one-sheet: the print runs edge to edge at the top, then the title in hairline capitals, the facts, the wordmark and the code.
+      poster: { x: 0, y: 0, w: 1080, h: 1060 },
+      wordmark: { x: 72, y: 1636, size: 52 },
+      kicker: { x: 72, y: 1096, size: 36, width: 936 },
+      title: { x: 72, y: 1150, width: 936, maxLines: 2, align: "left" },
+      meta: { x: 72, y: 1520, size: 38, width: 936 },
+      qr: { x: 72, y: 1716, w: 168, h: 168 },
+      qrCaption: { x: 272, y: 1770, size: 36, width: 736 },
     };
   }
   return {
@@ -49,7 +50,7 @@ export function cardLayout(variant: Variant): CardLayout {
 /** Title size by length, as in v1 (shorter titles get bigger type), scaled to the layouts above. */
 export function titleSize(variant: Variant, title: string): number {
   const n = [...title].length;
-  if (variant === "story") return n <= 13 ? 190 : n <= 34 ? 140 : 104;
+  if (variant === "story") return n <= 13 ? 170 : n <= 34 ? 130 : 100;
   return n <= 12 ? 132 : n <= 30 ? 100 : 76;
 }
 

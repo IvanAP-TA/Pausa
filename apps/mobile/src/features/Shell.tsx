@@ -1,124 +1,238 @@
-import { Link, usePathname, type Href } from "expo-router";
-import type { ReactNode } from "react";
+import { Link, usePathname, useRouter, type Href } from "expo-router";
+import { useState, type ComponentType, type ReactNode } from "react";
 import { Platform, Pressable, StyleSheet, useWindowDimensions, View, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/i18n";
-import { breakpoints, control, hair, space, useTheme, web } from "@/theme";
-import { PlusIcon } from "@/ui/Icons";
-import { Text, Title } from "@/ui/Text";
+import { breakpoints, hair, space, useTheme, web } from "@/theme";
+import { Avatar } from "@/ui/Avatar";
+import { PauseMark, Wordmark } from "@/ui/Brand";
+import { BookOpen, List, Plus, Popcorn, STROKE, Trophy, Users } from "@/ui/lucide";
+import { Text } from "@/ui/Text";
+import { usePressed } from "@/ui/usePressed";
 import { useCurrentCircle } from "./current-circle";
 import { Bell } from "./Bell";
+import { CircleAside } from "./CircleAside";
 import { useDocumentTitle } from "./doc-title";
 import { UpdateBanner } from "./offline/UpdateBanner";
 import { useSession } from "./session";
+import { SpaceButton, SpacePanel, useSpaceMenu } from "./SpaceMenu";
 
-type Item = {
-  key: string;
-  label: string;
-  /** Where it goes. Undefined = not built yet: shown dimmed, announced as "coming soon", not pressable. */
-  href?: string;
-  active: boolean;
-};
+// The frame of every signed-in page, as v1 (src/components/shell.tsx, space-switch.tsx, tab-bar.tsx): the bar on top (the
+// mark, the Cerchia I am in as a switch, the bell), the page, and the tabs under the thumb, a rail on the left from 64rem.
 
-function useItems(): { left: Item[]; right: Item[]; log: Item } {
-  const { t, href } = useI18n();
+type IconType = ComponentType<{ size?: number; strokeWidth?: number; color?: string }>;
+type TabKey = "diary" | "serata" | "ranking" | "lists" | "circle";
+const ICONS: Record<TabKey, IconType> = { diary: BookOpen, serata: Popcorn, lists: List, ranking: Trophy, circle: Users };
+const EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
+
+/** Which tab is lit. Pages reached from the diary (a title, an entry, a person, the notifications) keep Diario lit. */
+function useActive(circleId: string) {
+  const { href } = useI18n();
   const path = usePathname();
-  const { circleId } = useCurrentCircle();
-  const home = href("/home");
-  const serata = circleId ? href(`/c/${circleId}/serate`) : home;
-  const onSerata = /^\/(it|en|es)\/(c\/[^/]+\/serate|s\/)/.test(path);
-  const onMe = path.startsWith(href("/me")) || path === href("/account");
-  const onLog = path === href("/log") || path.startsWith(href("/log/"));
-  const onDiary = path === href("/diary");
-  const circles = !onSerata && !onMe && !onLog && !onDiary && (path === home || path.startsWith(href("/c/")) || path.startsWith(href("/t/")) || path.startsWith(href("/notifications")));
+  const base = href(`/c/${circleId}`);
+  const under = (p: string) => path === p || path.startsWith(`${p}/`);
+  const underDiary =
+    ["/log", "/people", "/insights"].some((p) => under(`${base}${p}`)) ||
+    ["/t", "/notifications", "/import", "/imports"].some((p) => under(href(p)));
   return {
-    left: [
-      { key: "circles", label: t("app.nav.circles"), href: home, active: circles },
-      { key: "diary", label: t("tabs.diary"), href: href("/diary"), active: onDiary },
-    ],
-    log: { key: "log", label: t("tabs.logShort"), href: href("/log"), active: onLog },
-    right: [
-      { key: "serata", label: t("tabs.serata"), href: serata, active: onSerata },
-      { key: "profile", label: t("tabs.profile"), href: href("/me"), active: onMe },
-    ],
+    diary: path === base || underDiary,
+    serata: under(`${base}/serate`) || under(href("/s")),
+    ranking: under(`${base}/ranking`),
+    lists: under(href("/lists")),
+    circle: under(`${base}/members`) || under(`${base}/settings`),
+    log: under(href("/log")),
+    me: under(href("/me")) || under(href("/account")) || under(href("/diary")),
   };
 }
 
-function Tab({ item, rail }: { item: Item; rail?: boolean }) {
+/** One tab: the icon over a small label on a phone; a row (icon, label) on the rail. The lit one draws its accent mark. */
+function Tab({ to, label, icon, active, rail, avatar }: { to: string; label: string; icon?: IconType; active: boolean; rail: boolean; avatar?: ReactNode }) {
   const { c } = useTheme();
-  const { t } = useI18n();
-  const soon = item.href === undefined;
-  const color = soon ? c.muted : item.active ? c.ink : c.ink2;
-  const body = (
-    <Pressable
-      role={soon ? "button" : "link"}
-      aria-label={soon ? t("app.nav.soon", { label: item.label }) : item.label}
-      aria-current={item.active ? "page" : undefined}
-      aria-disabled={soon || undefined}
-      disabled={soon}
-      style={StyleSheet.flatten([
-        {
-          flex: rail ? undefined : 1,
-          minHeight: control,
-          justifyContent: "center",
-          alignItems: rail ? "flex-start" : "center",
-          paddingHorizontal: space.sm,
-          paddingVertical: space.xs,
-          // The current tab lights a 2px stretch of the hairline it sits against: the top edge of the bar, the right edge of the rail.
-          ...(rail
-            ? { borderRightWidth: item.active ? 2 : 0, borderColor: c.accent }
-            : { borderTopWidth: item.active ? 2 : 0, borderColor: c.accent, marginTop: item.active ? -2 : 0 }),
-        },
-        web({ cursor: soon ? "default" : "pointer" }),
-      ])}
-    >
-      <Title style={{ color, fontSize: 20, lineHeight: 24 }}>{item.label}</Title>
-    </Pressable>
-  );
-  return soon ? body : (
-    <Link href={item.href as Href} asChild>
-      {body}
-    </Link>
-  );
-}
-
-function LogTab({ item, rail }: { item: Item; rail?: boolean }) {
-  const { c } = useTheme();
-  const { t } = useI18n();
+  const { hovered, bind } = usePressed();
+  const Icon = icon;
+  const color = active || hovered ? c.ink : c.muted;
   return (
-    <Link href={item.href as Href} asChild>
+    <Link href={to as Href} asChild>
       <Pressable
         role="link"
-        aria-label={t("tabs.log")}
-        aria-current={item.active ? "page" : undefined}
+        aria-label={label}
+        aria-current={active ? "page" : undefined}
+        {...bind}
         style={StyleSheet.flatten([
-          { minWidth: 72, minHeight: control + 8, alignItems: "center", justifyContent: "center", paddingHorizontal: space.sm, flexDirection: rail ? "row" : "column", gap: space["2xs"], borderWidth: rail ? hair : 0, borderColor: item.active ? c.accent : c.rule },
-          web({ cursor: "pointer" }),
+          rail
+            ? { minHeight: 44, flexDirection: "row", alignItems: "center", gap: space.sm, paddingHorizontal: space.sm, backgroundColor: active || hovered ? c.paper2 : "transparent" }
+            : { flex: 1, minWidth: 0, minHeight: 48, alignItems: "center", justifyContent: "center", gap: space["2xs"] },
+          web({ cursor: "pointer", transition: `color 150ms ${EASE}, background-color 150ms ${EASE}` }),
         ])}
       >
-        <PlusIcon color={c.accent} />
-        <Title style={{ color: item.active ? c.ink : c.ink2, fontSize: 18, lineHeight: 20 }}>{rail ? t("tabs.log") : item.label}</Title>
+        {active ? (
+          <View
+            aria-hidden
+            style={[
+              { position: "absolute", backgroundColor: c.accent },
+              rail ? { top: 0, bottom: 0, right: -(space.sm + hair), width: 2 } : { left: space.md, right: space.md, top: -(space.xs + hair), height: 2 },
+              web({ animation: `${rail ? "pausa-mark-y" : "pausa-mark-x"} 220ms ${EASE} backwards` }),
+            ]}
+          />
+        ) : null}
+        {avatar ?? (Icon ? <Icon size={22} strokeWidth={STROKE} color={active ? c.accent : color} /> : null)}
+        <Text numberOfLines={1} style={{ color, fontSize: rail ? 16 : 12, lineHeight: rail ? 24 : 16, paddingHorizontal: 2 }}>{label}</Text>
       </Pressable>
     </Link>
   );
 }
 
-/** The slim page header of every signed-in screen: where you are (the Cerchia in use) and the bell. */
-function Header() {
+/** "Registra": the one action of the app. A solid accent square with the + over its word on a phone; a full-width accent bar on the rail. */
+function LogTab({ to, active, rail }: { to: string; active: boolean; rail: boolean }) {
+  const { c } = useTheme();
+  const { t } = useI18n();
+  const { hovered, pressed, bind } = usePressed();
+  const fill = hovered ? c.accentHover : c.accent;
+  const press = web({ transition: `background-color 150ms ${EASE}, transform 150ms ${EASE}` });
+  return (
+    <Link href={to as Href} asChild>
+      <Pressable
+        role="link"
+        aria-label={t("tabs.log")}
+        aria-current={active ? "page" : undefined}
+        {...bind}
+        style={StyleSheet.flatten([
+          rail
+            ? { height: 48, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.xs, backgroundColor: fill, marginBottom: space.md, transform: [{ scale: pressed ? 0.98 : 1 }] }
+            : { minWidth: 64, alignItems: "center", gap: space["2xs"], paddingHorizontal: space["2xs"] },
+          rail ? press : null,
+          web({ cursor: "pointer" }),
+        ])}
+      >
+        {rail ? (
+          <>
+            <Plus size={22} strokeWidth={2} color={c.accentInk} />
+            <Text variant="strong" style={{ color: c.accentInk }}>{t("tabs.log")}</Text>
+          </>
+        ) : (
+          <>
+            <View style={StyleSheet.flatten([{ width: 40, height: 40, alignItems: "center", justifyContent: "center", backgroundColor: fill, transform: [{ scale: pressed ? 0.94 : 1 }] }, press])}>
+              <Plus size={22} strokeWidth={2} color={c.accentInk} />
+            </View>
+            <Text variant="strong" style={{ fontSize: 12, lineHeight: 16 }}>{t("tabs.logShort")}</Text>
+          </>
+        )}
+      </Pressable>
+    </Link>
+  );
+}
+
+function Logout() {
+  const { c } = useTheme();
+  const { t, href } = useI18n();
+  const { signOut } = useSession();
+  const router = useRouter();
+  const [out, setOut] = useState(false);
+  const { hovered, bind } = usePressed();
+  return (
+    <Pressable
+      role="button"
+      disabled={out}
+      onPress={async () => {
+        setOut(true);
+        await signOut();
+        router.replace(href() as never);
+      }}
+      {...bind}
+      style={StyleSheet.flatten([{ minHeight: 44, flexDirection: "row", alignItems: "center", paddingHorizontal: space.sm, backgroundColor: hovered ? c.paper2 : "transparent" }, web({ cursor: "pointer", transition: "background-color 150ms, color 150ms" })])}
+    >
+      <Text variant="small" style={{ color: hovered ? c.ink : c.muted }}>{out ? t("account.loggingOut") : t("account.logout")}</Text>
+    </Pressable>
+  );
+}
+
+/** The tabs: a bar `1fr auto 1fr` on a phone (Diario, Serata | Registra | Cerchia, Profilo), a rail from 64rem. */
+function TabBar({ circleId, rail }: { circleId: string; rail: boolean }) {
+  const { c } = useTheme();
+  const { t, href } = useI18n();
+  const { state } = useSession();
+  const insets = useSafeAreaInsets();
+  const a = useActive(circleId);
+  const base = `/c/${circleId}`;
+  const me = state.status === "ready" ? state.me : null;
+  const tab = (key: TabKey, to: string, active: boolean) => <Tab key={key} to={href(to)} label={t(`tabs.${key}`)} icon={ICONS[key]} active={active} rail={rail} />;
+  const profile = (
+    <Tab
+      to={href("/me")}
+      label={t("tabs.profile")}
+      active={a.me}
+      rail={rail}
+      avatar={
+        <View style={{ borderRadius: 999, padding: 2, margin: -2, borderWidth: 2, borderColor: a.me ? c.accent : "transparent" }}>
+          <Avatar name={me?.name ?? ""} image={me?.image} size={24} />
+        </View>
+      }
+    />
+  );
+  const log = <LogTab to={href("/log")} active={a.log} rail={rail} />;
+
+  if (rail)
+    return (
+      <View role="navigation" aria-label="Pausa" style={[{ width: 224, flexShrink: 0, borderRightWidth: hair, borderColor: c.rule, paddingHorizontal: space.sm, paddingTop: space.xl - 8 + insets.top, paddingBottom: space.lg, gap: space["2xs"] }, web({ height: "100dvh", position: "sticky", top: 0 })]}>
+        <Link href={href(base) as Href} aria-label="Pausa" style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: space.sm, marginBottom: space.lg }}>
+          <Wordmark size={33.2} />
+        </Link>
+        {log}
+        {tab("diary", base, a.diary)}
+        {tab("serata", `${base}/serate`, a.serata)}
+        {tab("ranking", `${base}/ranking`, a.ranking)}
+        {tab("lists", `/lists?circle=${circleId}`, a.lists)}
+        {tab("circle", `${base}/members`, a.circle)}
+        {profile}
+        <View style={{ marginTop: space["2xs"], borderTopWidth: hair, borderColor: c.rule, paddingTop: space.md }}>
+          <Logout />
+        </View>
+      </View>
+    );
+
+  return (
+    <View
+      role="navigation"
+      aria-label="Pausa"
+      style={{ flexDirection: "row", alignItems: "center", columnGap: space["2xs"], borderTopWidth: hair, borderColor: c.rule, backgroundColor: c.paper, paddingHorizontal: space["2xs"], paddingTop: space.xs, paddingBottom: Math.max(insets.bottom, space.xs) }}
+    >
+      <View style={{ flex: 1, minWidth: 0, flexDirection: "row" }}>
+        {tab("diary", base, a.diary)}
+        {tab("serata", `${base}/serate`, a.serata)}
+      </View>
+      {log}
+      <View style={{ flex: 1, minWidth: 0, flexDirection: "row" }}>
+        {tab("circle", `${base}/members`, a.circle)}
+        {profile}
+      </View>
+    </View>
+  );
+}
+
+/** The one bar at the top of every signed-in page: the mark (phones), the Cerchia I am in as a switch, the bell. */
+function TopBar({ rail }: { rail: boolean }) {
   const { c } = useTheme();
   const { href } = useI18n();
   const { circle } = useCurrentCircle();
   const insets = useSafeAreaInsets();
+  const menu = useSpaceMenu();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.sm, paddingLeft: space.md, paddingRight: space.xs, paddingTop: insets.top, borderBottomWidth: hair, borderColor: c.rule, minHeight: control + insets.top }}>
-      <Link href={href("/home") as Href} asChild>
-        <Pressable role="link" aria-label={circle ? circle.name : "Pausa"} style={StyleSheet.flatten([{ flex: 1, minHeight: control, justifyContent: "center" }, web({ cursor: "pointer" })])}>
-          <Text variant="strong" numberOfLines={1} tone="ink2">
-            {circle ? circle.name : "Pausa"}
-          </Text>
-        </Pressable>
-      </Link>
-      <Bell />
+    <View
+      role="banner"
+      style={{ zIndex: 250, flexDirection: "row", alignItems: "center", gap: space["2xs"], height: 56 + insets.top, paddingTop: insets.top, paddingLeft: Math.max(space.xs, insets.left), paddingRight: Math.max(space["2xs"], insets.right), borderBottomWidth: hair, borderColor: c.rule, backgroundColor: c.paper }}
+    >
+      {rail ? null : (
+        <Link href={href(circle ? `/c/${circle.id}` : "/me/circles") as Href} aria-label="Pausa" style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+          <View style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+            <PauseMark size={24} />
+          </View>
+        </Link>
+      )}
+      <View role="navigation" style={{ flex: 1, minWidth: 0, flexDirection: "row" }}>
+        <SpaceButton open={menu.open} onPress={menu.toggle} />
+      </View>
+      {circle ? <Bell /> : null}
+      {menu.open ? <SpacePanel close={menu.close} /> : null}
     </View>
   );
 }
@@ -127,33 +241,32 @@ function Header() {
 // (Web: an explicit height, not flex:1, because #root only has a min-height and a percentage flex-basis would resolve to the content.)
 const frame = (bg: string): ViewStyle[] => [{ backgroundColor: bg }, Platform.OS === "web" ? ({ height: "100dvh", overflow: "hidden" } as ViewStyle) : { flex: 1 }];
 
-/** Phones: bottom bar `1fr auto 1fr`, two tabs, the centred Registra, two tabs. From 64rem: a rail on the left. */
+/** Phones: top bar, page, tab bar. From 64rem: a centred 62rem frame, the rail on the left and a 40rem page column. */
 export function Shell({ children }: { children: ReactNode }) {
   useDocumentTitle();
   const { c } = useTheme();
-  const { t, href } = useI18n();
+  const { href } = useI18n();
   const { state } = useSession();
+  const { circleId } = useCurrentCircle();
   const { width } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const items = useItems();
   const path = usePathname();
   // The bar is for signed-in screens; sign-in and the invite landing stand alone.
   const bare = state.status !== "ready" || path === href("/sign-in") || path.startsWith(href("/join/"));
   if (bare) return <View style={frame(c.paper)}><UpdateBanner />{children}</View>;
 
   if (width >= breakpoints.rail) {
+    // v1: max-w 62rem with a 2rem gap; from 80rem, 82rem with a 2.5rem gap and the second column of a Cerchia.
+    const wide = width >= breakpoints.aside;
     return (
-      <View style={[frame(c.paper), { flexDirection: "row" }]}>
-        <View role="navigation" aria-label={t("app.nav.label")} style={{ width: 240, borderRightWidth: hair, borderColor: c.rule, paddingTop: space.lg + insets.top, gap: space.xs }}>
-          <Link href={href("/home") as Href} aria-label={t("app.nav.home")} style={{ paddingHorizontal: space.sm, paddingBottom: space.md }}>
-            <Title style={{ fontSize: 32, lineHeight: 38 }}>Pausa</Title>
-          </Link>
-          {[...items.left, items.log, ...items.right].map((it) => (it.key === "log" ? <LogTab key={it.key} item={it} rail /> : <Tab key={it.key} item={it} rail />))}
-        </View>
-        <View style={{ flex: 1 }}>
-          <Header />
-          <UpdateBanner />
-          <View style={{ flex: 1 }}>{children}</View>
+      <View style={frame(c.paper)}>
+        <View style={{ flex: 1, flexDirection: "row", alignSelf: "center", width: "100%", maxWidth: wide ? 1312 : 992, gap: wide ? 40 : 32 }}>
+          {circleId ? <TabBar circleId={circleId} rail /> : null}
+          <View style={{ flex: 1, maxWidth: 640 }}>
+            <TopBar rail={!!circleId} />
+            <UpdateBanner />
+            <View style={{ flex: 1 }}>{children}</View>
+          </View>
+          {circleId && wide ? <CircleAside circleId={circleId} /> : null}
         </View>
       </View>
     );
@@ -161,18 +274,10 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <View style={frame(c.paper)}>
-      <Header />
+      <TopBar rail={false} />
       <UpdateBanner />
       <View style={{ flex: 1 }}>{children}</View>
-      <View
-        role="navigation"
-        aria-label={t("app.nav.label")}
-        style={{ flexDirection: "row", alignItems: "stretch", borderTopWidth: hair, borderColor: c.rule, backgroundColor: c.paper, paddingBottom: insets.bottom }}
-      >
-        <View style={{ flex: 1, flexDirection: "row" }}>{items.left.map((it) => <Tab key={it.key} item={it} />)}</View>
-        <LogTab item={items.log} />
-        <View style={{ flex: 1, flexDirection: "row" }}>{items.right.map((it) => <Tab key={it.key} item={it} />)}</View>
-      </View>
+      {circleId ? <TabBar circleId={circleId} rail={false} /> : null}
     </View>
   );
 }

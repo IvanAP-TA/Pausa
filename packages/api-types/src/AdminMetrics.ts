@@ -3,4 +3,33 @@
 /**
  * Counts for the operator: nothing personal, no names.
  */
-export type AdminMetrics = { users: number, active7d: number, circles: number, logs: number, logs7d: number, serate: number, openReports: number, cardsShared7d: number, invitesShared7d: number, };
+export type AdminMetrics = { users: number, active7d: number, circles: number, logs: number, logs7d: number, serate: number, openReports: number, cardsShared7d: number, invitesShared7d: number, 
+/**
+ * The early success numbers (rates are 0..1; `null` = not enough data yet, which is not the same as zero).
+ * Share of people signed up 7+ days ago who created or joined a Cerchia within 7 days of signing up.
+ */
+circleWithin7d: number | null, circleWithin7dCohort: number, 
+/**
+ * Viewings per Cerchia per week, over the Cerchie that logged something that week (last 4 weeks).
+ */
+logsPerActiveCircleWeek: number | null, 
+/**
+ * Share of Cerchie with at least one group list.
+ */
+circlesUsingLists: number | null, 
+/**
+ * Seconds from opening a Serata to its result: the median, the share under 120 s, and how many finished.
+ */
+serataMedianSeconds: number | null, serataUnder120: number | null, serataFinished: number, 
+/**
+ * Share of finished Serate whose Card / invite link was shared at least once.
+ */
+serataCardRate: number | null, serataInviteRate: number | null, 
+/**
+ * Share of Cerchie (old enough to measure) with activity in the week that starts 7 / 30 days after creation.
+ */
+retentionD7: number | null, retentionD7Eligible: number, retentionD30: number | null, retentionD30Eligible: number, 
+/**
+ * Share of people in a Cerchia who ever used "Sto guardando".
+ */
+nowWatchingRate: number | null, nowWatchingPeople: number, };

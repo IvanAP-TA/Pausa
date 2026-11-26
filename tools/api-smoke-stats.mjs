@@ -101,6 +101,16 @@ check("top platform", Y.topPlatform.key === "Netflix" && Y.topPlatform.count ===
 check("title of the year: best average among titles two or more people rated", Y.titleOfTheYear.media.title === "Titolo 1" && Math.abs(Y.titleOfTheYear.avg - 28 / 3) < 1e-9);
 check("average stars is the average rating halved", Math.abs(Y.avgStars - (9 + 8 + 3 + 9 + 9 + 7 + 3 + 9 + 10 + 8 + 4 + 10 + 2) / 13 / 2) < 1e-9, String(Y.avgStars));
 check("years with viewings", JSON.stringify(I.yearsWithLogs) === "[2026]");
+check("year in review: nobody logged 'with' yet, so no together-most pair", Y.togetherMost === null);
+{
+  const idOf = (u, t, on) => sql(`SELECT id FROM log WHERE user_id='${u.id}' AND media_id='${T[t]}' AND watched_on='${on}'`)[0].id;
+  // p1 watched T1 with p2 (p2 logged it the same day too: counted once) and T2 on another day with p2: two times together.
+  sql(`INSERT INTO log_watched_with(log_id,user_id) VALUES ('${idOf(p1, 1, "2026-03-15")}','${p2.id}'),('${idOf(p1, 2, "2026-03-20")}','${p2.id}'),('${idOf(p2, 1, "2026-03-15")}','${p1.id}'),('${idOf(p1, 3, "2026-05-01")}','${out.id}')`);
+  const T2 = (await call("GET", `/api/circles/${K.id}/insights?year=2026`, { cookie: p2.cookie })).json.year.togetherMost;
+  check("together most: the pair p1/p2, each (title, day) once, a non-member never counts", T2 && [T2.a.id, T2.b.id].sort().join() === [p1.id, p2.id].sort().join() && T2.times === 2, JSON.stringify(T2));
+}
+const t8 = (await q("minVotes=0")).items.find((i) => i.media.title === "Titolo 8");
+check("ranking: watchedBy lists who saw a title, rated or not (T8: p4 saw it, nobody rated it here)", t8.ratings.length === 0 && t8.watchedBy.length === 1 && t8.watchedBy[0] === p4.id, JSON.stringify(t8));
 r = await call("GET", `/api/circles/${K.id}/insights?year=2019`, { cookie: p1.cookie });
 check("a year with nothing is empty, not an error", r.status === 200 && r.json.year.logs === 0 && r.json.year.titleOfTheYear === null && r.json.year.mostActive === null && r.json.year.movieHours === 0);
 

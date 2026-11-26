@@ -1,17 +1,26 @@
-import { View } from "react-native";
-import { useTheme } from "@/theme";
-import { Chevron } from "./Icons";
-import { TextLink } from "./TextLink";
+import { Link, type Href } from "expo-router";
+import { Pressable, StyleSheet } from "react-native";
+import { control, space, useTheme, web } from "@/theme";
+import { ChevronLeft } from "./lucide";
+import { Text } from "./Text";
+import { usePressed } from "./usePressed";
 
-/** "‹ label" back to a parent screen. */
+/** v1 back-link.tsx: a chevron and a word at the top left of the content, text-sm in ink-2, ink under the pointer. No underline. */
 export function BackLink({ to, label }: { to: string; label: string }) {
   const { c } = useTheme();
+  const { hovered, bind } = usePressed();
+  const color = hovered ? c.ink : c.ink2;
   return (
-    <View style={{ flexDirection: "row", alignItems: "center" }}>
-      <Chevron dir="left" color={c.ink2} />
-      <TextLink href={to} tone="ink2">
-        {label}
-      </TextLink>
-    </View>
+    <Link href={to as Href} asChild>
+      <Pressable
+        role="link"
+        aria-label={label}
+        {...bind}
+        style={StyleSheet.flatten([{ alignSelf: "flex-start", minHeight: control, flexDirection: "row", alignItems: "center", gap: space["2xs"], marginLeft: -space.xs, paddingRight: space.xs }, web({ cursor: "pointer", transition: "color 120ms" })])}
+      >
+        <ChevronLeft size={20} strokeWidth={1.6} color={color} />
+        <Text variant="small" style={{ color }}>{label}</Text>
+      </Pressable>
+    </Link>
   );
 }

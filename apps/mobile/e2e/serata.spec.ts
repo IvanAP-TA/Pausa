@@ -20,10 +20,10 @@ test.describe.configure({ mode: "serial" });
 
 const MATCH_MS = Number(process.env.SERATA_MATCH_MS ?? 8000);
 
-/** Adds a title to the new Serata by searching it (the mock catalogue knows "matrix", "breaking" and "one piece"). */
+/** Adds a title to the new Serata by searching it (the mock catalogue knows "matrix", "breaking" and "one piece") and tapping its poster. */
 async function addBySearch(page: Page, query: string, title: string) {
   await page.getByLabel(it.serata.search, { exact: true }).fill(query);
-  await page.getByRole("button", { name: `Aggiungi ${title}`, exact: true }).click();
+  await page.getByRole("button", { name: title, exact: true }).click();
 }
 
 const radio = (page: Page, title: string) => page.getByRole("radio", { name: new RegExp(`^${title}`) });
@@ -54,7 +54,7 @@ test.describe("a Serata with a member host, another member and a guest", () => {
   let inviteCode = "";
   let code = "";
 
-  test("the host builds a Tournament: search, add three titles, change the seeding with the buttons, open the room", async ({ browser }) => {
+  test("the host builds a Tournament: search, tap three posters (the order is the seeding), open the room", async ({ browser }) => {
     host = await person(browser, "host");
     memb = await person(browser, "memb");
     guest = await person(browser, "guest");
@@ -73,18 +73,10 @@ test.describe("a Serata with a member host, another member and a guest", () => {
     await addBySearch(page, "matrix", "Matrix");
     await addBySearch(page, "one piece", "One Piece");
     await addBySearch(page, "breaking", "Breaking Bad");
-    const items = page.getByTestId("picked-list").getByRole("listitem");
-    await expect(items).toHaveCount(3);
-    await expect(items.nth(0)).toContainText("Matrix");
-    await expect(items.nth(2)).toContainText("Breaking Bad");
-    // the accessible way to reorder: Breaking Bad up one place. The order is the seeding.
-    await page.getByRole("button", { name: "Sposta Breaking Bad più in alto" }).click();
-    await expect(items.nth(1)).toContainText("Breaking Bad");
-    await expect(items.nth(2)).toContainText("One Piece");
-    await expect(page.getByText("Breaking Bad ora è in posizione 2.")).toBeVisible();
-    // and put it back (Matrix, One Piece, Breaking Bad: seeds 1, 2, 3)
-    await page.getByRole("button", { name: "Sposta One Piece più in alto" }).click();
-    await expect(items.nth(1)).toContainText("One Piece");
+    // the poster of a taken title is pressed, and the count says so; the number on it is its seed (Matrix 1, One Piece 2, Breaking Bad 3)
+    await expect(page.getByTestId("picked-count")).toContainText("3 di 8");
+    await expect(page.getByRole("button", { name: "Matrix", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "Breaking Bad", exact: true })).toContainText("3");
     await expect(page.getByTestId("create-serata")).toBeEnabled();
     await page.getByTestId("create-serata").click();
     await page.waitForURL(/\/it\/s\/[A-HJ-NP-Z2-9]{6}$/);
@@ -174,7 +166,7 @@ test.describe("a Serata with a member host, another member and a guest", () => {
     expect(d1.suggestedFilename()).toBe(`pausa-serata-${code}-story.png`);
     const b1 = readFileSync((await d1.path())!);
     expect(png(b1)).toEqual({ w: 1080, h: 1920, magic: "PNG" });
-    // the poster box (x 220..860, y 300..1260) is the red artwork, not the placeholder dye; the ground outside it is the petrol dark
+    // the poster box (x 0..1080, y 0..1060) is the red artwork, not the placeholder dye; the ground outside it is the petrol dark
     const pixel = (x: number, y: number) =>
       page.evaluate(
         async ({ b64, x, y }) => {
@@ -192,7 +184,7 @@ test.describe("a Serata with a member host, another member and a guest", () => {
         { b64: b1.toString("base64"), x, y },
       );
     expect(await pixel(540, 780)).toEqual([255, 0, 0, 255]);
-    const ground = await pixel(20, 20);
+    const ground = await pixel(20, 1900); // the foot of the sheet (the print runs edge to edge at the top)
     expect(ground[0]).toBeLessThan(30);
     expect(ground[2]).toBeGreaterThan(ground[0]);
     await expect(page.getByText("Immagine salvata.")).toBeVisible();
@@ -212,6 +204,17 @@ test.describe("a Serata with a member host, another member and a guest", () => {
     await expect(stranger.page.getByTestId("public-winner")).toHaveText("Matrix");
     await expect(stranger.page.getByRole("button", { name: it.serata.result.share })).toBeVisible();
     await expect(stranger.page.getByTestId("guest-join")).toHaveCount(0);
+    await stranger.ctx.close();
+  });
+
+  test("/s/:code/card is the public page of the card: the one-sheet, the way into Pausa, the QR and the catalogue credit; no sign-in needed", async ({ browser }) => {
+    const stranger = await person(browser, "cardstranger");
+    await stranger.page.goto(`/it/s/${code}/card`);
+    await expect(stranger.page.getByTestId("serata-card")).toBeVisible();
+    await expect(stranger.page.getByTestId("public-winner")).toHaveText("Matrix");
+    await expect(stranger.page.getByRole("img", { name: it.serata.result.qrAlt })).toBeVisible();
+    await expect(stranger.page.getByRole("link", { name: it.serata.result.ctaButton })).toHaveAttribute("href", /\/it\/sign-in$/);
+    await expect(stranger.page.getByText(it.tmdb.attribution)).toBeVisible();
     await stranger.ctx.close();
   });
 

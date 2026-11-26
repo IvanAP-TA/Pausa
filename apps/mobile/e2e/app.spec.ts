@@ -46,6 +46,38 @@ async function signIn(page: Page, email: string, next?: string) {
 test.describe.configure({ mode: "serial" });
 
 test.describe("sign-in", () => {
+  test("the sheet: Google first (when configured), then the email; the TMDB credit is on the page", async ({ browser }) => {
+    const { page, ctx } = await person(browser, "sheet");
+    await page.route("**/api/auth/google/status", (route) => route.fulfill({ status: 200, contentType: "application/json", body: '{"enabled":true}' }));
+    await page.goto("/it/sign-in");
+    const google = page.getByRole("button", { name: it.auth.google });
+    await expect(google).toBeVisible();
+    const email = page.getByLabel(it.auth.email);
+    expect((await google.boundingBox())!.y).toBeLessThan((await email.boundingBox())!.y);
+    await expect(page.getByText(it.auth.or, { exact: true })).toBeVisible();
+    await expect(page.getByText(it.tmdb.attribution)).toBeVisible();
+    await ctx.close();
+  });
+
+  test("a dead invite says why, whatever the state", async ({ browser }) => {
+    const { page, ctx } = await person(browser, "dead");
+    for (const state of ["expired", "revoked", "exhausted"] as const) {
+      await page.route("**/api/invites/*", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ circleName: "", members: 0, state }) }));
+      await page.goto("/it/join/ABCDEFGH");
+      await expect(page.getByRole("heading", { level: 1 })).toContainText(it.join.invalid[state].title);
+    }
+    await ctx.close();
+  });
+
+  test("too many tries on an invite land on the quiet slow-down page", async ({ browser }) => {
+    const { page, ctx } = await person(browser, "limit");
+    await page.route("**/api/invites/*", (route) => route.fulfill({ status: 429, contentType: "application/json", headers: { "retry-after": "60" }, body: '{"code":"rate_limited","retryAfter":60}' }));
+    await page.goto("/it/join/ABCDEFGH");
+    await page.waitForURL(/\/it\/slow-down$/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(it.errors.slowTitle);
+    await ctx.close();
+  });
+
   test("a bad email is refused before any request, with a message", async ({ browser }) => {
     const { page, ctx } = await person(browser, "bad");
     let calls = 0;
@@ -115,7 +147,9 @@ test.describe("a Cerchia from creation to deletion, with two people", () => {
     await page.getByLabel(it.home.createLabel).fill("Divano Club");
     await page.getByRole("button", { name: it.home.createCta }).click();
     await page.waitForURL(/\/it\/c\/[^/]+$/);
-    circleUrl = new URL(page.url()).pathname;
+    // v1: a Cerchia opens on its diary; the people and the invites are the Cerchia tab
+    await page.goto(`${new URL(page.url()).pathname}/members`);
+    circleUrl = new URL(page.url()).pathname.replace(/\/members$/, "");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Divano Club");
     await expect(page.getByTestId(/^member-/)).toHaveCount(1);
     await expect(page.getByText(it.app.role.owner).first()).toBeVisible();
@@ -125,8 +159,8 @@ test.describe("a Cerchia from creation to deletion, with two people", () => {
     const { page } = owner;
     await expect(page.getByText(/^[A-HJ-NP-Z2-9]{8}$/)).toHaveCount(1);
     code = (await page.getByText(/^[A-HJ-NP-Z2-9]{8}$/).first().textContent())!.trim();
-    await page.getByRole("radio", { name: it.circle.invites.expiryChoices["30d"] }).click();
-    await page.getByRole("radio", { name: "10", exact: true }).click();
+    await page.getByLabel(it.circle.invites.expiry).selectOption("30d");
+    await page.getByLabel(it.circle.invites.maxUses).selectOption("10");
     await page.getByRole("button", { name: it.circle.invites.create }).click();
     await expect(page.getByText(/^[A-HJ-NP-Z2-9]{8}$/)).toHaveCount(2);
     await page.getByRole("button", { name: it.circle.copy }).first().click();
@@ -135,18 +169,22 @@ test.describe("a Cerchia from creation to deletion, with two people", () => {
     await expect(page.getByText(it.circle.copied).first()).toBeVisible();
   });
 
-  test("a stranger opens the invite link signed out: the invite page, then sign-in, then they are in", async ({ browser }) => {
+  test("a stranger opens the invite link signed out: sign-in, then the invite with the Cerchia's name, then they press Entra", async ({ browser }) => {
     member = await person(browser, "member");
     const { page } = member;
     await page.goto(`/it/join/${code}`);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText(it.app.join.title);
-    await expect(page.getByText(code).first()).toBeVisible();
-    await page.getByRole("link", { name: it.landing.nav.login }).click();
+    // legacy: a valid invite for someone signed out goes straight to sign-in and comes back
     await page.waitForURL(/sign-in\?next=/);
     await page.getByLabel(it.auth.email).fill(member.email);
     await page.getByRole("button", { name: it.auth.sendLink }).click();
     await page.getByTestId("dev-link").click();
+    await page.waitForURL(/\/it\/join\/[A-HJ-NP-Z2-9]{8}$/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Divano Club");
+    // nothing happened by itself: the person joins with an explicit press
+    await page.getByRole("button", { name: it.join.cta }).click();
     await page.waitForURL(/\/it\/c\/[^/]+$/);
+    // v1: a Cerchia opens on its diary; the people and the invites are the Cerchia tab
+    await page.goto(`${new URL(page.url()).pathname}/members`);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Divano Club");
     await expect(page.getByTestId(/^member-/)).toHaveCount(2);
     // a plain member cannot manage anyone, create invites or see group settings
@@ -157,7 +195,8 @@ test.describe("a Cerchia from creation to deletion, with two people", () => {
   test("a code the Cerchia no longer accepts is explained, not a blank page", async ({ browser }) => {
     const { page, ctx } = await person(browser, "late");
     await signIn(page, `late-${run}@pausa.test`, "/it/join/ZZZZZZZZ");
-    await expect(page.getByText(it.app.apiErrors.not_found)).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(it.join.invalid.not_found.title);
+    await expect(page.getByText(it.join.invalid.not_found.body)).toBeVisible();
     await ctx.close();
   });
 
@@ -241,10 +280,10 @@ test.describe("a Cerchia from creation to deletion, with two people", () => {
     expect(data.profile.email).toBe(member.email);
     expect(data).toHaveProperty("exportedAt");
 
-    await page.getByRole("radio", { name: it.app.languages.en }).click();
+    await page.getByTestId("pref-language").selectOption("en"); // a select, as in v1
     await page.waitForURL("**/en/me/account");
     await expect(page.getByRole("heading", { level: 1 })).toContainText(en.account.title);
-    await page.getByRole("radio", { name: it.app.languages.it }).click();
+    await page.getByTestId("pref-language").selectOption("it");
     await page.waitForURL("**/it/me/account");
 
     await page.getByRole("button", { name: it.account.logout }).click();
@@ -254,18 +293,18 @@ test.describe("a Cerchia from creation to deletion, with two people", () => {
     await page.waitForURL(/sign-in/);
   });
 
-  test("deleting the account needs the name, and ends the session", async ({ browser }) => {
+  test("deleting the account needs the email, and ends the session", async ({ browser }) => {
     const { page, ctx, email } = await person(browser, "gone");
     await signIn(page, email);
     await page.waitForURL("**/it/home");
     await page.goto("/it/account");
     await page.getByRole("button", { name: it.account.deleteOpen }).click();
-    const name = email.split("@")[0];
-    await page.getByLabel(it.app.account.deleteConfirmName.replace("{name}", name)).fill("someone else");
-    await page.getByRole("button", { name: it.account.deleteGo }).click();
-    await expect(page.getByText(it.app.account.deleteMismatchName)).toBeVisible();
-    await page.getByLabel(it.app.account.deleteConfirmName.replace("{name}", name)).fill(name);
-    await page.getByRole("button", { name: it.account.deleteGo }).click();
+    // v1: the email of the account is typed to confirm (the server checks it too)
+    await page.getByTestId("delete-email").fill("someone@else.test");
+    await page.getByTestId("delete-go").click();
+    await expect(page.getByText(it.account.deleteMismatch)).toBeVisible();
+    await page.getByTestId("delete-email").fill(email);
+    await page.getByTestId("delete-go").click();
     await page.waitForURL(/\/it$/);
     const me = await ctx.request.get("/api/me");
     expect(me.status()).toBe(401);
@@ -296,19 +335,25 @@ test.describe("accessibility and motion", () => {
     await ctx.close();
   });
 
-  test("the tab bar: Cerchie, Diario, the centred Registra, Serata, Profilo; the bell is in the header", async ({ browser }) => {
+  test("the tab bar, as v1: Diario, Serata, the centred Registra, Cerchia, Profilo; the mark, the Cerchia switch and the bell on top", async ({ browser }) => {
     const { page, ctx, email } = await person(browser, "tabs");
     await signIn(page, email);
     await page.waitForURL("**/it/home");
-    const nav = page.getByRole("navigation", { name: it.app.nav.label });
+    // no Cerchia yet: only the top bar is drawn
+    await expect(page.getByRole("navigation", { name: "Pausa" })).toHaveCount(0);
+    await page.getByLabel(it.home.createLabel).fill("Tab Club");
+    await page.getByRole("button", { name: it.home.createCta }).click();
+    await page.waitForURL(/\/it\/c\/[^/]+$/);
+    const base = new URL(page.url()).pathname;
+    const nav = page.getByRole("navigation", { name: "Pausa" });
     await expect(nav).toBeVisible();
     await expect(nav.getByRole("link")).toHaveCount(5);
-    await expect(nav.getByRole("button")).toHaveCount(0); // nothing is a placeholder any more
     const log = nav.getByRole("link", { name: it.tabs.log });
     await expect(log).toHaveAttribute("href", "/it/log");
-    await expect(nav.getByRole("link", { name: it.tabs.diary })).toHaveAttribute("href", "/it/diary");
-    // no Cerchia yet: the Serata tab has nowhere to go but the list of Cerchie
-    await expect(nav.getByRole("link", { name: it.tabs.serata })).toHaveAttribute("href", "/it/home");
+    await expect(nav.getByRole("link", { name: it.tabs.diary })).toHaveAttribute("href", base);
+    await expect(nav.getByRole("link", { name: it.tabs.diary })).toHaveAttribute("aria-current", "page");
+    await expect(nav.getByRole("link", { name: it.tabs.serata })).toHaveAttribute("href", `${base}/serate`);
+    await expect(nav.getByRole("link", { name: it.tabs.circle })).toHaveAttribute("href", `${base}/members`);
     // Registra sits on the centre line of the screen
     const box = await log.boundingBox();
     expect(Math.abs(box!.x + box!.width / 2 - 390 / 2)).toBeLessThan(3);
@@ -316,12 +361,13 @@ test.describe("accessibility and motion", () => {
     const nb = (await nav.boundingBox())!;
     expect(nb.y + nb.height).toBeGreaterThan(844 - 2);
     await expect(page.getByTestId("bell")).toBeVisible();
+    await expect(page.getByRole("button", { name: new RegExp(`^Tab Club: ${it.space.switchOpen}`) })).toBeVisible();
     await nav.getByRole("link", { name: it.tabs.profile }).click();
     await page.waitForURL("**/it/me");
     await expect(nav.getByRole("link", { name: it.tabs.profile })).toHaveAttribute("aria-current", "page");
-    await nav.getByRole("link", { name: it.tabs.diary }).click();
-    await page.waitForURL("**/it/diary");
-    await expect(nav.getByRole("link", { name: it.tabs.diary })).toHaveAttribute("aria-current", "page");
+    await nav.getByRole("link", { name: it.tabs.circle }).click();
+    await page.waitForURL("**/members");
+    await expect(nav.getByRole("link", { name: it.tabs.circle })).toHaveAttribute("aria-current", "page");
     await ctx.close();
   });
 

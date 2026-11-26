@@ -1,7 +1,7 @@
 import type { SessionInfo } from "@pausa/api-types";
-import { usePathname, useRouter } from "expo-router";
+import { Link, usePathname, useRouter, type Href } from "expo-router";
 import { useState, type ReactNode } from "react";
-import { Platform, View } from "react-native";
+import { Platform, Pressable, View } from "react-native";
 import { api } from "@/api";
 import { errorMessage } from "@/api/errors";
 import { setToken } from "@/api/token";
@@ -9,9 +9,19 @@ import { useAction } from "@/api/useAction";
 import { useResource } from "@/api/useResource";
 import { LOCALES, useI18n, type Locale } from "@/i18n";
 import { hair, space, useTheme, type ThemePref } from "@/theme";
-import { Button, Choice, ErrorState, Field, Heading, Loading, Notice, Row, RowList, Screen, Tag, Text, TextLink, Title } from "@/ui";
+import { peopleApi } from "@/api/people";
+import { BackLink } from "@/ui/BackLink";
+import { ChevronRight } from "@/ui/lucide";
+import { Select } from "@/ui/Select";
+import { Well } from "@/ui/Surfaces";
+import { Button, ErrorState, Field, Heading, Loading, Notice, Row, RowList, Screen, Tag, Text, TextLink } from "@/ui";
+import { PushToggle } from "./people/PushToggle";
+import { Services } from "./people/Services";
 import { saveExport } from "./save-export";
 import { RequireSession, useMe, useSession } from "./session";
+
+/** Three people brought in make a Fondatore (v1 `FOUNDER_AT`): a badge, nothing more. */
+const FOUNDER_AT = 3;
 
 function Section({ children }: { children: ReactNode }) {
   const { c } = useTheme();
@@ -27,24 +37,28 @@ function Preferences() {
     <Section>
       <Heading level={2}>{t("account.theme")}</Heading>
       <Text tone="ink2">{t("account.themeHint")}</Text>
-      <Choice<ThemePref>
-        label={t("account.theme")}
-        value={pref}
-        onChange={setPref}
-        options={(["system", "light", "dark"] as const).map((v) => ({ value: v, label: t(`common.themes.${v}`) }))}
-      />
-      <Choice<Locale>
-        label={t("common.language")}
-        value={locale}
-        // Same page, other language: swap the first path segment. On web a full page load, so the exported HTML of that language
-        // (its <html lang>, its catalogue) is what runs; router.replace kept the old language's screen mounted (found by the e2e test).
-        onChange={(l) => {
-          const next = path.replace(/^\/(it|en|es)(?=\/|$)/, `/${l}`);
-          if (Platform.OS === "web") window.location.assign(next);
-          else router.replace(next as never);
-        }}
-        options={LOCALES.map((l) => ({ value: l, label: t(`app.languages.${l}`) }))}
-      />
+      <View style={{ gap: space.sm }}>
+        <Select<Locale>
+          label={t("common.language")}
+          value={locale}
+          testID="pref-language"
+          // Same page, other language: swap the first path segment. On web a full page load, so the exported HTML of that language
+          // (its <html lang>, its catalogue) is what runs; router.replace kept the old language's screen mounted (found by the e2e test).
+          onChange={(l) => {
+            const next = path.replace(/^\/(it|en|es)(?=\/|$)/, `/${l}`);
+            if (Platform.OS === "web") window.location.assign(next);
+            else router.replace(next as never);
+          }}
+          options={LOCALES.map((l) => ({ value: l, label: t(`app.languages.${l}`) }))}
+        />
+        <Select<ThemePref>
+          label={t("common.theme")}
+          value={pref}
+          testID="pref-theme"
+          onChange={setPref}
+          options={(["system", "light", "dark"] as const).map((v) => ({ value: v, label: t(`common.themes.${v}`) }))}
+        />
+      </View>
     </Section>
   );
 }
@@ -117,42 +131,46 @@ function Data() {
   );
 }
 
-function DeleteAccount() {
+function DeleteAccount({ email }: { email: string }) {
   const { t, href } = useI18n();
-  const me = useMe();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
   const [mismatch, setMismatch] = useState(false);
   const act = useAction();
   const { signOut } = useSession();
-  const matches = typed.trim() === me.name.trim();
+  const matches = typed.trim().toLowerCase() === email.trim().toLowerCase();
   return (
     <Section>
       <Heading level={2}>{t("account.deleteTitle")}</Heading>
       <Text tone="ink2">{t("account.deleteBody")}</Text>
       {!open ? (
-        <Button label={t("account.deleteOpen")} variant="quiet" onPress={() => setOpen(true)} />
+        <View style={{ alignSelf: "flex-start" }}>
+          <Button label={t("account.deleteOpen")} variant="quiet" onPress={() => setOpen(true)} testID="delete-open" />
+        </View>
       ) : (
         <View style={{ gap: space.sm }}>
           <Field
-            label={t("app.account.deleteConfirmName", { name: me.name })}
+            label={t("account.deleteConfirm", { email })}
             value={typed}
             onChangeText={(v) => { setTyped(v); setMismatch(false); }}
             autoCapitalize="none"
             autoCorrect={false}
-            error={mismatch ? t("app.account.deleteMismatchName") : null}
+            keyboardType="email-address"
+            error={mismatch ? t("account.deleteMismatch") : null}
+            testID="delete-email"
           />
           <Button
             label={act.busy ? t("app.account.deleting") : t("account.deleteGo")}
             variant="danger"
             busy={act.busy}
+            testID="delete-go"
             onPress={async () => {
               if (!matches) {
                 setMismatch(true);
                 return;
               }
-              if (await act.run(() => api.deleteAccount())) {
+              if (await act.run(() => api.deleteAccount(typed.trim()))) {
                 await setToken(null);
                 await signOut();
                 router.replace(href() as never);
@@ -168,33 +186,62 @@ function DeleteAccount() {
 
 function AccountBody() {
   const { t, href } = useI18n();
-  const me = useMe();
+  const { c } = useTheme();
   const { signOut } = useSession();
   const router = useRouter();
   const [out, setOut] = useState(false);
+  const me = useResource((signal) => peopleApi.settings(signal), []);
+  const guest = useMe().isAnonymous;
   return (
     <Screen>
-      <Heading level={1}>{t("account.title")}</Heading>
-      <View style={{ gap: space["2xs"] }}>
-        <Text variant="label" tone="muted">{t("account.name")}</Text>
-        <Title>{me.name}</Title>
-        {me.isAnonymous ? <Text tone="ink2">{t("app.account.guest")}</Text> : null}
+      <View style={{ gap: space.xs }}>
+        <BackLink to={href("/me")} label={t("profile.title")} />
+        <Heading level={1}>{t("account.title")}</Heading>
+        {me.data ? (
+          <Text variant="small" tone="muted" selectable testID="account-email">
+            {me.data.email}
+          </Text>
+        ) : null}
+        {guest ? <Text tone="ink2">{t("app.account.guest")}</Text> : null}
+        {me.data && me.data.brought > 0 ? (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.xs }} testID="account-brought">
+            <Text tone="ink2">{t("account.brought", { count: me.data.brought })}</Text>
+            {me.data.brought >= FOUNDER_AT ? <Tag tone="accent" label={t("account.founder")} /> : null}
+          </View>
+        ) : null}
       </View>
+
+      <Link href={href("/me/profile") as Href} asChild>
+        <Pressable role="link" testID="account-edit-profile" style={{ minHeight: 44 }}>
+          <Well style={{ padding: space.md, gap: space["3xs"] }}>
+            <Text variant="strong">{t("profile.edit")}</Text>
+            <Text variant="small" tone="muted">{t("profile.editHint")}</Text>
+          </Well>
+        </Pressable>
+      </Link>
+
       <Preferences />
+      <PushToggle />
+      <Section>
+        <RowList>
+          <Row href={href("/me/settings")} testID="me-settings" style={{ gap: space.md }}>
+            <View style={{ flex: 1, gap: space["3xs"] }}>
+              <Text variant="strong">{t("app.account.alertsTitle")}</Text>
+              <Text variant="small" tone="muted">{t("app.account.alertsBody")}</Text>
+            </View>
+            <ChevronRight size={20} strokeWidth={1.6} color={c.muted} />
+          </Row>
+        </RowList>
+      </Section>
+      <Services />
       <Sessions />
       <Data />
       <Section>
-        <Heading level={2}>{t("account.legal")}</Heading>
-        <View style={{ flexDirection: "row", gap: space.md, flexWrap: "wrap" }}>
-          <TextLink href={href("/privacy")}>{t("account.privacy")}</TextLink>
-          <TextLink href={href("/terms")}>{t("account.terms")}</TextLink>
-        </View>
-      </Section>
-      <Section>
         <Button
           label={out ? t("account.loggingOut") : t("account.logout")}
-          variant="secondary"
+          variant="quiet"
           busy={out}
+          testID="logout"
           onPress={async () => {
             setOut(true);
             await signOut();
@@ -202,7 +249,11 @@ function AccountBody() {
           }}
         />
       </Section>
-      <DeleteAccount />
+      {me.data ? <DeleteAccount email={me.data.email} /> : null}
+      <View role="navigation" aria-label={t("account.legal")} style={{ flexDirection: "row", gap: space.lg, flexWrap: "wrap" }}>
+        <TextLink href={href("/privacy")}>{t("account.privacy")}</TextLink>
+        <TextLink href={href("/terms")}>{t("account.terms")}</TextLink>
+      </View>
     </Screen>
   );
 }

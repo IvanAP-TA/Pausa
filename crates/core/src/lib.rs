@@ -17,6 +17,7 @@ pub mod profile;
 pub mod push;
 pub mod ranking;
 pub mod rating;
+pub mod review;
 pub mod serata;
 pub mod shell;
 pub mod streaming;

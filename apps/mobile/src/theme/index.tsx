@@ -71,6 +71,14 @@ export function globalCss(): string {
     `:root{${block(palettes.dark, "dark")}}`,
     `:root[data-theme="light"]{${block(palettes.light, "light")}}`,
     `@media (prefers-color-scheme: light){:root[data-theme="system"]{${block(palettes.light, "light")}}}`,
+    // Safelight and curtain strengths (v1 tokens.css): dark, stronger on a phone (small, dimmed screens), faint on light paper.
+    `:root{--safelight:14%;--curtain:30%;--grain:.07}`,
+    `@media (max-width:40rem){:root:not([data-theme="light"]){--safelight:18%;--curtain:46%;--grain:.12}}`,
+    `:root[data-theme="light"]{--safelight:7%;--curtain:5%;--grain:.12}`,
+    `@media (prefers-color-scheme: light){:root[data-theme="system"]{--safelight:7%;--curtain:5%;--grain:.12}}`,
+    // The grain's specks are white on dark paper, dark on light paper.
+    `:root[data-theme="light"] [data-grain]{filter:invert(1)}`,
+    `@media (prefers-color-scheme: light){:root[data-theme="system"] [data-grain]{filter:invert(1)}}`,
     face(fonts.display200, "sofia-sans-extra-condensed-latin-200-normal", 200),
     face(fonts.display400, "sofia-sans-extra-condensed-latin-400-normal", 400),
     face(fonts.body300, "barlow-latin-300-normal", 300),
@@ -86,8 +94,20 @@ export function globalCss(): string {
     `:focus-visible{outline:2px solid var(--c-focus);outline-offset:2px}`,
     `::selection{background:color-mix(in oklab,var(--c-accent) 35%,transparent)}`,
     `input,textarea{font-size:max(16px,1em)}`,
+    // v1: on a field the focus ring sits on the edge itself, not a second box outside it; a link's underline turns accent under the pointer.
+    `input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:-1px}`,
+    `[data-glyph]::before{content:attr(data-glyph)}`,
+    `[data-link]:hover{text-decoration-color:var(--c-accent)!important}`,
     `.skip-link{position:absolute;left:8px;top:-100px;z-index:999;padding:12px 16px;background:var(--c-accent);color:var(--c-accentInk);font-family:${fonts.body600},system-ui,sans-serif}`,
     `.skip-link:focus{top:8px}`,
+    // v1 globals.css keyframes: a panel unfolding from its button, the current tab's mark drawn across or down, a press, a skeleton.
+    `@keyframes pausa-unfold{from{opacity:0;transform:translateY(-6px)}}`,
+    `@keyframes pausa-mark-x{from{transform:scaleX(0)}}`,
+    `@keyframes pausa-mark-y{from{transform:scaleY(0)}}`,
+    `@keyframes pausa-draw{from{transform:scaleX(0)}}`,
+    `@keyframes pausa-stand{from{opacity:.4;transform:scaleY(.5)}}`,
+    `@keyframes pausa-pop{from{transform:scale(.9)}to{transform:none}}`,
+    `@keyframes pausa-pulse{50%{opacity:.55}}`,
     `@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}`,
   ].join("\n");
 }

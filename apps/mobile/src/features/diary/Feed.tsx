@@ -1,86 +1,103 @@
+import type { LogDto } from "@pausa/api-types";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { api } from "@/api";
 import { errorMessage } from "@/api/errors";
-import { diaryApi, type FeedFilters } from "@/api/diary";
+import { diaryApi } from "@/api/diary";
 import { usePages } from "@/api/usePages";
 import { useResource } from "@/api/useResource";
 import { useI18n } from "@/i18n";
 import { space } from "@/theme";
-import { BackLink } from "@/ui/BackLink";
 import { Button } from "@/ui/Button";
-import { Choice } from "@/ui/Choice";
-import { Field } from "@/ui/Field";
-import { Sheet } from "@/ui/Sheet";
-import { Empty, ErrorState, Loading, Heading, RowList, Screen, Tag, Text } from "@/ui";
-import { RequireSession } from "../session";
-import { CircleNav, LogCard, useCircleScope } from "./shared";
+import { Empty, ErrorState, Loading, Screen, Text } from "@/ui";
+import { DayHead } from "@/ui/Surfaces";
+import { RequireSession, useSession } from "../session";
+import { CircleExtrasView, CircleHead, OnAir } from "./CircleHead";
+import { EMPTY, FilterBar, toFilters, type Draft } from "./FilterBar";
+import { dayKey, dayName } from "./dates";
+import { CardList, LogCard, useCircleScope } from "./shared";
 import "./diary.messages";
 
-type Draft = { person: string; kind: string; year: string; platform: string; minRating: string };
-const EMPTY: Draft = { person: "", kind: "", year: "", platform: "", minRating: "" };
-
-const toFilters = (d: Draft): FeedFilters => ({
-  person: d.person || undefined,
-  kind: (d.kind || undefined) as FeedFilters["kind"],
-  year: /^\d{4}$/.test(d.year.trim()) ? Number(d.year) : undefined,
-  platform: d.platform.trim() || undefined,
-  minRating: d.minRating ? Number(d.minRating) : undefined,
-});
+/**
+ * v1: the diary is cut into days (of the app's time zone, by when a viewing reached the Cerchia). Each day opens with its date set
+ * as a figure on an ink rule, the weekday (or oggi, ieri) and the month beside it; today's figure takes the signal.
+ */
+function Days({ items, circleId }: { items: LogDto[]; circleId: string }) {
+  const { locale } = useI18n();
+  const now = Date.now();
+  const groups: Array<{ key: string; at: number; logs: LogDto[] }> = [];
+  for (const log of items) {
+    const key = dayKey(log.arrivedAt);
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.logs.push(log);
+    else groups.push({ key, at: log.arrivedAt, logs: [log] });
+  }
+  const month = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" });
+  return (
+    <View testID="days">
+      {groups.map((g, i) => (
+        <View key={g.key} style={{ marginTop: i === 0 ? 0 : space.xl - 8 }} testID={`day-${g.key}`}>
+          <DayHead day={new Date(g.at).getDate()} name={dayName(g.at, now, locale)} month={month.format(g.at)} today={g.key === dayKey(now)} />
+          <CardList>
+            {g.logs.map((log) => (
+              <LogCard key={log.id} log={log} circleId={circleId} />
+            ))}
+          </CardList>
+        </View>
+      ))}
+    </View>
+  );
+}
 
 function FeedBody({ id, person }: { id: string; person?: string }) {
   const { t, href, locale } = useI18n();
+  const { state } = useSession();
   useCircleScope(id);
   const circle = useResource((signal) => api.circle(id, signal), [id]);
+  const extras = useResource((signal) => diaryApi.extras(id, locale, signal), [id, locale]);
   const [applied, setApplied] = useState<Draft>({ ...EMPTY, person: person ?? "" });
-  const [draft, setDraft] = useState<Draft>(EMPTY);
-  const [open, setOpen] = useState(false);
   const filters = toFilters(applied);
   const feed = usePages((before, signal) => diaryApi.feed(id, { ...filters, before, locale }, signal), [id, locale, JSON.stringify(filters)]);
   const activeCount = Object.values(filters).filter((v) => v !== undefined).length;
-  const set = (k: keyof Draft) => (v: string) => setDraft((d) => ({ ...d, [k]: v }));
+
+  // Not mine (any more) or gone: one message, not a second one from the feed under it.
+  if (circle.error)
+    return (
+      <Screen>
+        <ErrorState error={circle.error} onRetry={circle.reload} />
+      </Screen>
+    );
 
   return (
-    <Screen onRefresh={() => void feed.reload()} refreshing={feed.status === "loading" && feed.items.length > 0} onNearEnd={() => void feed.loadMore()}>
-      <BackLink to={href("/home")} label={t("app.circle.back")} />
-      <Heading level={1}>{circle.data?.name ?? t("diary.nav.feed")}</Heading>
-      <CircleNav circleId={id} current="feed" />
-      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.xs }}>
-        <Button
-          label={t("feed.filter.title")}
-          variant="secondary"
-          onPress={() => {
-            setDraft(applied);
-            setOpen(true);
-          }}
-          testID="open-filters"
-        />
-        <Button label={t("diary.feed.refresh")} variant="quiet" onPress={() => void feed.reload()} />
-        {activeCount > 0 ? <Tag tone="accent" label={t("diary.feed.active", { count: activeCount })} /> : null}
-        {activeCount > 0 ? <Button label={t("feed.filter.clear")} variant="quiet" onPress={() => setApplied(EMPTY)} /> : null}
-      </View>
+    <Screen onRefresh={() => { void feed.reload(); circle.reload(); extras.reload(); }} refreshing={feed.status === "loading" && feed.items.length > 0} onNearEnd={() => void feed.loadMore()}>
+      {circle.data ? <CircleHead circle={circle.data} /> : <Loading rows={1} />}
+      {circle.data ? <OnAir watching={circle.data.watching} meId={state.status === "ready" ? state.me.id : undefined} onChanged={() => void circle.reload()} /> : null}
+      <FilterBar
+        members={circle.data?.members ?? []}
+        applied={applied}
+        onApply={setApplied}
+        resultCount={activeCount > 0 && feed.status === "ready" ? feed.items.length : null}
+        hasMore={!!feed.next}
+      />
+
+      {/* v1: first steps and memories only on the plain diary, not on a filtered view. */}
+      {activeCount === 0 ? <CircleExtrasView circleId={id} extras={extras.data} /> : null}
 
       {feed.status === "loading" ? <Loading rows={4} /> : null}
       {feed.status === "error" ? <ErrorState error={feed.error} onRetry={feed.reload} /> : null}
       {feed.status === "ready" && feed.items.length === 0 ? (
         activeCount > 0 ? (
-          <Empty title={t("feed.filter.none")} body={t("diary.feed.noneBody")}>
-            <Button label={t("feed.filter.clear")} variant="secondary" onPress={() => setApplied(EMPTY)} />
-          </Empty>
+          <Text tone="ink2" style={{ paddingTop: space.md }} testID="filter-none">
+            {t("feed.filter.none")}
+          </Text>
         ) : (
           <Empty title={t("feed.emptyTitle")} body={t("feed.emptyBody")}>
             <Button label={t("feed.emptyCta")} href={href("/log")} />
           </Empty>
         )
       ) : null}
-      {feed.items.length > 0 ? (
-        <RowList>
-          {feed.items.map((log) => (
-            <LogCard key={log.id} log={log} circleId={id} />
-          ))}
-        </RowList>
-      ) : null}
+      {feed.items.length > 0 ? <Days items={feed.items} circleId={id} /> : null}
       {feed.more === "loading" ? <Loading rows={1} /> : null}
       {feed.more === "error" ? (
         <View role="alert" style={{ gap: space.xs }}>
@@ -95,49 +112,6 @@ function FeedBody({ id, person }: { id: string; person?: string }) {
         </Text>
       ) : null}
 
-      <Sheet title={t("feed.filter.title")} open={open} onClose={() => setOpen(false)}>
-        {circle.data ? (
-          <Choice
-            label={t("feed.filter.by")}
-            value={draft.person}
-            onChange={set("person")}
-            options={[{ value: "", label: t("feed.filter.everyone") }, ...circle.data.members.map((m) => ({ value: m.userId, label: m.name }))]}
-          />
-        ) : null}
-        <Choice
-          label={t("feed.filter.kind")}
-          value={draft.kind}
-          onChange={set("kind")}
-          options={[
-            { value: "", label: t("feed.filter.any") },
-            { value: "movie", label: t("kind.movie") },
-            { value: "tv", label: t("kind.tv") },
-            { value: "anime", label: t("kind.anime") },
-          ]}
-        />
-        <Field label={t("feed.filter.year")} value={draft.year} onChangeText={set("year")} keyboardType="number-pad" maxLength={4} hint={t("diary.feed.yearHint")} />
-        <Field label={t("log.platform")} value={draft.platform} onChangeText={set("platform")} placeholder={t("log.platformPlaceholder")} maxLength={60} />
-        <Choice
-          label={t("feed.filter.rating")}
-          value={draft.minRating}
-          onChange={set("minRating")}
-          options={[
-            { value: "", label: t("feed.filter.any") },
-            ...[6, 8, 9].map((h) => ({ value: String(h), label: t("feed.filter.atLeast", { stars: h / 2 }) })),
-          ]}
-        />
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs }}>
-          <Button
-            label={t("feed.filter.apply")}
-            onPress={() => {
-              setApplied(draft);
-              setOpen(false);
-            }}
-            testID="apply-filters"
-          />
-          <Button label={t("feed.filter.clear")} variant="quiet" onPress={() => setDraft(EMPTY)} />
-        </View>
-      </Sheet>
     </Screen>
   );
 }

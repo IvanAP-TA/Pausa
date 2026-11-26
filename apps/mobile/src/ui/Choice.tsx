@@ -1,5 +1,6 @@
 import { Pressable, View } from "react-native";
 import { control, hair, space, useTheme, web } from "@/theme";
+import { Check } from "./lucide";
 import { Text } from "./Text";
 
 export type ChoiceOption<V extends string> = { value: V; label: string };
@@ -27,6 +28,8 @@ export function Choice<V extends string>({ label, value, options, onChange }: { 
                   minHeight: control,
                   minWidth: control,
                   paddingHorizontal: space.md,
+                  flexDirection: "row",
+                  gap: space["2xs"],
                   alignItems: "center",
                   justifyContent: "center",
                   borderWidth: hair,
@@ -36,8 +39,8 @@ export function Choice<V extends string>({ label, value, options, onChange }: { 
                 web({ cursor: "pointer" }),
               ]}
             >
+              {on ? <Check size={16} strokeWidth={1.8} color={c.ink} /> : null}
               <Text variant={on ? "strong" : "body"} tone={on ? "ink" : "ink2"}>
-                {on ? "✓ " : ""}
                 {o.label}
               </Text>
             </Pressable>

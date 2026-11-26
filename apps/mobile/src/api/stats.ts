@@ -1,4 +1,4 @@
-import type { Insights, RankingPage, Recommendation } from "@pausa/api-types";
+import type { ForYou, Insights, RankingPage, Recommendation } from "@pausa/api-types";
 import { client } from "@/api";
 import type { Client } from "./client";
 import { query } from "./diary";
@@ -26,6 +26,7 @@ export function statsEndpoints(c: Client) {
       c.json<Insights>("GET", `/api/circles/${e(circleId)}/insights${query({ ...o })}`, { signal }),
     recommendations: (circleId: string, o: { limit?: number; locale: string }, signal?: AbortSignal) =>
       c.json<Recommendation[]>("GET", `/api/circles/${e(circleId)}/recommendations${query({ ...o })}`, { signal }),
+    forYou: (o: { locale: string }, signal?: AbortSignal) => c.json<ForYou>("GET", `/api/me/for-you${query({ ...o })}`, { signal }),
   };
 }
 export const statsApi = statsEndpoints(client);

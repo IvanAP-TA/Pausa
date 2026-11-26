@@ -25,10 +25,12 @@ pub fn shell_path(path: &str) -> Option<String> {
     }
     let tail = match rest {
         ["c", _] => "c/[id]".to_string(),
-        ["c", _, page @ ("settings" | "feed" | "ranking" | "insights" | "serate")] => {
+        ["c", _, page @ ("settings" | "feed" | "ranking" | "insights" | "serate" | "members")] => {
             format!("c/[id]/{page}")
         }
         ["c", _, "log", _] => "c/[id]/log/[logId]".to_string(),
+        ["c", _, "log", _, "edit"] => "c/[id]/log/[logId]/edit".to_string(),
+        ["c", _, "m", _] => "c/[id]/m/[mediaId]".to_string(),
         ["c", _, "people", _] => "c/[id]/people/[userId]".to_string(),
         ["join", _] => "join/[code]".to_string(),
         ["log", _] => "log/[logId]".to_string(),
@@ -56,6 +58,9 @@ mod tests {
             Some("/it/c/[id]/people/[userId]".into())
         );
         assert_eq!(s("/it/c/abc/serate"), Some("/it/c/[id]/serate".into()));
+        assert_eq!(s("/it/c/abc/members"), Some("/it/c/[id]/members".into()));
+        assert_eq!(s("/it/c/abc/log/l1/edit"), Some("/it/c/[id]/log/[logId]/edit".into()));
+        assert_eq!(s("/it/c/abc/m/local:x1"), Some("/it/c/[id]/m/[mediaId]".into()));
         assert_eq!(s("/it/join/ABCD"), Some("/it/join/[code]".into()));
         assert_eq!(s("/it/log/l1"), Some("/it/log/[logId]".into()));
         assert_eq!(s("/it/t/local:x1"), Some("/it/t/[mediaId]".into()));

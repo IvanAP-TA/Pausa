@@ -126,10 +126,10 @@ for (const l of LOCALES)
         expect((await page.locator("body").innerText()).length).toBeGreaterThan(200);
       });
 
-      test("the language switcher links to the same page in the other languages", async ({ page }) => {
+      test("the other languages of the same page are announced (hreflang; as in v1 guides and legal pages have no visible switcher)", async ({ page }) => {
         for (const other of LOCALES) {
-          const link = page.locator(`footer a[lang="${other}"]`);
-          await expect(link, other).toHaveAttribute("href", `/${other}${p.sub}`);
+          const alt = page.locator(`head link[rel="alternate"][hreflang="${other}"]`);
+          await expect(alt, other).toHaveAttribute("href", new RegExp(`/${other}${p.sub.replace(/\//g, "\\/")}$`));
         }
       });
     });
@@ -216,7 +216,7 @@ test.describe("guides", () => {
   test("30 the date, the invitation and the way back are there", async ({ page }) => {
     await page.goto("/it/guide/" + SLUG);
     await expect(page.locator("body")).toContainText(`${msg.it.guides.updated}: ${msg.it.guides.updatedOn}`);
-    await expect(page.getByRole("link", { name: msg.it.landing.hero.cta })).toHaveAttribute("href", "/it/sign-in");
+    await expect(page.getByRole("link", { name: msg.it.guides.try })).toHaveAttribute("href", "/it#try");
     await expect(page.getByRole("link", { name: msg.it.guides.back })).toHaveAttribute("href", "/it/guide");
   });
 

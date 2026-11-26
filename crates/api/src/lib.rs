@@ -22,6 +22,7 @@ mod manage;
 mod media;
 mod profile;
 mod push;
+mod review;
 mod serata;
 mod serata_room;
 mod session;
@@ -94,6 +95,7 @@ async fn route(req: Request, env: Env) -> Result<Response> {
         (Method::Post, ["api", "circles", "join"]) => circles::join(req, env).await,
         (Method::Get, ["api", "invites", code]) => circles::preview(req, env, code).await,
         (Method::Get, ["api", "circles", id]) => manage::detail(req, env, id).await,
+        (Method::Get, ["api", "circles", id, "extras"]) => manage::extras(req, env, id).await,
         (Method::Patch, ["api", "circles", id]) => manage::update(req, env, id).await,
         (Method::Delete, ["api", "circles", id]) => manage::delete(req, env, id).await,
         (Method::Post, ["api", "circles", id, "invites"]) => {
@@ -122,6 +124,7 @@ async fn route(req: Request, env: Env) -> Result<Response> {
             account::revoke_session(req, env, id).await
         }
         (Method::Get, ["api", "media", "search"]) => media::search(req, env).await,
+        (Method::Post, ["api", "media", "resolve"]) => media::resolve(req, env).await,
         (Method::Get, ["api", "media", id]) => media::detail(req, env, id).await,
         (Method::Put, ["api", "media", id, "progress"]) => media::set(req, env, id).await,
         (Method::Post, ["api", "media", id, "progress", "advance"]) => {
@@ -130,12 +133,17 @@ async fn route(req: Request, env: Env) -> Result<Response> {
         (Method::Delete, ["api", "media", id, "progress"]) => media::clear(req, env, id).await,
         (Method::Get, ["api", "me", "progress"]) => media::list(req, env).await,
         (Method::Get, ["api", "me", "diary"]) => diary::my_diary(req, env).await,
+        (Method::Get, ["api", "me", "diary", "counts"]) => diary::my_diary_counts(req, env).await,
 
         (Method::Post, ["api", "logs"]) => diary::create(req, env).await,
+        (Method::Get, ["api", "logs", id]) => diary::get_own(req, env, id).await,
         (Method::Put, ["api", "logs", id]) => diary::update(req, env, id).await,
         (Method::Delete, ["api", "logs", id]) => diary::delete(req, env, id).await,
         (Method::Put, ["api", "logs", id, "shares"]) => diary::set_shares(req, env, id).await,
         (Method::Get, ["api", "circles", id, "feed"]) => diary::feed(req, env, id).await,
+        (Method::Get, ["api", "circles", id, "media", media]) => {
+            diary::circle_media(req, env, id, media).await
+        }
         (Method::Get, ["api", "circles", id, "logs", log]) => {
             diary::thread(req, env, id, log).await
         }
@@ -154,6 +162,8 @@ async fn route(req: Request, env: Env) -> Result<Response> {
             admin::resolve(req, env, id).await
         }
         (Method::Get, ["api", "admin", "metrics"]) => admin::metrics(req, env).await,
+        (Method::Get, ["api", "review"]) => review::status(env).await,
+        (Method::Post, ["api", "review", "sign-in"]) => review::sign_in(req, env).await,
         (Method::Get, ["api", "me", "for-you"]) => foryou::for_you(req, env).await,
         (Method::Get, ["api", "providers"]) => streaming::catalogue(req, env).await,
         (Method::Get, ["api", "me", "providers"]) => streaming::mine(req, env).await,
@@ -213,7 +223,21 @@ async fn route(req: Request, env: Env) -> Result<Response> {
             ["api", "serate", code, op @ ("start" | "vote" | "ballot" | "force" | "leave")],
         ) => serata::act(req, env, code, op).await,
         (Method::Get, ["api", "circles", id, "serate"]) => serata::history(req, env, id).await,
+        (Method::Get, ["api", "circles", id, "serate", "services"]) => {
+            serata::services(req, env, id).await
+        }
+        (Method::Get, ["api", "circles", id, "serate", "suggest"]) => {
+            serata::suggest(req, env, id).await
+        }
         (Method::Get, ["api", "imports"]) => imports::list(req, env).await,
+        (Method::Get, ["api", "imports", "bulk-days"]) => imports::bulk_days(req, env).await,
+        (Method::Get, ["api", "imports", "config"]) => imports::config(req, env).await,
+        (Method::Post, ["api", "imports", "bulk-days", day, "hide"]) => {
+            imports::hide_bulk_day(req, env, day).await
+        }
+        (Method::Delete, ["api", "imports", "bulk-days", day]) => {
+            imports::delete_bulk_day(req, env, day).await
+        }
         (Method::Post, ["api", "imports"]) => imports::start(req, env).await,
         (Method::Get, ["api", "imports", id]) => imports::status(req, env, id).await,
         (Method::Delete, ["api", "imports", id]) => imports::delete(req, env, id).await,
