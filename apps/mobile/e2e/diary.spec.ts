@@ -16,7 +16,6 @@ test.beforeEach(() => test.skip(!apiUp, `API not running on ${API}: start the de
 test.describe.configure({ mode: "serial" });
 
 const NEW = {
-  rateLess: "Mezza stella in meno",
   needTwo: "Scrivi almeno due lettere.",
   future: "La data non può essere nel futuro.",
   dateRequired: "Scegli la data.",
@@ -77,10 +76,12 @@ test.describe("Registra", () => {
     for (let i = 0; i < 7; i++) await page.keyboard.press("ArrowRight");
     await expect(slider).toHaveAttribute("aria-valuenow", "7");
     await expect(slider).toHaveAttribute("aria-valuetext", "3,5 stelle su 5");
-    await page.getByRole("button", { name: NEW.rateLess }).click();
+    await page.keyboard.press("ArrowLeft");
     await expect(slider).toHaveAttribute("aria-valuenow", "6");
-    await page.getByRole("button", { name: "Mezza stella in più" }).click();
+    await page.keyboard.press("ArrowRight");
     await expect(slider).toHaveAttribute("aria-valuenow", "7");
+    // v1: the value is written beside the stars
+    await expect(page.getByText("3,5", { exact: true })).toBeVisible();
 
     await openDetails(page);
     await page.getByLabel(it.log.seasonLogged).selectOption("2");

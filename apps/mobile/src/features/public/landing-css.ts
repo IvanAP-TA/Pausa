@@ -36,7 +36,7 @@ export const LANDING_CSS = `
 .lp-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .lp-wrap{width:100%;max-width:var(--container);margin:0 auto;padding:0 var(--gutter)}
 .lp-cols{display:grid;column-gap:var(--gap)}
-@media (min-width:64rem){.lp-cols{grid-template-columns:repeat(12,minmax(0,1fr))}.lp-s3{grid-column:span 3}.lp-s4{grid-column:span 4}.lp-s5{grid-column:span 5}.lp-s6{grid-column:span 6}.lp-s7{grid-column:span 7}.lp-s8{grid-column:span 8}.lp-st5{grid-column-start:5}.lp-st6{grid-column-start:6}.lp-st7{grid-column-start:7}.lp-st9{grid-column-start:9}}
+@media (min-width:64rem){.lp-cols{grid-template-columns:repeat(12,minmax(0,1fr))}.lp-s3{grid-column-end:span 3}.lp-s4{grid-column-end:span 4}.lp-s5{grid-column-end:span 5}.lp-s6{grid-column-end:span 6}.lp-s7{grid-column-end:span 7}.lp-s8{grid-column-end:span 8}.lp-st5{grid-column-start:5}.lp-st6{grid-column-start:6}.lp-st7{grid-column-start:7}.lp-st9{grid-column-start:9}}
 .lp-min0{min-width:0}
 .lp-head{font-family:${D},ui-sans-serif,sans-serif;font-weight:200;font-size:clamp(2.75rem,6.5vw,5.5rem);line-height:1.02;text-transform:uppercase;letter-spacing:-.005em;text-wrap:balance;overflow-wrap:break-word}
 .lp-lead{font-family:Barlow_300,ui-sans-serif,sans-serif;font-size:1.2rem;line-height:1.4;color:var(--c-ink2)}
@@ -168,13 +168,14 @@ export const LANDING_CSS = `
 .lp-step-vis{display:none}
 .lp-how-side{display:block}
 .lp-how-steps{gap:0}.lp-step{min-height:64svh;align-content:center}
-.lp-s1{view-timeline:--step1 block}.lp-s2{view-timeline:--step2 block}.lp-s3{view-timeline:--step3 block}
+.lp-k1{view-timeline:--step1 block}.lp-k2{view-timeline:--step2 block}.lp-k3{view-timeline:--step3 block}
 .lp-how-vis{opacity:0;animation:lp-vis linear both;animation-range:cover 0% cover 100%}
-.lp-v1{animation-timeline:--step1}.lp-v2{animation-timeline:--step2}.lp-v3{animation-timeline:--step3;animation-name:lp-vis-last}
+.lp-v1{animation-timeline:--step1;animation-name:lp-vis-first}.lp-v2{animation-timeline:--step2}.lp-v3{animation-timeline:--step3;animation-name:lp-vis-last}
 }}
 @media (min-width:64rem){@supports not (animation-timeline:view()){.lp-how-side{display:none}}}
-@keyframes lp-vis{0%{opacity:0;transform:translateY(12px)}30%,70%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-12px)}}
-@keyframes lp-vis-last{0%{opacity:0;transform:translateY(12px)}30%,100%{opacity:1;transform:none}}
+@keyframes lp-vis{0%,28%{opacity:0;transform:translateY(12px)}31.5%,68.5%{opacity:1;transform:none}72%,100%{opacity:0;transform:translateY(-12px)}}
+@keyframes lp-vis-last{0%,28%{opacity:0;transform:translateY(12px)}31.5%,100%{opacity:1;transform:none}}
+@keyframes lp-vis-first{0%,68.5%{opacity:1;transform:none}72%,100%{opacity:0;transform:translateY(-12px)}}
 
 /* features, guests, privacy */
 .lp-features{padding-bottom:var(--sg)}
@@ -273,6 +274,7 @@ export const LANDING_CSS = `
 .lp-install-q{background:none;border:0;padding:0;font:inherit;color:inherit}
 .lp-install-link{display:inline-flex;align-items:center;gap:8px;min-height:44px;font-size:.875rem;text-decoration:underline;text-decoration-color:var(--c-muted);text-underline-offset:.2em;color:var(--c-ink)}
 @media (display-mode:standalone),(display-mode:fullscreen),(display-mode:minimal-ui){.lp-install{display:none!important}}
+@media (max-width:47.99rem){.lp-install{display:none!important}}
 
 /* sticky CTA: phones only, once the hero has left and until the closing call is in view */
 .lp-cta{display:none}

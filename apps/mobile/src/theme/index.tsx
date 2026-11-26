@@ -97,6 +97,11 @@ export function globalCss(): string {
     // v1: on a field the focus ring sits on the edge itself, not a second box outside it; a link's underline turns accent under the pointer.
     `input:focus-visible,textarea:focus-visible,select:focus-visible{outline-offset:-1px}`,
     `[data-glyph]::before{content:attr(data-glyph)}`,
+    // The rating: a native range input laid invisibly over the stars (v1 RatingField); its 22px thumb is half a star.
+    `input.pz-range{position:absolute;inset:0;margin:0;width:100%;height:44px;cursor:pointer;opacity:0;-webkit-appearance:none;appearance:none;touch-action:manipulation}`,
+    `input.pz-range::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px}`,
+    `input.pz-range::-moz-range-thumb{width:22px;height:22px;border:0}`,
+    `.pz-rating:has(input:focus-visible){outline:2px solid var(--c-focus);outline-offset:2px}`,
     `[data-link]:hover{text-decoration-color:var(--c-accent)!important}`,
     `.skip-link{position:absolute;left:8px;top:-100px;z-index:999;padding:12px 16px;background:var(--c-accent);color:var(--c-accentInk);font-family:${fonts.body600},system-ui,sans-serif}`,
     `.skip-link:focus{top:8px}`,

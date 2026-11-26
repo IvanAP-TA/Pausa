@@ -97,7 +97,7 @@ export function LandingBody({ locale }: { locale: Locale }) {
             <div className="lp-how-grid">
               <ol className="lp-how-steps">
                 {steps.map((s, i) => (
-                  <li key={i} className={`lp-step lp-s${i + 1}`}>
+                  <li key={i} className={`lp-step lp-k${i + 1}`}>
                     <div className="lp-step-row" data-reveal>
                       <span aria-hidden="true" className="lp-figure lp-poster">{i + 1}</span>
                       <div style={{ minWidth: 0 }}>

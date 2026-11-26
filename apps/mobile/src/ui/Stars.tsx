@@ -1,12 +1,11 @@
 import "@/features/diary/diary.messages";
 import { useState } from "react";
-import { Platform, Pressable, View, type GestureResponderEvent } from "react-native";
+import { Platform, View } from "react-native";
 import { useI18n } from "@/i18n";
-import { control, fonts, space, useTheme } from "@/theme";
-import { Button } from "./Button";
+import { fonts, space, useTheme } from "@/theme";
 import { Text } from "./Text";
 import { starsText } from "./stars-text";
-import { Star as StarIcon } from "./lucide";
+import { Minus as MinusIcon, Star as StarIcon } from "./lucide";
 
 /** Ratings travel as half stars, 1..10 (the API's unit). 7 = three and a half stars. */
 export const MAX_HALVES = 10;
@@ -41,73 +40,107 @@ export function Stars({ halves, size = 16 }: { halves: number | null | undefined
   );
 }
 
+/** v1 RatingField geometry: a 22px "no rating" stop, then five 44px stars; every 22px is half a star. */
+const STOP = 22;
+const STAR = 44;
+const WIDTH = STOP + STAR * 5;
+const halvesAt = (x: number) => Math.max(0, Math.min(MAX_HALVES, Math.ceil((x - STOP) / (STAR / 2))));
+
 /**
- * Picks a rating in half stars. One slider for assistive technology (arrow keys on the keyboard, increment/decrement actions on
- * native), 56pt stars you tap on the left or right half, and real 44pt "less / more / none" buttons for anyone who cannot aim at a half.
+ * Picks a rating in half stars, as v1's RatingField: five 44px stars you slide across (a press on the left half of a star is a
+ * half star, the stop before the first star is "no rating"), the number written beside them.
+ * Web: a native range input laid invisibly over the stars stays the mechanism for pointer, touch and keyboard; under a mouse
+ * the stars preview the value the pointer is on. Native: the finger drags across the row; assistive technology gets an
+ * adjustable control with increment/decrement.
  */
 export function StarInput({ value, onChange, label }: { value: number; onChange: (halves: number) => void; label: string }) {
   const { t, locale } = useI18n();
   const { c } = useTheme();
-  const [focused, setFocused] = useState(false);
-  const size = 44;
-  const slot = 56;
+  const [hover, setHover] = useState<number | null>(null);
   const set = (n: number) => onChange(Math.max(0, Math.min(MAX_HALVES, n)));
-  const text = value ? t("feed.rating", { stars: starsText(value, locale) }) : t("log.noRating");
+  const shown = hover ?? value;
+  const spoken = value ? t("feed.rating", { stars: starsText(value, locale) }) : t("log.noRating");
+  const number = (r: number) => new Intl.NumberFormat(locale, { minimumFractionDigits: r % 2 ? 1 : 0 }).format(r / 2);
+
+  const stars = (
+    <>
+      <View aria-hidden pointerEvents="none" style={{ width: STOP, height: STAR, alignItems: "center", justifyContent: "center" }}>
+        <MinusIcon size={14} color={c.muted} strokeWidth={1.6} />
+      </View>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <View key={i} pointerEvents="none">
+          <Star size={STAR} fill={shown >= i * 2 ? 1 : shown === i * 2 - 1 ? 0.5 : 0} />
+        </View>
+      ))}
+    </>
+  );
+
+  const row =
+    Platform.OS === "web" ? (
+      <div
+        className="pz-rating"
+        onPointerMove={(e) => {
+          if (e.pointerType !== "mouse") return;
+          setHover(halvesAt(e.clientX - e.currentTarget.getBoundingClientRect().left));
+        }}
+        onPointerLeave={() => setHover(null)}
+        style={{ position: "relative", display: "flex", flexDirection: "row", alignItems: "center", width: WIDTH, height: STAR, flexShrink: 0 }}
+      >
+        {stars}
+        <input
+          type="range"
+          className="pz-range"
+          min={0}
+          max={MAX_HALVES}
+          step={1}
+          value={value}
+          aria-label={label}
+          aria-valuenow={value}
+          aria-valuetext={spoken}
+          onChange={(e) => set(Number(e.currentTarget.value))}
+        />
+      </div>
+    ) : (
+      <View
+        accessible
+        accessibilityRole="adjustable"
+        accessibilityLabel={label}
+        accessibilityValue={{ min: 0, max: MAX_HALVES, now: value, text: spoken }}
+        accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
+        onAccessibilityAction={(e) => set(value + (e.nativeEvent.actionName === "increment" ? 1 : -1))}
+        onStartShouldSetResponder={() => true}
+        onMoveShouldSetResponder={() => true}
+        onResponderTerminationRequest={() => false}
+        onResponderGrant={(e) => set(halvesAt(e.nativeEvent.locationX))}
+        onResponderMove={(e) => set(halvesAt(e.nativeEvent.locationX))}
+        style={{ flexDirection: "row", alignItems: "center", width: WIDTH, height: STAR }}
+      >
+        {stars}
+      </View>
+    );
+
   return (
     <View style={{ gap: space.xs }}>
       <Text variant="label" tone="ink2">
         {label}
       </Text>
-      <View
-        role="slider"
-        aria-label={label}
-        aria-valuemin={0}
-        aria-valuemax={MAX_HALVES}
-        aria-valuenow={value}
-        aria-valuetext={text}
-        accessible
-        accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
-        onAccessibilityAction={(e) => set(value + (e.nativeEvent.actionName === "increment" ? 1 : -1))}
-        // RN-web passes DOM keyboard events through; native ignores the prop.
-        {...(Platform.OS === "web"
-          ? ({
-              tabIndex: 0,
-              onKeyDown: (e: { key: string; preventDefault: () => void }) => {
-                const d = e.key === "ArrowRight" || e.key === "ArrowUp" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 0;
-                if (d) {
-                  e.preventDefault();
-                  set(value + d);
-                } else if (e.key === "Home") set(0);
-                else if (e.key === "End") set(MAX_HALVES);
-              },
-            } as object)
-          : {})}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        style={{ flexDirection: "row", alignSelf: "flex-start", outlineWidth: focused ? 2 : 0, outlineColor: c.focus, outlineStyle: "solid" } as never}
-      >
-        {[1, 2, 3, 4, 5].map((i) => {
-          const full = i * 2;
-          const press = (half: boolean) => (_e: GestureResponderEvent) => set(value === (half ? full - 1 : full) ? 0 : half ? full - 1 : full);
-          return (
-            <View key={i} style={{ width: slot, height: slot, alignItems: "center", justifyContent: "center" }}>
-              <Star size={size} fill={value >= full ? 1 : value === full - 1 ? 0.5 : 0} />
-              <View aria-hidden style={{ position: "absolute", left: 0, top: 0, width: slot, height: slot, flexDirection: "row" }}>
-                <Pressable accessible={false} focusable={false} tabIndex={-1} onPress={press(true)} style={{ flex: 1 }} testID={`star-${full - 1}`} />
-                <Pressable accessible={false} focusable={false} tabIndex={-1} onPress={press(false)} style={{ flex: 1 }} testID={`star-${full}`} />
-              </View>
-            </View>
-          );
-        })}
-      </View>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.xs }}>
-        <Button label="−½" accessibilityLabel={`−½ ${t("diary.rating.less")}`} variant="quiet" disabled={value <= 0} onPress={() => set(value - 1)} style={{ paddingHorizontal: space.sm }} />
-        <Button label="+½" accessibilityLabel={`+½ ${t("diary.rating.more")}`} variant="quiet" disabled={value >= MAX_HALVES} onPress={() => set(value + 1)} style={{ paddingHorizontal: space.sm }} />
-        <Text variant="strong" tone={value ? "ink" : "muted"} style={{ minHeight: control, textAlignVertical: "center", paddingVertical: space.xs, flexShrink: 1 }} aria-live="polite">
-          {text}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: space.md, rowGap: space.xs }}>
+        {row}
+        <Text aria-hidden tone={shown ? "ink" : "muted"} style={{ minWidth: 72 }}>
+          {shown ? (
+            <>
+              <Text style={{ fontFamily: fonts.display400, fontSize: 24 }}>{number(shown)}</Text>
+              {" / 5"}
+            </>
+          ) : (
+            t("log.noRating")
+          )}
         </Text>
-        {value ? <Button label={t("diary.rating.clear")} variant="quiet" onPress={() => set(0)} /> : null}
       </View>
+      {/* the value, spoken once after a change (the stars and the number above are hidden from assistive technology) */}
+      <Text aria-live="polite" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 }}>
+        {spoken}
+      </Text>
     </View>
   );
 }
