@@ -20,6 +20,7 @@ mod lists;
 mod mail;
 mod manage;
 mod media;
+mod native_shell;
 mod profile;
 mod push;
 mod review;
@@ -90,6 +91,10 @@ async fn route(req: Request, env: Env) -> Result<Response> {
         (Method::Post, ["api", "auth", "native", "exchange"]) => {
             auth::native_exchange(req, env).await
         }
+        // v1's Tauri shell (still installed on phones): sign-in through the system browser.
+        (Method::Get, ["api", "native", "start"]) => native_shell::start(req, env).await,
+        (Method::Get, ["api", "native", "done"]) => native_shell::done(req, env).await,
+        (Method::Get, ["api", "native", "exchange"]) => native_shell::exchange(req, env).await,
 
         (Method::Post, ["api", "circles"]) => circles::create(req, env).await,
         (Method::Post, ["api", "circles", "join"]) => circles::join(req, env).await,

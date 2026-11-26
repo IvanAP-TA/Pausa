@@ -412,6 +412,33 @@ check("Google native code accepts the right verifier after failed attempts", r.s
 r = await call("POST", "/api/auth/native/exchange", { body: { code: protectedCode, verifier } });
 check("Google native code cannot be redeemed twice", r.status === 401);
 
+// v1's Tauri shell (a WebView on phones): the system browser signs in, /api/native/done hands a code to pausa://auth?token=,
+// the shell's WebView swaps it at /api/native/exchange for a web session cookie.
+const shellUser = await signIn(mail("shell"), "/api/native/done?next=%2Fes%2Fhome");
+check("the email link keeps the done query (next with ?)", /\/api\/native\/done\?next=(?:%2F|\/)es(?:%2F|\/)home$/.test(shellUser.location ?? ""), shellUser.location);
+r = await call("GET", "/api/native/start?next=%2Fit%2Fhome", { cookie: shellUser.cookie });
+check("shell start, already signed in: straight to done", r.status === 302 && /\/api\/native\/done\?next=(?:%2F|\/)it(?:%2F|\/)home$/.test(r.headers.get("location") ?? ""), String(r.status));
+r = await call("GET", "/api/native/start?next=%2Fit%2Fhome");
+check("shell start, signed out: Google ending on done", r.status === 302 && /\/api\/auth\/google\/start\?locale=it&next=(?:%2F|\/)api(?:%2F|\/)native(?:%2F|\/)done/.test(r.headers.get("location") ?? ""), r.headers.get("location"));
+r = await call("GET", "/api/native/done?next=%2Fes%2Fhome");
+check("shell done without a session goes to sign-in", r.status === 302 && /\/es\/sign-in\?next=(?:%2F|\/)es(?:%2F|\/)home$/.test(r.headers.get("location") ?? ""), r.headers.get("location"));
+r = await call("GET", "/api/native/done?next=%2Fes%2Fhome", { cookie: shellUser.cookie });
+const shellLink = /pausa:\/\/auth\?token=([^&"]+)&amp;next=(?:%2F|\/)es(?:%2F|\/)home/.exec(r.text);
+check("shell done: a page opening pausa://auth?token=&next= in the right language", r.status === 200 && !!shellLink && /Sesión iniciada/.test(r.text), r.text.slice(0, 300));
+r = await call("GET", "/api/native/exchange?token=nope&next=%2Fes%2Fhome");
+check("shell exchange refuses an unknown code", r.status === 302 && /\/es\/sign-in$/.test(r.headers.get("location") ?? ""));
+r = await call("GET", `/api/native/exchange?token=${shellLink?.[1]}&next=%2Fes%2Fhome`);
+const shellCookie = r.cookies.find((c) => c.startsWith("pausa_session="))?.split(";")[0];
+check("shell exchange: a web session and on to next", r.status === 303 && /\/es\/home$/.test(r.headers.get("location") ?? "") && !!shellCookie, String(r.status));
+r = await call("GET", "/api/me", { cookie: shellCookie });
+check("the shell's session is the same person", r.status === 200 && r.json?.name === `shell-${run}` && r.json?.isAnonymous === false, r.text);
+r = await call("GET", `/api/native/exchange?token=${shellLink?.[1]}&next=%2Fes%2Fhome`);
+check("a shell code works once", r.status === 302 && !r.cookies.some((c) => c.startsWith("pausa_session=")));
+r = await call("GET", `/api/native/exchange?token=${protectedCode}&next=/api/native/done`);
+check("a verifier-bound app code cannot be spent by the shell", r.status === 302);
+r = await call("GET", "/api/native/done?next=https%3A%2F%2Fevil.test", { cookie: shellUser.cookie });
+check("shell next stays on this site", r.status === 200 && /next=(?:%2F|\/)it(?:%2F|\/)home/.test(r.text));
+
 // ═════════ T2b: daily housekeeping ═════════
 const ok = await signIn(mail("keep"));
 const keepId = await uid(ok);

@@ -2,7 +2,7 @@ import { Redirect, useLocalSearchParams } from "expo-router";
 import * as Linking from "expo-linking";
 import { useState } from "react";
 import { Platform, useWindowDimensions, View } from "react-native";
-import { api } from "@/api";
+import { API_URL, api } from "@/api";
 import { useAction } from "@/api/useAction";
 import { errorMessage } from "@/api/errors";
 import { useResource } from "@/api/useResource";
@@ -12,7 +12,7 @@ import { Button, Field, Heading, Loading, Notice, Screen, Text } from "@/ui";
 import { Wordmark } from "@/ui/Brand";
 import { GoogleMark } from "@/ui/GoogleMark";
 import { Well } from "@/ui/Surfaces";
-import { isEmbeddedBrowser } from "./embedded-browser";
+import { isEmbeddedBrowser, isNativeShell, nativeDoneUrl } from "./embedded-browser";
 import { safeNext } from "./next";
 import { openGoogle } from "./google-sign-in";
 import { useSession } from "./session";
@@ -46,7 +46,9 @@ export function SignIn() {
   const wide = width >= breakpoints.rail;
   // In-app browsers (WhatsApp, Instagram...) refuse Google: web only. The first paint has no user agent on the server, so a
   // visitor in one sees the button flash at most once; the e2e cannot have it (Playwright is a real browser).
-  const embedded = Platform.OS === "web" && typeof navigator !== "undefined" && isEmbeddedBrowser(navigator.userAgent);
+  // v1's Tauri app is a WebView too, but it sends Google to the system browser and takes the session back: the button stays.
+  const shell = Platform.OS === "web" && isNativeShell();
+  const embedded = !shell && Platform.OS === "web" && typeof navigator !== "undefined" && isEmbeddedBrowser(navigator.userAgent);
   const googleOn = google?.enabled === true;
 
   const submit = async () => {
@@ -56,7 +58,7 @@ export function SignIn() {
       return;
     }
     setInvalid(false);
-    const res = await send.run(() => api.requestMagicLink({ email: value, next, locale, native: Platform.OS !== "web" }));
+    const res = await send.run(() => api.requestMagicLink({ email: value, next: shell ? nativeDoneUrl(next) : next, locale, native: Platform.OS !== "web" }));
     if (res) {
       setSent(true);
       setDevLink(res.value.devLink ?? null);
@@ -70,6 +72,11 @@ export function SignIn() {
   };
 
   const startGoogle = async () => {
+    if (shell) {
+      // The shell catches this address and opens it in the system browser (legacy google-button.tsx).
+      window.location.href = `${API_URL}/api/native/start?next=${encodeURIComponent(next)}`;
+      return;
+    }
     setGoogleBusy(true);
     setGoogleError(false);
     try {
@@ -85,7 +92,7 @@ export function SignIn() {
   const form = sent ? (
     <View style={{ gap: space.sm }}>
       <Notice>{t("auth.linkSent")}</Notice>
-      {Platform.OS !== "web" ? <Text variant="small" tone="muted">{t("app.signIn.nativeOpen")}</Text> : null}
+      {Platform.OS !== "web" || shell ? <Text variant="small" tone="muted">{t("app.signIn.nativeOpen")}</Text> : null}
       {/* Local development only: the API returns `devLink` when it has no mail key and the request is from loopback. */}
       {devLink ? (
         <View style={{ gap: space.xs }}>

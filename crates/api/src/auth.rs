@@ -220,9 +220,17 @@ async fn verify_inner(req: &Request, env: &Env) -> R<Response> {
         );
     }
 
-    let mut target = url.clone();
-    target.set_path(&next);
-    target.set_query(None);
+    // `next` may carry a query (the old shell's /api/native/done?next=...): resolve it, same origin only.
+    let target = url
+        .join(&next)
+        .ok()
+        .filter(|u| u.origin() == url.origin())
+        .unwrap_or_else(|| {
+            let mut u = url.clone();
+            u.set_path("/");
+            u.set_query(None);
+            u
+        });
     let mut res = Response::empty()?.with_status(303);
     res.headers_mut().set("Location", target.as_str())?;
     res.headers_mut()
