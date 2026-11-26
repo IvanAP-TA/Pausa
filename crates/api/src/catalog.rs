@@ -12,6 +12,10 @@ use pausa_core::catalog::{
 };
 use pausa_core::dto::{CandidateDto, ErrorCode, Locale};
 use pausa_core::limits;
+use pausa_core::people::{
+    card_from_anilist, card_from_tmdb, hits_from_anilist, hits_from_tmdb, merge_hits, PersonCard,
+    PersonHit, PersonKey,
+};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use worker::wasm_bindgen::JsValue;
@@ -84,11 +88,18 @@ async fn count(c: &Caller<'_>) -> R<()> {
 }
 
 pub async fn tmdb_get(env: &Env, caller: &Caller<'_>, path_and_query: &str) -> R<Value> {
+    tmdb_fetch(env, caller, path_and_query)
+        .await?
+        .ok_or_else(unavailable)
+}
+
+/// Like `tmdb_get`, but `None` when TMDB definitively answers 404 (the title does not exist there).
+async fn tmdb_fetch(env: &Env, caller: &Caller<'_>, path_and_query: &str) -> R<Option<Value>> {
     let token = setting(env, "TMDB_API_TOKEN").ok_or_else(unavailable)?;
     let base = setting(env, "TMDB_BASE_URL").unwrap_or_else(|| TMDB_DEFAULT.to_string());
     let url = format!("{base}{path_and_query}");
     if let Some(v) = cache_get(&url).await {
-        return Ok(v);
+        return Ok(Some(v));
     }
     count(caller).await?;
     let headers = Headers::new();
@@ -99,16 +110,32 @@ pub async fn tmdb_get(env: &Env, caller: &Caller<'_>, path_and_query: &str) -> R
     let mut res = Fetch::Request(Request::new_with_init(&url, &init)?)
         .send()
         .await?;
+    if res.status_code() == 404 {
+        console_error!("tmdb answered 404");
+        return Ok(None);
+    }
     if res.status_code() != 200 {
         console_error!("tmdb answered {}", res.status_code());
         return Err(unavailable());
     }
     let v: Value = res.json().await?;
     cache_put(&url, &v, TMDB_TTL_S).await;
-    Ok(v)
+    Ok(Some(v))
 }
 
 async fn anilist_post(env: &Env, caller: &Caller<'_>, query: &str, vars: Value) -> R<Value> {
+    anilist_fetch(env, caller, query, vars)
+        .await?
+        .ok_or_else(unavailable)
+}
+
+/// Like `anilist_post`, but `None` when AniList definitively says the media does not exist (404 or a "Not Found." error).
+async fn anilist_fetch(
+    env: &Env,
+    caller: &Caller<'_>,
+    query: &str,
+    vars: Value,
+) -> R<Option<Value>> {
     let url = setting(env, "ANILIST_URL").unwrap_or_else(|| ANILIST_DEFAULT.to_string());
     // POST answers are not cacheable by URL, so a synthetic GET key stands for (query, variables).
     let key = format!(
@@ -116,7 +143,7 @@ async fn anilist_post(env: &Env, caller: &Caller<'_>, query: &str, vars: Value) 
         pausa_core::auth::hash_token(&format!("{query}{vars}"))
     );
     if let Some(v) = cache_get(&key).await {
-        return Ok(v);
+        return Ok(Some(v));
     }
     count(caller).await?;
     let headers = Headers::new();
@@ -133,20 +160,36 @@ async fn anilist_post(env: &Env, caller: &Caller<'_>, query: &str, vars: Value) 
     let mut res = Fetch::Request(Request::new_with_init(&url, &init)?)
         .send()
         .await?;
-    if res.status_code() != 200 {
-        console_error!("anilist answered {}", res.status_code());
+    let status = res.status_code();
+    if status != 200 && status != 404 {
+        console_error!("anilist answered {status}");
         return Err(unavailable());
+    }
+    if status == 404 {
+        console_error!("anilist answered 404");
+        return Ok(None);
     }
     let v: Value = res.json().await?;
-    if v.get("errors").is_some() {
-        return Err(unavailable());
+    if let Some(errs) = v.get("errors") {
+        let not_found = errs.as_array().is_some_and(|a| {
+            a.iter().any(|e| {
+                e.get("message")
+                    .and_then(Value::as_str)
+                    .is_some_and(|m| m.contains("Not Found"))
+            })
+        });
+        return if not_found {
+            Ok(None)
+        } else {
+            Err(unavailable())
+        };
     }
     cache_put(&key, &v, ANILIST_TTL_S).await;
-    Ok(v)
+    Ok(Some(v))
 }
 
 const ANILIST_SEARCH: &str = "query($q:String){Page(perPage:8){media(search:$q,type:ANIME,isAdult:false){id idMal title{romaji english native} seasonYear startDate{year} isAdult coverImage{large}}}}";
-const ANILIST_MEDIA: &str = "query($id:Int){Media(id:$id,type:ANIME){id idMal title{romaji english native} seasonYear startDate{year} episodes duration description(asHtml:false) genres isAdult coverImage{large}}}";
+const ANILIST_MEDIA: &str = "query($id:Int){Media(id:$id,type:ANIME){id idMal title{romaji english native} seasonYear startDate{year} episodes duration description(asHtml:false) genres isAdult coverImage{large} staff(sort:RELEVANCE,perPage:25){edges{role node{id name{full} image{large}}}}}}";
 
 #[derive(Deserialize)]
 struct LocalRow {
@@ -263,6 +306,78 @@ pub async fn search(
         .into_iter()
         .map(to_dto)
         .collect())
+}
+
+const ANILIST_PERSON_SEARCH: &str = "query($q:String){Page(perPage:8){staff(search:$q){id name{full} primaryOccupations image{large}}}}";
+const ANILIST_STAFF: &str = "query($id:Int){Staff(id:$id){id name{full} image{large} description(asHtml:false) dateOfBirth{year month day} dateOfDeath{year month day} homeTown staffMedia(type:ANIME,sort:START_DATE_DESC,perPage:50){edges{staffRole node{id type isAdult title{romaji english native} seasonYear startDate{year} coverImage{large}}}}}}";
+
+/// People search: TMDB (directing and writing people) and AniList staff, in the same error style as `search` (one catalogue being
+/// down only removes its own hits; the rate limit is not swallowed). Nothing is stored.
+pub async fn person_search(
+    env: &Env,
+    db: &D1Database,
+    user_id: &str,
+    q: &str,
+    locale: Locale,
+) -> R<Vec<PersonHit>> {
+    let q = q.trim();
+    if q.chars().count() < 2 || q.chars().count() > 100 {
+        return Err(Fail::invalid());
+    }
+    let caller = Caller {
+        db,
+        user_id,
+        counted: true,
+    };
+    let tmdb = if setting(env, "TMDB_API_TOKEN").is_some() {
+        let path = format!(
+            "/search/person?query={}&language={}&include_adult=false&page=1",
+            urlencode(q),
+            tmdb_lang(locale)
+        );
+        match tmdb_get(env, &caller, &path).await {
+            Ok(v) => hits_from_tmdb(&v, 10),
+            Err(f) if f.status == 429 => return Err(f),
+            Err(_) => Vec::new(),
+        }
+    } else {
+        Vec::new()
+    };
+    let anilist = match anilist_post(env, &caller, ANILIST_PERSON_SEARCH, json!({ "q": q })).await {
+        Ok(v) => hits_from_anilist(&v, 8),
+        Err(f) if f.status == 429 => return Err(f),
+        Err(_) => Vec::new(),
+    };
+    Ok(merge_hits(tmdb, anilist, 10))
+}
+
+/// A person's card (bio and filmography) from the catalogue the key belongs to; `None` when it has no such person.
+pub async fn person_card(
+    env: &Env,
+    db: &D1Database,
+    user_id: &str,
+    key: &PersonKey,
+    locale: Locale,
+) -> R<Option<PersonCard>> {
+    let caller = Caller {
+        db,
+        user_id,
+        counted: true,
+    };
+    Ok(match key {
+        PersonKey::Tmdb(id) => {
+            let path = format!(
+                "/person/{id}?language={}&append_to_response=combined_credits",
+                tmdb_lang(locale)
+            );
+            tmdb_fetch(env, &caller, &path)
+                .await?
+                .and_then(|b| card_from_tmdb(&b))
+        }
+        PersonKey::Anilist(id) => anilist_fetch(env, &caller, ANILIST_STAFF, json!({ "id": id }))
+            .await?
+            .and_then(|b| card_from_anilist(&b)),
+    })
 }
 
 fn urlencode(s: &str) -> String {
@@ -438,6 +553,12 @@ async fn store(db: &D1Database, d: &Draft, locale: Locale, source: &str) -> R<St
             now.into(),
         ])?,
     );
+    stmts.extend(v2_statements(
+        db,
+        Target::Find(find_sql, &find_args),
+        d,
+        now,
+    )?);
     db.batch(stmts).await?;
 
     first_id(
@@ -447,6 +568,66 @@ async fn store(db: &D1Database, d: &Draft, locale: Locale, source: &str) -> R<St
     )
     .await?
     .ok_or_else(Fail::internal)
+}
+
+/// How a title is addressed by the statements of a batch: by its catalogue key (`store`, the row may not exist yet when the
+/// batch is built) or by its id (`fill_locale`).
+enum Target<'a> {
+    Find(&'a str, &'a [JsValue]),
+    Id(&'a str),
+}
+
+/// The statements that write what 0003 added for a title: its stable genres and `catalog_v2_at`. Both are idempotent.
+fn v2_statements(
+    db: &D1Database,
+    target: Target<'_>,
+    d: &Draft,
+    now: f64,
+) -> R<Vec<D1PreparedStatement>> {
+    let mut stmts = Vec::new();
+    for g in &d.genre_slugs {
+        stmts.push(match &target {
+            Target::Find(find_sql, args) => db
+                .prepare(format!("INSERT OR IGNORE INTO media_genre(media_id, genre) SELECT id, ?3 FROM media_entity WHERE {find_sql}"))
+                .bind(&[args[0].clone(), args[1].clone(), (*g).into()])?,
+            Target::Id(id) => db
+                .prepare("INSERT OR IGNORE INTO media_genre(media_id, genre) VALUES (?1, ?2)")
+                .bind(&[(*id).into(), (*g).into()])?,
+        });
+    }
+    for c in &d.people {
+        let (col, ext) = match &c.key {
+            PersonKey::Tmdb(i) => ("tmdb_id", *i),
+            PersonKey::Anilist(i) => ("anilist_id", *i),
+        };
+        let profile: JsValue = c.profile.as_deref().map_or(JsValue::NULL, JsValue::from);
+        // The conflict target repeats the partial index's WHERE, as SQLite requires.
+        stmts.push(
+            db.prepare(format!("INSERT INTO person(id, {col}, name, profile_path) VALUES (?1, ?2, ?3, ?4) ON CONFLICT({col}) WHERE {col} IS NOT NULL DO UPDATE SET name = excluded.name, profile_path = COALESCE(excluded.profile_path, person.profile_path)"))
+                .bind(&[new_id().into(), (ext as f64).into(), c.name.as_str().into(), profile])?,
+        );
+        let role = c.role.as_str();
+        let pos = c.position as f64;
+        stmts.push(match &target {
+            Target::Find(find_sql, args) => db
+                .prepare(format!("INSERT OR IGNORE INTO media_person(media_id, person_id, role, position) SELECT m.id, p.id, ?3, ?4 FROM media_entity m, person p WHERE m.id = (SELECT id FROM media_entity WHERE {find_sql}) AND p.{col} = ?5"))
+                .bind(&[args[0].clone(), args[1].clone(), role.into(), pos.into(), (ext as f64).into()])?,
+            Target::Id(id) => db
+                .prepare(format!("INSERT OR IGNORE INTO media_person(media_id, person_id, role, position) SELECT ?1, p.id, ?2, ?3 FROM person p WHERE p.{col} = ?4"))
+                .bind(&[(*id).into(), role.into(), pos.into(), (ext as f64).into()])?,
+        });
+    }
+    stmts.push(match &target {
+        Target::Find(find_sql, args) => db
+            .prepare(format!(
+                "UPDATE media_entity SET catalog_v2_at = ?3 WHERE {find_sql}"
+            ))
+            .bind(&[args[0].clone(), args[1].clone(), now.into()])?,
+        Target::Id(id) => db
+            .prepare("UPDATE media_entity SET catalog_v2_at = ?2 WHERE id = ?1")
+            .bind(&[(*id).into(), now.into()])?,
+    });
+    Ok(stmts)
 }
 
 #[derive(Deserialize)]
@@ -527,7 +708,74 @@ pub async fn fill_locale(
                 .bind(&[media_id.into(), (*season as f64).into(), (*episodes as f64).into()])?,
         );
     }
+    stmts.extend(v2_statements(
+        db,
+        Target::Id(media_id),
+        &d,
+        now_ms() as f64,
+    )?);
     db.batch(stmts).await?;
+    Ok(())
+}
+
+/// Refreshes a stored title's genres and authors from the catalogue (Italian: neither depends on the language). Used for titles
+/// stored before migration 0003, by the backfill (`counted: false`) and lazily on the detail view (`counted: true`).
+/// `catalog_v2_at` is stamped when the title was filled, or when the catalogue definitively has no such title (404) so it is not
+/// retried forever. Rate limit, missing token, 5xx and network errors return `Err` without stamping: they are transient.
+pub async fn fill_v2(
+    env: &Env,
+    db: &D1Database,
+    user_id: &str,
+    media_id: &str,
+    counted: bool,
+) -> R<()> {
+    let k = db
+        .prepare("SELECT kind, tmdb_id, anilist_id FROM media_entity WHERE id = ?1")
+        .bind(&[media_id.into()])?
+        .first::<EntityKeys>(None)
+        .await?
+        .ok_or_else(Fail::not_found)?;
+    let caller = Caller {
+        db,
+        user_id,
+        counted,
+    };
+    let draft: Option<Draft> = match (k.tmdb_id, k.anilist_id) {
+        (Some(id), _) => {
+            let tv = k.kind != "movie";
+            let path = format!(
+                "/{}/{id}?language={}&append_to_response=credits,external_ids",
+                if tv { "tv" } else { "movie" },
+                tmdb_lang(Locale::It)
+            );
+            tmdb_fetch(env, &caller, &path)
+                .await?
+                .and_then(|body| draft_from_tmdb(tv, &body))
+        }
+        (None, Some(id)) => anilist_fetch(env, &caller, ANILIST_MEDIA, json!({ "id": id }))
+            .await?
+            .and_then(|body| draft_from_anilist(&body)),
+        _ => None,
+    };
+    let now = now_ms() as f64;
+    match draft {
+        Some(d) => {
+            let mut stmts = vec![
+                db.prepare("DELETE FROM media_genre WHERE media_id = ?1")
+                    .bind(&[media_id.into()])?,
+                db.prepare("DELETE FROM media_person WHERE media_id = ?1")
+                    .bind(&[media_id.into()])?,
+            ];
+            stmts.extend(v2_statements(db, Target::Id(media_id), &d, now)?);
+            db.batch(stmts).await?;
+        }
+        None => {
+            db.prepare("UPDATE media_entity SET catalog_v2_at = ?2 WHERE id = ?1")
+                .bind(&[media_id.into(), now.into()])?
+                .run()
+                .await?;
+        }
+    }
     Ok(())
 }
 
@@ -597,7 +845,7 @@ pub async fn tmdb_lookup(
     Ok(None)
 }
 
-const ANILIST_BY_MAL: &str = "query($id:Int){Media(idMal:$id,type:ANIME){id idMal title{romaji english native} seasonYear startDate{year} episodes duration description(asHtml:false) genres isAdult coverImage{large}}}";
+const ANILIST_BY_MAL: &str = "query($id:Int){Media(idMal:$id,type:ANIME){id idMal title{romaji english native} seasonYear startDate{year} episodes duration description(asHtml:false) genres isAdult coverImage{large} staff(sort:RELEVANCE,perPage:25){edges{role node{id name{full} image{large}}}}}}";
 
 /// The stored anime for a MyAnimeList id, fetched from AniList the first time.
 pub async fn resolve_mal(

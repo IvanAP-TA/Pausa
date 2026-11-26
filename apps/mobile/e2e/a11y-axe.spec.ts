@@ -53,6 +53,7 @@ const routeScreens = (): Array<[string, string]> => [
   ["ranking", `/it/c/${ids.circle}/ranking`],
   ["insights", `/it/c/${ids.circle}/insights`],
   ["person", `/it/c/${ids.circle}/people/${ids.member}`],
+  ["author page", `/it/c/${ids.circle}/person/tmdb:9339`],
   ["title page", `/it/t/${ids.media}`],
   ["circle settings", `/it/c/${ids.circle}/settings`],
   ["serate (builder + history)", `/it/c/${ids.circle}/serate`],
@@ -134,16 +135,25 @@ for (const { size, scheme } of MATRIX) {
   });
 }
 
+const MATRIX_KEY = "tmdb:movie:603";
+
 async function statesSignedIn(page: Page, out: Finding[], env: string) {
   // Registra with a series picked and a season chosen
   await page.goto("/it/log");
   await settled(page);
   await page.getByLabel("Cerca un film, una serie, un anime…").fill("breaking");
   await page.getByRole("button", { name: /^Breaking Bad/ }).first().click();
-  // the details are folded (v1): open them, then the season is a select
-  if ((await page.getByTestId("log-details").getAttribute("aria-expanded")) !== "true") await page.getByTestId("log-details").click();
-  await page.getByTestId("season").selectOption("1");
+  // a new viewing has no details section; the details live in the edit form of an existing viewing
+  await page.getByTestId("mode-watching").waitFor();
   await check(page, out, "Registra with a series", env);
+  // the edit form loads for the author only: this viewer logs a viewing of their own, then opens its edit page
+  const mine = await page.request.post("/api/logs", { data: { mediaKey: MATRIX_KEY, watchedOn: "2026-10-02", locale: "it", rating: 8, circles: [ids.circle] } });
+  expect(mine.status(), "the viewer's own viewing").toBe(201);
+  await page.goto(`/it/log/${(await mine.json()).id}`);
+  await settled(page);
+  await page.getByTestId("log-details").waitFor();
+  if ((await page.getByTestId("log-details").getAttribute("aria-expanded")) !== "true") await page.getByTestId("log-details").click();
+  await check(page, out, "Registra: edit with details open", env);
   // the filter panel on the feed (v1: in the page, not a sheet)
   await page.goto(`/it/c/${ids.circle}/feed`);
   await settled(page);

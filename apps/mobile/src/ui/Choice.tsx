@@ -3,7 +3,7 @@ import { control, hair, space, useTheme, web } from "@/theme";
 import { Check } from "./lucide";
 import { Text } from "./Text";
 
-export type ChoiceOption<V extends string> = { value: V; label: string };
+export type ChoiceOption<V extends string> = { value: V; label: string; testID?: string };
 
 /** A row of mutually exclusive options (expiry, cover, theme, language): a radio group, 44pt each, the chosen one filled. */
 export function Choice<V extends string>({ label, value, options, onChange }: { label: string; value: V; options: Array<ChoiceOption<V>>; onChange: (v: V) => void }) {
@@ -23,6 +23,7 @@ export function Choice<V extends string>({ label, value, options, onChange }: { 
               aria-checked={on}
               aria-label={o.label}
               onPress={() => onChange(o.value)}
+              testID={o.testID}
               style={[
                 {
                   minHeight: control,

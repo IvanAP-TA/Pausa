@@ -22,7 +22,7 @@ const NEW = {
   spoilerGate: "Contiene spoiler · tocca per leggere",
   commentGate: "Commento con spoiler: apri per leggerlo",
 };
-/** Registra folds date, platform, episode and the rest behind "Aggiungi dettagli": open it (an edit starts open). */
+/** Editing a viewing keeps date, platform, episode and the rest behind "Aggiungi dettagli" (a new viewing has no such section): open it (an edit starts open). */
 const openDetails = async (page: import("@playwright/test").Page) => {
   const d = page.getByTestId("log-details");
   if ((await d.getAttribute("aria-expanded")) !== "true") await d.click();
@@ -69,7 +69,7 @@ test.describe("Registra", () => {
     await expect(page.getByTestId(`share-${cid}`)).toHaveAttribute("aria-checked", "true"); // the Cerchia in use is pre-selected
   });
 
-  test("a half-star rating from the keyboard, a season from the catalogue and an episode, shared with the Cerchia", async () => {
+  test("a half-star rating from the keyboard and a review, shared with the Cerchia (a new viewing has no details: today, no season)", async () => {
     const { page } = ann;
     const slider = page.getByRole("slider", { name: it.log.rating });
     await slider.focus();
@@ -83,68 +83,33 @@ test.describe("Registra", () => {
     // v1: the value is written beside the stars
     await expect(page.getByText("3,5", { exact: true })).toBeVisible();
 
-    await openDetails(page);
-    await page.getByLabel(it.log.seasonLogged).selectOption("2");
-    await page.getByLabel(it.log.episode, { exact: true }).fill("5");
     await page.getByLabel(it.log.review).fill("Bellissima stagione");
-    await page.getByRole("checkbox", { name: "Netflix" }).click();
     await page.getByTestId("submit-log").click();
     await page.waitForURL(new RegExp(`/it/c/${cid}/log/[^/?]+$`));
     threadUrl = new URL(page.url()).pathname;
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Breaking Bad");
     await expect(page.locator('[data-testid^="review-"]')).toHaveText("Bellissima stagione");
-    await expect(page.getByText("S2·E5")).toBeVisible(); // the card says the facts on one line: "Serie, 2008, S2·E5, su Netflix"
-    await expect(page.getByText("su Netflix")).toBeVisible();
+    await expect(page.getByText("S2·E5")).toHaveCount(0); // no season or episode is asked for a new viewing: the whole series
     await expect(page.getByRole("img", { name: "3,5 stelle su 5" })).toBeVisible();
   });
 
-  test("seasons come from the catalogue: an episode past the end is refused, so is a future date; the last platform is remembered", async () => {
+  test("log form: no details, no change-title, watching only for series, back returns to search", async () => {
     const { page } = ann;
     await page.goto("/it/log");
+    await expect(page.getByRole("link", { name: /indietro/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /indietro/i })).toHaveCount(0); // search screen: hidden
+    await page.getByLabel(it.log.search).fill("matrix");
+    await page.getByRole("button", { name: /^Matrix/ }).first().click();
+    await expect(page.getByTestId("picked-title")).toBeVisible();
+    await expect(page.getByTestId("log-details")).toHaveCount(0);
+    await expect(page.getByRole("switch", { name: /spoiler/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /cambia titolo/i })).toHaveCount(0);
+    await expect(page.getByTestId("mode-watching")).toHaveCount(0); // film
+    await page.getByRole("button", { name: /indietro/i }).click();
+    await expect(page.getByLabel(it.log.search)).toBeVisible();
     await page.getByLabel(it.log.search).fill("breaking");
     await page.getByRole("button", { name: /^Breaking Bad/ }).first().click();
-    await openDetails(page);
-    const seasonSelect = page.getByLabel(it.log.seasonLogged);
-    await expect(seasonSelect.locator("option")).toHaveCount(3); // the season menu, from GET /api/media/:id: the whole show, 1 and 2 (the mock series has two seasons)
-    await expect(seasonSelect.locator("option").nth(2)).toHaveText("Stagione 2 (13 ep.)");
-    await seasonSelect.selectOption("2");
-    await expect(page.getByLabel(it.log.episode, { exact: true })).toHaveAttribute("placeholder", "1 / 13");
-    await page.getByLabel(it.log.episode, { exact: true }).fill("14");
-    await expect(page.getByText("Un numero da 1 a 13.")).toBeVisible();
-    await page.getByTestId("submit-log").click();
-    await expect(page).toHaveURL(/\/it\/log$/); // refused before any request
-
-    await page.getByLabel(it.log.episode, { exact: true }).fill("3");
-    await page.getByLabel(it.log.watchedOn).fill(ymd(2));
-    await expect(page.getByText(NEW.future)).toBeVisible();
-    await page.getByLabel(it.log.watchedOn).fill(""); // the browser's date picker cannot hold an impossible day, only an empty one
-    await expect(page.getByText(NEW.dateRequired)).toBeVisible();
-    await page.getByRole("button", { name: "Ieri" }).click();
-    await expect(page.getByText(NEW.future)).toHaveCount(0);
-    await page.getByTestId("submit-log").click();
-    await page.waitForURL(new RegExp(`/it/c/${cid}/log/`));
-    // the platform used last time is remembered for the next form
-    await page.goto("/it/log");
-    await page.getByLabel(it.log.search).fill("breaking");
-    await page.getByRole("button", { name: /^Breaking Bad/ }).first().click();
-    await openDetails(page);
-    await expect(page.getByRole("checkbox", { name: "Netflix" })).toHaveAttribute("aria-checked", "true");
-    await expect(page.getByLabel("Un'altra piattaforma")).toHaveValue("Netflix");
-  });
-
-  test("a title Pausa does not hold yet has free numbers for season and episode", async () => {
-    const { page } = ann;
-    await page.goto("/it/log");
-    await page.getByLabel(it.log.search).fill("death note");
-    await page.getByRole("button", { name: /^Death Note/ }).click();
-    await openDetails(page);
-    await expect(page.getByLabel(it.log.seasonLogged)).toHaveCount(0); // no season menu before the title exists
-    await page.getByLabel(it.log.season, { exact: true }).fill("1");
-    await page.getByLabel(it.log.episode, { exact: true }).fill("2");
-    await page.getByTestId("submit-log").click();
-    await page.waitForURL(new RegExp(`/it/c/${cid}/log/`));
-    await expect(page.getByText("S1·E2")).toBeVisible();
-    await expect(page.getByText(it.kind.anime)).toBeVisible();
+    await expect(page.getByTestId("mode-watching")).toBeVisible(); // series
   });
 
   test("'Sto guardando' writes the position and no viewing; the synopsis shows; the way to the import is there", async () => {
@@ -299,6 +264,19 @@ test.describe("feed, spoilers, reactions, comments", () => {
     await bob.page.goto(`/it/c/${cid}/log/${matrixLog}/edit`);
     await expect(bob.page.getByLabel(it.log.review)).toHaveCount(0);
   });
+
+  test("add-to-list select and button share the same bottom edge and height", async () => {
+    await api(ann, "POST", "/api/lists", { name: "Allineamento", kind: "watchlist" }); // the select is hidden without a list
+    const { page } = ann;
+    await page.goto(`/it/c/${cid}/log/${matrixLog}`);
+    const sel = page.getByTestId("add-to-list");
+    const btn = page.getByTestId("add-to-list-go");
+    await expect(sel).toBeVisible();
+    const a = (await sel.boundingBox())!;
+    const b = (await btn.boundingBox())!;
+    expect(Math.abs(a.y + a.height - (b.y + b.height))).toBeLessThanOrEqual(1);
+    expect(Math.abs(a.height - b.height)).toBeLessThanOrEqual(1);
+  });
 });
 
 test.describe("the feed paginates and filters", () => {
@@ -428,14 +406,16 @@ test.describe("the title page", () => {
     await page.getByTestId("log-this").click();
     await page.waitForURL(new RegExp(`/it/log\\?media=${bb}`));
     await expect(page.getByTestId("picked-title")).toContainText(/breaking bad/i); // no search needed
-    await openDetails(page);
-    await expect(page.getByTestId("season").locator('option[value="2"]')).toHaveCount(1); // the seasons of the title came with it
+    await expect(page.getByTestId("log-details")).toHaveCount(0); // a new viewing has no details section
   });
 });
 
 test.describe("my diary: continue watching, edit, sharing, delete", () => {
   test("the strip advances an episode and a season, and the position is the server's", async () => {
     const { page } = ann;
+    // A second title in progress, so the strip has to act on the right row (the log form no longer writes positions for a new viewing).
+    const dn = (await api<{ id: string }>(ann, "POST", "/api/media/resolve", { mediaKey: "anilist:1535", locale: "it" })).json.id;
+    expect((await api(ann, "PUT", `/api/media/${dn}/progress`, { season: 1, episode: 2, status: "watching" })).status).toBe(204);
     const before = (await api<Array<{ media: { id: string; title: string }; season: number; episode: number }>>(ann, "GET", "/api/me/progress")).json;
     expect(before.length).toBeGreaterThan(1); // Breaking Bad and Death Note
     const p = before.find((x) => x.media.title === "Breaking Bad")!;
@@ -466,6 +446,8 @@ test.describe("my diary: continue watching, edit, sharing, delete", () => {
     await expect(page.getByRole("slider", { name: it.log.rating })).toHaveAttribute("aria-valuenow", "6");
     await expect(page.getByLabel(it.log.watchedOn)).toHaveValue(ymd(0));
     await expect(page.getByTestId(`with-${bobId}`)).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByRole("switch", { name: /spoiler/i })).toHaveCount(0); // the two toggles are hidden, edit included
+    await expect(page.getByTestId("mode-watching")).toHaveCount(0);
     await page.getByLabel(it.log.review).fill("MODIFICATO");
     await page.getByRole("slider", { name: it.log.rating }).focus();
     await page.keyboard.press("ArrowRight");

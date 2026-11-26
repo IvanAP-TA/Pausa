@@ -4,8 +4,8 @@ use crate::diary::{locale_of, num, query_param};
 use crate::http::{body, finish, json, no_content, now_ms, Fail, R};
 use crate::{catalog, manage, session};
 use pausa_core::dto::{
-    CircleMySettings, KindCount, Locale, MediaDto, MySettings, NotificationDto, NotificationPage, PersonDto,
-    PersonProfile, WatchingDto,
+    CircleMySettings, KindCount, Locale, MediaDto, MySettings, NotificationDto, NotificationPage,
+    PersonDto, PersonProfile, WatchingDto,
 };
 use pausa_core::profile::{
     avatar_change, clean_bio, clean_display_name, clean_genres, AvatarChange, COUNTRIES,
@@ -107,7 +107,11 @@ async fn settings_inner(req: &Request, env: &Env) -> R<Response> {
         .results::<CountsRow>()?
         .into_iter()
         .next()
-        .unwrap_or(CountsRow { logs: 0, private_logs: 0, brought: 0 });
+        .unwrap_or(CountsRow {
+            logs: 0,
+            private_logs: 0,
+            brought: 0,
+        });
     let u = res[0]
         .results::<UserRow>()?
         .into_iter()
@@ -512,19 +516,45 @@ async fn person_inner(req: &Request, env: &Env, circle_id: &str, user_id: &str) 
     let kinds: Vec<KindCount> = ["movie", "tv", "anime"]
         .iter()
         .filter_map(|k| {
-            let n = res[6].results::<KindRow>().ok()?.into_iter().find(|r| r.kind == *k)?.n;
-            (n > 0).then(|| KindCount { kind: (*k).to_string(), count: n as u32 })
+            let n = res[6]
+                .results::<KindRow>()
+                .ok()?
+                .into_iter()
+                .find(|r| r.kind == *k)?
+                .n;
+            (n > 0).then(|| KindCount {
+                kind: (*k).to_string(),
+                count: n as u32,
+            })
         })
         .collect();
     let titles = kinds.iter().map(|k| k.count).sum();
-    let loved_ratings = res[7].results::<LovedRatingRow>()?.into_iter().map(|r| r.rating as u8).collect();
-    let watching = res[8].results::<LiveRow>()?.into_iter().next().map(|r| WatchingDto {
-        user: PersonDto { id: r.user_id, name: r.name, image: r.image },
-        media: MediaDto { id: r.media_id, kind: r.kind, title: r.loc_title.unwrap_or(r.original_title), year: r.year, poster_path: r.poster_path },
-        season: r.season,
-        episode: r.episode,
-        updated_at: r.updated_at,
-    });
+    let loved_ratings = res[7]
+        .results::<LovedRatingRow>()?
+        .into_iter()
+        .map(|r| r.rating as u8)
+        .collect();
+    let watching = res[8]
+        .results::<LiveRow>()?
+        .into_iter()
+        .next()
+        .map(|r| WatchingDto {
+            user: PersonDto {
+                id: r.user_id,
+                name: r.name,
+                image: r.image,
+            },
+            media: MediaDto {
+                id: r.media_id,
+                kind: r.kind,
+                title: r.loc_title.unwrap_or(r.original_title),
+                year: r.year,
+                poster_path: r.poster_path,
+            },
+            season: r.season,
+            episode: r.episode,
+            updated_at: r.updated_at,
+        });
     json(
         &PersonProfile {
             person: PersonDto {

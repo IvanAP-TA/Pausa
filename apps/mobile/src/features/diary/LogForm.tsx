@@ -10,8 +10,7 @@ import { isOnline } from "@/offline/connectivity";
 import { useOutbox } from "../offline/OutboxProvider";
 import { useI18n } from "@/i18n";
 import { control, fallbackSans, fonts, hair, layout, space, useTheme, web } from "@/theme";
-import { readStored, writeStored } from "@/theme/pref-storage";
-import { BackLink } from "@/ui/BackLink";
+import { BackButton, BackLink } from "@/ui/BackLink";
 import { Button } from "@/ui/Button";
 import { Chip, ChipGroup } from "@/ui/Chip";
 import { ConfirmButton } from "@/ui/ConfirmButton";
@@ -23,7 +22,6 @@ import { Row, RowList } from "@/ui/Row";
 import { Section } from "@/ui/Section";
 import { Select } from "@/ui/Select";
 import { StarInput } from "@/ui/Stars";
-import { Toggle } from "@/ui/Toggle";
 import { ErrorState, Heading, Loading, Screen, Skeleton, Text, Title } from "@/ui";
 import { useCurrentCircle } from "../current-circle";
 import { RequireSession, useMe } from "../session";
@@ -34,7 +32,6 @@ import "./diary.messages";
 const MAX_REVIEW = 4000;
 /** What the save returns when the viewing went to the offline outbox instead of the server. */
 const QUEUED = "queued-offline";
-const PLATFORM_KEY = "pausa-platform";
 const COMMON_PLATFORMS = ["Netflix", "Prime Video", "Disney+", "MUBI", "Cinema"];
 const isSeries = (kind: string) => kind === "tv" || kind === "anime";
 const ymdOk = isYmd;
@@ -52,8 +49,8 @@ type Initial = {
   circles: string[];
 };
 
-/** The picked title, compact: poster, name, meta (year, kind, two genres), "change"; the synopsis folded to two lines. */
-function PickedCard({ picked, genres, overview, loadingOverview, onChangeTitle }: { picked: Picked; genres: string[]; overview: string | null; loadingOverview: boolean; onChangeTitle?: () => void }) {
+/** The picked title, compact: poster, name, meta (year, kind, two genres); the synopsis folded to two lines. */
+function PickedCard({ picked, genres, overview, loadingOverview }: { picked: Picked; genres: string[]; overview: string | null; loadingOverview: boolean }) {
   const { t } = useI18n();
   const { c } = useTheme();
   const [more, setMore] = useState(false);
@@ -69,7 +66,6 @@ function PickedCard({ picked, genres, overview, loadingOverview, onChangeTitle }
           <Text variant="small" tone="muted">
             {[picked.year, t(`kind.${kind}`), ...genres.slice(0, 2)].filter(Boolean).join(", ")}
           </Text>
-          {onChangeTitle ? <Button label={t("diary.log.change")} variant="quiet" size="sm" onPress={onChangeTitle} style={{ minHeight: control }} /> : null}
         </View>
       </View>
       {overview ? (
@@ -210,7 +206,7 @@ function SaveBar({ children }: { children: ReactNode }) {
   );
 }
 
-function Form({ picked, onChangeTitle, edit, initial }: { picked: Picked; onChangeTitle?: () => void; edit?: { logId: string; sharedBefore: string[] }; initial: Initial }) {
+function Form({ picked, edit, initial }: { picked: Picked; edit?: { logId: string; sharedBefore: string[] }; initial: Initial }) {
   const { t, href, locale, date } = useI18n();
   const router = useRouter();
   const me = useMe();
@@ -291,8 +287,9 @@ function Form({ picked, onChangeTitle, edit, initial }: { picked: Picked; onChan
   const submit = async () => {
     setTouched(true);
     if (invalid) {
-      // The field that refuses lives in the folded details: open them so the reason is in front of the person.
-      if (mode === "watched") setDetailsOpen(true);
+      // The field that refuses lives in the folded details: open them so the reason is in front of the person. A new log has
+      // no details (its date is today), so there is nothing to open.
+      if (mode === "watched" && edit) setDetailsOpen(true);
       return;
     }
     if (mode === "watching") {
@@ -311,7 +308,8 @@ function Form({ picked, onChangeTitle, edit, initial }: { picked: Picked; onChan
       watchedOn: day,
       rating: rating || null,
       review: review.trim() || null,
-      platform: platform.trim() || null,
+      // A new log does not show the platform: it sends none rather than one the person cannot see.
+      platform: edit ? platform.trim() || null : null,
       season: series && season ? Number(season) : null,
       episode: series && season && episode ? Number(episode) : null,
       containsSpoilers: spoilers,
@@ -339,7 +337,6 @@ function Form({ picked, onChangeTitle, edit, initial }: { picked: Picked; onChan
       }
     });
     if (!done) return;
-    if (platform.trim()) void writeStored(PLATFORM_KEY, platform.trim());
     router.replace((done.value === QUEUED || !circles[0] ? href("/diary") : href(`/c/${circles[0]}/log/${done.value}`)) as never);
   };
 
@@ -392,13 +389,13 @@ function Form({ picked, onChangeTitle, edit, initial }: { picked: Picked; onChan
     </SaveBar>
   );
 
-  const head = <PickedCard picked={picked} genres={detail?.genres ?? []} overview={catalogOverview} loadingOverview={!!localId && !detailDone} onChangeTitle={onChangeTitle} />;
+  const head = <PickedCard picked={picked} genres={detail?.genres ?? []} overview={catalogOverview} loadingOverview={!!localId && !detailDone} />;
 
   if (mode === "watching") {
     return (
       <View style={{ gap: space.lg }}>
         {head}
-        <ModeTabs mode={mode} onChange={setMode} />
+        {edit || !series ? null : <ModeTabs mode={mode} onChange={setMode} />}
         {series ? (
           <View role="group" aria-label={t("log.progress")} style={{ gap: space.sm }}>
             <Text variant="label" tone="ink2">
@@ -415,12 +412,13 @@ function Form({ picked, onChangeTitle, edit, initial }: { picked: Picked; onChan
   return (
     <View style={{ gap: space.lg }}>
       {head}
-      {edit ? null : <ModeTabs mode={mode} onChange={setMode} />}
+      {edit || !series ? null : <ModeTabs mode={mode} onChange={setMode} />}
 
       <StarInput value={rating} onChange={setRating} label={t("log.rating")} />
 
       <Field label={t("log.review")} value={review} onChangeText={setReview} multiline maxLength={MAX_REVIEW} hint={`${review.length}/${MAX_REVIEW}`} testID="review-input" />
 
+      {edit ? (
       <Details open={detailsOpen} onToggle={() => setDetailsOpen((o) => !o)} title={t("log.details")} hint={t("log.detailsHint")}>
         <View style={{ gap: space.xs }}>
           <DateField value={day} onChange={setDay} max={todayYmd()} error={touched || day.length === 10 ? dateError : null} hint={ymdOk(day) ? date(ymdToMs(day)) : undefined} testID="watched-on" />
@@ -448,11 +446,6 @@ function Form({ picked, onChangeTitle, edit, initial }: { picked: Picked; onChan
 
         {offerOverview ? <Field label={t("log.overview")} value={overview} onChangeText={setOverview} multiline maxLength={1200} placeholder={t("log.overviewPlaceholder")} testID="overview-input" /> : null}
 
-        <View>
-          <Toggle label={t("log.spoilers")} value={spoilers} onChange={setSpoilers} />
-          <Toggle label={t("log.rewatch")} value={rewatch} onChange={setRewatch} />
-        </View>
-
         {taggable.length > 0 ? (
           <View role="group" aria-label={t("log.with")} style={{ gap: space.xs }}>
             <Text variant="label" tone="ink2">
@@ -466,6 +459,7 @@ function Form({ picked, onChangeTitle, edit, initial }: { picked: Picked; onChan
           </View>
         ) : null}
       </Details>
+      ) : null}
 
       <ChipGroup label={t("log.who")} hint={circles.length === 0 ? `${t("log.privateOnly")}. ${t("log.privateHelp")}` : t("diary.log.shareHint", { count: circles.length })}>
         {me.circles.map((c) => (
@@ -487,13 +481,9 @@ function NewLog() {
   const [picked, setPicked] = useState<Picked | null>(() =>
     pick ? { key: String(pick), title: String(pickTitle ?? ""), year: pickYear ? Number(pickYear) : null, kind: String(pickKind ?? "movie"), posterPath: pickPoster ? String(pickPoster) : null } : null,
   );
-  const [platform, setPlatform] = useState<string | null>(null);
   const [loadingMedia, setLoadingMedia] = useState(!!media);
   const [mediaError, setMediaError] = useState<unknown>(null);
   const asked = useRef(false);
-  useEffect(() => {
-    void readStored(PLATFORM_KEY).then((v) => setPlatform(v ?? ""));
-  }, []);
   useEffect(() => {
     if (!media || asked.current) return;
     asked.current = true;
@@ -512,7 +502,7 @@ function NewLog() {
     rating: 0,
     date: todayYmd(),
     review: "",
-    platform: platform ?? "",
+    platform: "",
     spoilers: false,
     rewatch: false,
     season: "",
@@ -522,12 +512,12 @@ function NewLog() {
   };
   return (
     <Screen>
-      <BackLink to={href("/diary")} label={t("tabs.diary")} />
+      {picked ? <BackButton label={t("diary.log.back")} onPress={() => setPicked(null)} /> : null}
       <Heading level={1}>{t("log.title")}</Heading>
-      {loadingMedia || platform === null ? <Loading rows={3} /> : null}
+      {loadingMedia ? <Loading rows={3} /> : null}
       {mediaError ? <ErrorState error={mediaError} /> : null}
-      {!loadingMedia && platform !== null && !picked ? <Search onPick={setPicked} autoFocus /> : null}
-      {picked && platform !== null ? <Form key={picked.key} picked={picked} onChangeTitle={() => setPicked(null)} initial={initial} /> : null}
+      {!loadingMedia && !picked ? <Search onPick={setPicked} autoFocus people /> : null}
+      {picked ? <Form key={picked.key} picked={picked} initial={initial} /> : null}
       {/* The other way in: bring a whole history from another service. */}
       <RowList>
         <Row href={href("/import")} testID="log-import">

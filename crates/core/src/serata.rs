@@ -862,9 +862,17 @@ pub fn build_roster(
     let too_seen = |id: &str| people > 0 && seen_by.get(id).copied().unwrap_or(0) * 2 >= people;
     let ok = |id: &str| !too_seen(id) && !blocked(id);
     let mut recs: Vec<&RosterTitle> = recommended.iter().collect();
-    recs.sort_by(|a, b| b.score.cmp(&a.score));
-    let recs: Vec<&str> = recs.into_iter().map(|r| r.id.as_str()).filter(|i| ok(i)).collect();
-    let lists: Vec<&str> = watchlist.iter().map(String::as_str).filter(|i| ok(i)).collect();
+    recs.sort_by_key(|r| std::cmp::Reverse(r.score));
+    let recs: Vec<&str> = recs
+        .into_iter()
+        .map(|r| r.id.as_str())
+        .filter(|i| ok(i))
+        .collect();
+    let lists: Vec<&str> = watchlist
+        .iter()
+        .map(String::as_str)
+        .filter(|i| ok(i))
+        .collect();
     let mut out: Vec<String> = Vec::new();
     let mut take = |id: Option<&&str>| {
         if let Some(id) = id {
@@ -890,9 +898,18 @@ mod tests {
     fn roster_alternates_sources_and_drops_what_is_seen_or_unstreamable() {
         let seen: HashMap<String, u32> = [("seen".to_string(), 2)].into();
         let recs = [
-            RosterTitle { id: "r1".into(), score: 9 },
-            RosterTitle { id: "seen".into(), score: 8 },
-            RosterTitle { id: "r2".into(), score: 7 },
+            RosterTitle {
+                id: "r1".into(),
+                score: 9,
+            },
+            RosterTitle {
+                id: "seen".into(),
+                score: 8,
+            },
+            RosterTitle {
+                id: "r2".into(),
+                score: 7,
+            },
         ];
         let list: Vec<String> = ["w1", "r1", "no", "w2"].map(String::from).to_vec();
         let out = build_roster(&list, &recs, &seen, 4, &|id| id == "no", 8);

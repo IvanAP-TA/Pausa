@@ -1,5 +1,6 @@
 // Barrel for the generated types. Regenerate with: cargo test -p pausa-core
 export type { ApiError } from "./ApiError";
+export type { AuthorDto } from "./AuthorDto";
 export type { Availability } from "./Availability";
 export type { Ballot } from "./Ballot";
 export type { Because } from "./Because";
@@ -62,6 +63,9 @@ export type { PairDto } from "./PairDto";
 export type { ParticipantView } from "./ParticipantView";
 export type { PersonCount } from "./PersonCount";
 export type { PersonDto } from "./PersonDto";
+export type { PersonHitDto } from "./PersonHitDto";
+export type { PersonPageDto } from "./PersonPageDto";
+export type { PersonWorkDto } from "./PersonWorkDto";
 export type { PersonProfile } from "./PersonProfile";
 export type { PersonRating } from "./PersonRating";
 export type { Position } from "./Position";

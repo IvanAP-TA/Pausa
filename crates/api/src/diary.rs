@@ -9,8 +9,8 @@ use pausa_core::diary::{
     clamp_position, clean_log, date_of_ms, sets_title_rating, LogError, LogInput, MAX_WATCHED_WITH,
 };
 use pausa_core::dto::{
-    CommentDto, DiaryCounts, ErrorCode, LastCommentDto, Locale, LogCreated, LogDto, LogPage, LogThread, MediaDto, PersonDto,
-    ReactionCount, Removed,
+    CommentDto, DiaryCounts, ErrorCode, LastCommentDto, Locale, LogCreated, LogDto, LogPage,
+    LogThread, MediaDto, PersonDto, ReactionCount, Removed,
 };
 use pausa_core::limits;
 use serde::Deserialize;
@@ -235,7 +235,10 @@ async fn create_inner(req: &mut Request, env: &Env) -> R<Response> {
         .map(str::trim)
         .filter(|o| !o.is_empty())
         .map(str::to_string);
-    if user_overview.as_ref().is_some_and(|o| o.chars().count() > 1200) {
+    if user_overview
+        .as_ref()
+        .is_some_and(|o| o.chars().count() > 1200)
+    {
         return Err(Fail::invalid());
     }
     let locale = input
@@ -718,20 +721,32 @@ fn to_dto(r: LogRow, viewer: &str, reveal: bool) -> LogDto {
             .collect(),
         shared_in: serde_json::from_str(&r.shared_in).unwrap_or_default(),
         runtime_min: r.runtime_min,
-        genres: r.genres.as_deref().and_then(|g| serde_json::from_str(g).ok()).unwrap_or_default(),
+        genres: r
+            .genres
+            .as_deref()
+            .and_then(|g| serde_json::from_str(g).ok())
+            .unwrap_or_default(),
         overview: r.overview.filter(|o| !o.trim().is_empty()),
         watched_with: serde_json::from_str(&r.watched_with).unwrap_or_default(),
-        last_comment: r.last_comment.as_deref().and_then(|j| serde_json::from_str::<LastCommentJson>(j).ok()).map(|c| LastCommentDto {
-            author: PersonDto { id: c.id, name: c.name, image: c.image },
-            body: c.body.map(|b| {
-                if b.chars().count() > 180 {
-                    format!("{}…", b.chars().take(180).collect::<String>().trim_end())
-                } else {
-                    b
-                }
+        last_comment: r
+            .last_comment
+            .as_deref()
+            .and_then(|j| serde_json::from_str::<LastCommentJson>(j).ok())
+            .map(|c| LastCommentDto {
+                author: PersonDto {
+                    id: c.id,
+                    name: c.name,
+                    image: c.image,
+                },
+                body: c.body.map(|b| {
+                    if b.chars().count() > 180 {
+                        format!("{}…", b.chars().take(180).collect::<String>().trim_end())
+                    } else {
+                        b
+                    }
+                }),
+                is_spoiler: c.sp != 0,
             }),
-            is_spoiler: c.sp != 0,
-        }),
     }
 }
 
@@ -840,7 +855,11 @@ async fn get_own_inner(req: &Request, env: &Env, log_id: &str) -> R<Response> {
     );
     let row = db
         .prepare(sql)
-        .bind(&[log_id.into(), s.user_id.as_str().into(), catalog::locale_code(locale).into()])?
+        .bind(&[
+            log_id.into(),
+            s.user_id.as_str().into(),
+            catalog::locale_code(locale).into(),
+        ])?
         .all()
         .await?
         .results::<LogRow>()?
@@ -912,8 +931,18 @@ async fn feed_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response> {
         .and_then(|y| y.parse::<i64>().ok())
         .filter(|y| (1900..2200).contains(y))
     {
-        add(&mut filters, &mut args, " AND l.watched_on >= ?", format!("{y:04}-01-01").into());
-        add(&mut filters, &mut args, " AND l.watched_on < ?", format!("{:04}-01-01", y + 1).into());
+        add(
+            &mut filters,
+            &mut args,
+            " AND l.watched_on >= ?",
+            format!("{y:04}-01-01").into(),
+        );
+        add(
+            &mut filters,
+            &mut args,
+            " AND l.watched_on < ?",
+            format!("{:04}-01-01", y + 1).into(),
+        );
     }
     // "Visto con": one person who was there.
     if let Some(w) = query_param(req, "with") {
@@ -926,14 +955,24 @@ async fn feed_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response> {
     }
     // One title (its page inside the Cerchia).
     if let Some(m) = query_param(req, "mediaId") {
-        add(&mut filters, &mut args, " AND l.media_id = ?", m.as_str().into());
+        add(
+            &mut filters,
+            &mut args,
+            " AND l.media_id = ?",
+            m.as_str().into(),
+        );
     }
     // Text search on the title: the localized one or the original, any part, any case (v1: LIKE with % _ \ escaped).
     if let Some(q) = query_param(req, "q")
         .map(|q| q.trim().to_lowercase().chars().take(80).collect::<String>())
         .filter(|q| !q.is_empty())
     {
-        let pat = format!("%{}%", q.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_"));
+        let pat = format!(
+            "%{}%",
+            q.replace('\\', "\\\\")
+                .replace('%', "\\%")
+                .replace('_', "\\_")
+        );
         args.push(pat.into());
         let n = args.len();
         filters.push_str(&format!(
@@ -1145,11 +1184,21 @@ struct CircleMediaRow {
 
 /// `GET /api/circles/:id/media/:mediaId?locale=`: the original title, the source of the synopsis and the Cerchia's average
 /// rating (members only, blocked authors left out). The viewings themselves come from the feed with `mediaId`.
-pub async fn circle_media(req: Request, env: Env, circle_id: &str, media_id: &str) -> Result<Response> {
+pub async fn circle_media(
+    req: Request,
+    env: Env,
+    circle_id: &str,
+    media_id: &str,
+) -> Result<Response> {
     finish(circle_media_inner(&req, &env, circle_id, media_id).await)
 }
 
-async fn circle_media_inner(req: &Request, env: &Env, circle_id: &str, media_id: &str) -> R<Response> {
+async fn circle_media_inner(
+    req: &Request,
+    env: &Env,
+    circle_id: &str,
+    media_id: &str,
+) -> R<Response> {
     let db = env.d1("DB")?;
     let s = session::require(req, &db).await?;
     crate::manage::my_role(&db, circle_id, &s.user_id).await?;

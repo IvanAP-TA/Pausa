@@ -113,8 +113,10 @@ test.describe("profile and preferences", () => {
 
     await page.unroute("**/api/media/search*");
     await page.getByLabel(it.log.search).fill("matrix");
-    await expect(local).toHaveCount(1);
-    await local.click();
+    // other specs may have stored "Matrix Reloaded" too (director page): pick exactly "Matrix"
+    const matrix = local.filter({ has: page.getByText("Matrix", { exact: true }) });
+    await expect(matrix).toHaveCount(1);
+    await matrix.click();
     await expect(page.getByTestId(/^fav-/)).toHaveCount(1);
     await expect(page.getByLabel(it.log.search)).toHaveValue(""); // ready for the next one
     await expect(page.getByText("1 di 5")).toBeVisible();
@@ -205,7 +207,7 @@ test.describe("the person page", () => {
 });
 
 test.describe("ranking", () => {
-  test("average, votes, sort, filters and the per-person ratings on expand", async () => {
+  test("type tabs, three-state sort, filters with funnel, year range sheet and the per-person ratings", async () => {
     const { page } = bob;
     await page.goto(`/it/c/${cid}/ranking`);
     const rows = page.getByTestId(/^rank-/);
@@ -217,12 +219,53 @@ test.describe("ranking", () => {
     const matrix = rows.filter({ hasText: /matrix/i });
     for (const n of [ANN_NOW, bob.name, cara.name]) await expect(matrix.getByLabel(`${n}: `, { exact: false }).first()).toBeVisible();
     await expect(matrix.getByLabel(`${ANN_NOW}: 4,5 stelle`)).toBeVisible(); // ann and cara gave 9
-    await expect(matrix.getByRole("link", { name: /matrix/i })).toHaveAttribute("href", new RegExp(`/it/c/${cid}/m/`));
+    await expect(matrix.getByText(ANN_NOW, { exact: true })).toHaveCount(0); // initials avatar, the name is not printed
+    await expect(matrix.getByRole("listitem")).toHaveCount(3);
+    await expect(matrix.getByTestId("votes-more")).toHaveCount(0); // three people: nothing to expand
+    // the name goes straight to the vote (Registra) page with the title picked; the poster opens the title page
+    await expect(matrix.getByRole("link", { name: /vota matrix/i })).toHaveAttribute("href", new RegExp(`/it/log\\?media=.+&circle=${cid}`));
+    await expect(matrix.getByRole("link", { name: /apri la scheda di matrix/i })).toHaveAttribute("href", new RegExp(`/it/c/${cid}/m/`));
+    await matrix.getByRole("link", { name: /vota matrix/i }).click();
+    await expect(page.getByTestId("picked-title")).toContainText(/matrix/i);
+    await expect(page.getByTestId("media-search")).toHaveCount(0);
+    await page.goBack();
+    await page.waitForURL(new RegExp(`/c/${cid}/ranking`));
 
-    await page.getByRole("radio", { name: it.ranking.sort.votes }).click();
+    await expect(page.getByRole("navigation", { name: /feed|classifica/i })).toHaveCount(0); // no CircleNav
+    await expect(page.getByTestId("kind-movie")).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByRole("radio", { name: it.ranking.filters.any })).toHaveCount(0); // no "Tutti"
+
+    const votes = page.getByTestId("sort-votes");
+    await votes.click();
+    await expect(votes).toHaveAttribute("data-dir", "desc");
     await expect(rows.first()).toContainText(/matrix/i); // three votes
-    await page.getByRole("radio", { name: it.ranking.sort.title }).click();
-    await expect(rows.first()).toContainText(/inception/i);
+    await votes.click();
+    await expect(votes).toHaveAttribute("data-dir", "asc");
+    await expect(rows.last()).toContainText(/matrix/i);
+    await votes.click();
+    await expect(votes).toHaveAttribute("data-dir", "off");
+    await expect(rows.first()).toContainText(/se7en/i);
+    await expect(page.getByTestId("sort-title")).toHaveCount(0);
+    await expect(page.getByTestId("sort-recent")).toHaveCount(0);
+
+    // funnel icon on Filtri
+    await expect(page.getByTestId("open-filters").locator("svg")).toHaveCount(1);
+
+    // year range: a decade preset, then custom
+    await page.getByTestId("open-years").click();
+    await page.getByTestId("year-d1990").click();
+    await page.getByTestId("apply-years").click();
+    await expect(rows).toHaveCount(2); // Se7en 1995, Matrix 1999
+    await page.getByTestId("open-years").click();
+    await page.getByTestId("year-custom").click();
+    await page.getByTestId("year-custom-from").fill("2010");
+    await page.getByTestId("year-custom-to").fill("2010");
+    await page.getByTestId("apply-years").click();
+    await expect(rows).toHaveCount(1); // Inception
+    await page.getByTestId("open-years").click();
+    await page.getByTestId("year-all").click();
+    await page.getByTestId("apply-years").click();
+    await expect(rows).toHaveCount(3);
 
     await page.getByTestId("open-filters").click();
     await page.getByTestId("rank-q").fill("MATR");
@@ -249,12 +292,37 @@ test.describe("ranking", () => {
     await page.getByRole("button", { name: it.ranking.filters.reset }).first().click();
     await expect(rows).toHaveCount(3);
 
+    // genre: defaults to "Tutti"; the mock catalogue gives Matrix action+scifi (TMDB 28/878), the other seeded films drama
     await page.getByTestId("open-filters").click();
-    await page.getByRole("radio", { name: it.kind.tv }).click();
+    const genre = page.getByTestId("rank-genre");
+    await expect(genre).toHaveValue(""); // "Tutti"
+    await genre.selectOption("scifi");
     await page.getByTestId("apply-filters").click();
-    await expect(page.getByText(it.ranking.empty)).toBeVisible();
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toContainText(/matrix/i);
     await page.getByRole("button", { name: it.ranking.filters.reset }).first().click();
     await expect(rows).toHaveCount(3);
+
+    await page.getByTestId("kind-tv").click();
+    await expect(page.getByText(it.ranking.emptyAll)).toBeVisible();
+  });
+
+  test("more than three voters: the +N control expands the avatars inline", async ({ browser }) => {
+    // own Cerchia, so the fourth person does not change the counts the other tests rely on
+    const dan = await person(browser, "dan");
+    await signIn(dan);
+    const small = await circleWith(ann, [bob, cara, dan], "Quattro");
+    for (const [p, rating] of [[ann, 9], [bob, 7], [cara, 9], [dan, 6]] as const) await logApi(p, { mediaKey: "tmdb:movie:603", rating, circles: [small] });
+    const { page } = ann;
+    await page.goto(`/it/c/${small}/ranking`);
+    const matrix = page.getByTestId(/^rank-/).filter({ hasText: /matrix/i });
+    await expect(matrix.getByRole("listitem")).toHaveCount(3);
+    await matrix.getByTestId("votes-more").click();
+    await expect(matrix.getByRole("listitem")).toHaveCount(4);
+    await expect(matrix.getByLabel(`${dan.name}: 3 stelle`)).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0); // inline, no popup
+    await matrix.getByTestId("votes-more").click();
+    await expect(matrix.getByRole("listitem")).toHaveCount(3);
   });
 
   test("pages of forty, with the page counter", async () => {

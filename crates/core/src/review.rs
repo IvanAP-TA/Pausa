@@ -22,13 +22,26 @@ pub fn password_matches(given: &str, expected: &str) -> bool {
     if expected.is_empty() {
         return false;
     }
-    constant_time_eq(hash_token(given).as_bytes(), hash_token(expected).as_bytes())
+    constant_time_eq(
+        hash_token(given).as_bytes(),
+        hash_token(expected).as_bytes(),
+    )
 }
 
 /// The demo group's people: `(id, name, email, role)`. The reviewer's own address comes from the environment, so it is not here.
 pub const DEMO_PEOPLE: [(&str, &str, &str, &str); 2] = [
-    ("u-review-anna", "Anna (demo)", "anna@review.invalid", "member"),
-    ("u-review-marco", "Marco (demo)", "marco@review.invalid", "member"),
+    (
+        "u-review-anna",
+        "Anna (demo)",
+        "anna@review.invalid",
+        "member",
+    ),
+    (
+        "u-review-marco",
+        "Marco (demo)",
+        "marco@review.invalid",
+        "member",
+    ),
 ];
 
 /// Demo films: `(id, title, year, runtime in minutes)`.
@@ -41,15 +54,36 @@ pub const DEMO_FILMS: [(&str, &str, i64, i64); 6] = [
     ("m-review-6", "Battleship Potemkin", 1925, 75),
 ];
 
-/// Demo viewings: `(person id, film index, rating in half stars, days ago, review)`.
-pub const DEMO_LOGS: [(&str, usize, Option<i64>, i64, Option<&str>); 9] = [
-    (REVIEW_USER_ID, 0, Some(9), 2, Some("Still creepy after a hundred years.")),
+/// One demo viewing: `(person id, film index, rating in half stars, days ago, review)`.
+pub type DemoLog = (&'static str, usize, Option<i64>, i64, Option<&'static str>);
+
+/// Demo viewings.
+pub const DEMO_LOGS: [DemoLog; 9] = [
+    (
+        REVIEW_USER_ID,
+        0,
+        Some(9),
+        2,
+        Some("Still creepy after a hundred years."),
+    ),
     (REVIEW_USER_ID, 1, Some(10), 6, None),
     (REVIEW_USER_ID, 4, Some(8), 14, Some("Great stunts.")),
     ("u-review-anna", 0, Some(8), 2, None),
-    ("u-review-anna", 2, Some(7), 9, Some("Weird sets, loved them.")),
+    (
+        "u-review-anna",
+        2,
+        Some(7),
+        9,
+        Some("Weird sets, loved them."),
+    ),
     ("u-review-anna", 3, Some(9), 20, None),
-    ("u-review-marco", 1, Some(9), 6, Some("A bit long, worth it.")),
+    (
+        "u-review-marco",
+        1,
+        Some(9),
+        6,
+        Some("A bit long, worth it."),
+    ),
     ("u-review-marco", 4, Some(7), 14, None),
     ("u-review-marco", 5, Some(8), 25, None),
 ];

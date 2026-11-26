@@ -18,7 +18,7 @@ import { Section } from "@/ui/Section";
 import { Meter, Well } from "@/ui/Surfaces";
 import { Stars, starsText } from "@/ui/Stars";
 import { Empty, ErrorState, Heading, Loading, Notice, Screen, Text, Title } from "@/ui";
-import { CircleNav, useCircleScope } from "../diary/shared";
+import { useCircleScope } from "../diary/shared";
 import { RequireSession } from "../session";
 import "./stats.messages";
 import { shareYearCard } from "./year-card";
@@ -328,7 +328,6 @@ function InsightsBody({ id }: { id: string }) {
     <Screen>
       <BackLink to={href("/home")} label={t("app.circle.back")} />
       <Heading level={1}>{circle.data?.name ?? t("insights.title")}</Heading>
-      <CircleNav circleId={id} current="insights" />
       {data.loading && !data.data ? <Loading rows={4} /> : null}
       {data.error ? <ErrorState error={data.error} onRetry={data.reload} /> : null}
       {data.data ? (

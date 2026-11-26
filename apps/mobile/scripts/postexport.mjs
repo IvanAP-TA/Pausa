@@ -47,6 +47,8 @@ const SHELL = [
   re(`^(${L})/c/\\[id\\]/log/\\[logId\\]/edit\\.html$`),
   re(`^(${L})/c/\\[id\\]/m/\\[mediaId\\]\\.html$`),
   re(`^(${L})/c/\\[id\\]/people/\\[userId\\]\\.html$`),
+  re(`^(${L})/person/\\[key\\]\\.html$`),
+  re(`^(${L})/c/\\[id\\]/person/\\[key\\]\\.html$`),
   // Serata / lists / import (the other engineer's screens; listed here so the shared export passes while both trees are in flux)
   re(`^(${L})/(lists|import|imports)(/\\[[a-zA-Z]+\\])?\\.html$`),
   re(`^(${L})/c/\\[id\\]/serate(/\\[[a-zA-Z]+\\])?\\.html$`),

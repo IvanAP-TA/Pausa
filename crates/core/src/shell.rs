@@ -32,9 +32,11 @@ pub fn shell_path(path: &str) -> Option<String> {
         ["c", _, "log", _, "edit"] => "c/[id]/log/[logId]/edit".to_string(),
         ["c", _, "m", _] => "c/[id]/m/[mediaId]".to_string(),
         ["c", _, "people", _] => "c/[id]/people/[userId]".to_string(),
+        ["c", _, "person", _] => "c/[id]/person/[key]".to_string(),
         ["join", _] => "join/[code]".to_string(),
         ["log", _] => "log/[logId]".to_string(),
         ["t", _] => "t/[mediaId]".to_string(),
+        ["person", _] => "person/[key]".to_string(),
         ["s", _] => "s/[code]".to_string(),
         ["s", _, sub] if sub.bytes().all(|b| b.is_ascii_lowercase()) => format!("s/[code]/{sub}"),
         ["lists", _] => "lists/[id]".to_string(),
@@ -59,14 +61,25 @@ mod tests {
         );
         assert_eq!(s("/it/c/abc/serate"), Some("/it/c/[id]/serate".into()));
         assert_eq!(s("/it/c/abc/members"), Some("/it/c/[id]/members".into()));
-        assert_eq!(s("/it/c/abc/log/l1/edit"), Some("/it/c/[id]/log/[logId]/edit".into()));
-        assert_eq!(s("/it/c/abc/m/local:x1"), Some("/it/c/[id]/m/[mediaId]".into()));
+        assert_eq!(
+            s("/it/c/abc/log/l1/edit"),
+            Some("/it/c/[id]/log/[logId]/edit".into())
+        );
+        assert_eq!(
+            s("/it/c/abc/m/local:x1"),
+            Some("/it/c/[id]/m/[mediaId]".into())
+        );
         assert_eq!(s("/it/join/ABCD"), Some("/it/join/[code]".into()));
         assert_eq!(s("/it/log/l1"), Some("/it/log/[logId]".into()));
         assert_eq!(s("/it/t/local:x1"), Some("/it/t/[mediaId]".into()));
         assert_eq!(s("/it/s/6QLMP4"), Some("/it/s/[code]".into()));
         assert_eq!(s("/it/s/6QLMP4/result"), Some("/it/s/[code]/result".into()));
         assert_eq!(s("/it/lists/l1"), Some("/it/lists/[id]".into()));
+        assert_eq!(s("/it/person/tmdb:9339"), Some("/it/person/[key]".into()));
+        assert_eq!(
+            s("/en/c/abc/person/anilist:96881"),
+            Some("/en/c/[id]/person/[key]".into())
+        );
     }
 
     #[test]
@@ -86,6 +99,9 @@ mod tests {
             "/api/me",
             "/it/c/abc/log/l1/extra",
             "/it/s/X/Res1",
+            "/it/person",
+            "/it/person/tmdb%3A9339",
+            "/it/c/abc/person",
         ] {
             assert_eq!(s(p), None, "{p}");
         }

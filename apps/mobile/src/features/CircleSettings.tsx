@@ -14,7 +14,6 @@ import { RequireSession, useMe, useSession } from "./session";
 import { peopleApi } from "@/api/people";
 import { CircleSwitches } from "./people/CircleSwitches";
 import { Withdraw } from "./people/Withdraw";
-import { CircleNav } from "./diary/shared";
 
 type Cover = (typeof COVERS)[number] | "none";
 
@@ -225,7 +224,6 @@ function SettingsBody({ id }: { id: string }) {
     <Screen>
       {header}
       <Heading level={1}>{t("settings.title")}</Heading>
-      <CircleNav circleId={id} current="settings" />
       <Mine id={id} />
       <View style={{ borderTopWidth: hair, borderColor: c.rule, paddingTop: space.lg }}>
         <Withdraw circleId={circle.id} circleName={circle.name} />

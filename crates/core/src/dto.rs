@@ -249,6 +249,60 @@ pub struct MediaDetailDto {
     pub genres: Vec<String>,
     pub cast: Vec<CastDto>,
     pub seasons: Vec<SeasonDto>,
+    pub authors: Vec<AuthorDto>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct AuthorDto {
+    /// `tmdb:1` or `anilist:2`.
+    pub key: String,
+    pub name: String,
+    /// `director`, `creator` or `author`.
+    pub role: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct PersonHitDto {
+    pub key: String,
+    pub name: String,
+    pub profile_path: Option<String>,
+    pub known_for: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct PersonWorkDto {
+    /// Catalogue key, for `POST /api/media/resolve` when `media_id` is null.
+    pub work_key: String,
+    /// Set when Pausa already holds the title.
+    pub media_id: Option<String>,
+    pub kind: String,
+    pub title: String,
+    pub year: Option<i64>,
+    pub poster_path: Option<String>,
+    pub role: String,
+    /// Cerchia average in half stars; null without a Cerchia or votes.
+    pub avg: Option<f64>,
+    pub ratings: Vec<PersonRating>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct PersonPageDto {
+    pub key: String,
+    pub name: String,
+    pub profile_path: Option<String>,
+    pub born: Option<String>,
+    pub died: Option<String>,
+    pub place: Option<String>,
+    pub bio: Option<String>,
+    pub works: Vec<PersonWorkDto>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -569,6 +623,8 @@ pub struct RankingPage {
     pub page_size: u32,
     pub year_min: Option<i64>,
     pub year_max: Option<i64>,
+    /// Genre slugs present among the titles of the requested kind, sorted.
+    pub genres: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]

@@ -3,11 +3,11 @@ import { control, hair, space, useTheme, web } from "@/theme";
 import { Text } from "./Text";
 
 /** One toggle in a multiple choice ("watched with", "share with"): a checkbox, 44pt, the chosen one filled and ticked. */
-export function Chip({ label, on, onPress, testID, accessibilityLabel }: { label: string; on: boolean; onPress: () => void; testID?: string; accessibilityLabel?: string }) {
+export function Chip({ label, on, onPress, testID, accessibilityLabel, type = "checkbox" }: { label: string; on: boolean; onPress: () => void; testID?: string; accessibilityLabel?: string; type?: "checkbox" | "radio" }) {
   const { c } = useTheme();
   return (
     <Pressable
-      role="checkbox"
+      role={type}
       aria-checked={on}
       aria-label={accessibilityLabel ?? label}
       onPress={onPress}

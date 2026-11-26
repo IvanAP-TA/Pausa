@@ -88,7 +88,7 @@ if (!up) {
 }
 
 let failed = 0;
-for (const name of ["api-smoke", "api-smoke-diary", "api-smoke-people", "api-smoke-stats", "api-smoke-serata", "api-smoke-import", "api-smoke-admin", "api-smoke-push", "api-smoke-assets", "api-smoke-where", "api-smoke-foryou", "api-smoke-email", "api-smoke-idem"]) {
+for (const name of ["api-smoke", "api-smoke-diary", "api-smoke-people", "api-smoke-stats", "api-smoke-serata", "api-smoke-import", "api-smoke-admin", "api-smoke-push", "api-smoke-assets", "api-smoke-where", "api-smoke-foryou", "api-smoke-email", "api-smoke-idem", "api-smoke-authors"]) {
   if (only && only !== name) continue;
   console.log(`\n▶ ${name}`);
   const r = spawnSync(process.execPath, [path.join(root, "tools", `${name}.mjs`), base], { cwd: root, env, stdio: "inherit" });

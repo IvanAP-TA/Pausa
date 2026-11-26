@@ -6,6 +6,7 @@ import { parse, type Node } from "../src/i18n/format";
 import { lookup, registeredAreas } from "../src/i18n/messages";
 import "../src/features/diary/diary.messages";
 import "../src/features/people/people.messages";
+import "../src/features/people/person.messages";
 import "../src/features/stats/stats.messages";
 import "../src/features/lists/lists.messages";
 import { createClient } from "../src/api/client";
@@ -23,7 +24,7 @@ const root = path.resolve(__dirname, "../../..");
 const src = path.resolve(__dirname, "../src");
 const LOCALES = ["it", "en", "es"] as const;
 const base = Object.fromEntries(LOCALES.map((l) => [l, JSON.parse(readFileSync(path.join(root, "packages/messages", `${l}.json`), "utf8"))]));
-const MINE = ["diary", "people", "stats"];
+const MINE = ["diary", "people", "stats", "authorPage"];
 const areas = new Map(registeredAreas());
 
 function flat(o: unknown, prefix = ""): Array<[string, string]> {

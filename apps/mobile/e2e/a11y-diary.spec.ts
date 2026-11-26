@@ -103,10 +103,14 @@ test("the registration form with a series picked, a filter sheet and a report sh
   await p.page.goto("/it/log");
   await p.page.getByLabel("Cerca un film, una serie, un anime…").fill("breaking");
   await p.page.getByRole("button", { name: /^Breaking Bad/ }).first().click();
-  // the details are folded (v1): open them, then the season is a select
-  if ((await p.page.getByTestId("log-details").getAttribute("aria-expanded")) !== "true") await p.page.getByTestId("log-details").click();
-  await p.page.getByTestId("season").selectOption("1");
+  // a new viewing has no details section: audit the form as it is, then the edit form of an existing viewing (details open)
+  await p.page.getByTestId("mode-watching").waitFor();
   problems.form = await audit(p.page);
+  const mine = (await logApi(p, { mediaKey: "tmdb:movie:603", rating: 8, review: "Da modificare.", circles: [cid] })).json.id;
+  await p.page.goto(`/it/log/${mine}`);
+  await p.page.getByTestId("log-details").waitFor();
+  if ((await p.page.getByTestId("log-details").getAttribute("aria-expanded")) !== "true") await p.page.getByTestId("log-details").click();
+  problems.editForm = await audit(p.page);
   await p.page.goto(`/it/c/${cid}/feed`);
   await p.page.getByTestId("open-filters").click();
   await p.page.getByTestId("filter-panel").waitFor();

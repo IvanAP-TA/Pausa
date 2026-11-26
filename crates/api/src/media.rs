@@ -7,7 +7,8 @@ use crate::session;
 use pausa_core::catalog::Key;
 use pausa_core::diary::{advance, clamp_position};
 use pausa_core::dto::{
-    CastDto, ErrorCode, IdOnly, Locale, MediaDetailDto, MediaDto, Position, ProgressDto, ProgressNext, SeasonDto,
+    AuthorDto, CastDto, ErrorCode, IdOnly, Locale, MediaDetailDto, MediaDto, Position, ProgressDto,
+    ProgressNext, SeasonDto,
 };
 use serde::Deserialize;
 use worker::wasm_bindgen::JsValue;
@@ -78,6 +79,14 @@ struct DetailRow {
 }
 
 #[derive(Deserialize)]
+struct AuthorRow {
+    tmdb_id: Option<i64>,
+    anilist_id: Option<i64>,
+    name: String,
+    role: String,
+}
+
+#[derive(Deserialize)]
 struct SeasonRow {
     season: i64,
     episodes: i64,
@@ -99,6 +108,8 @@ async fn read_detail(db: &D1Database, media_id: &str, loc: &str) -> R<Option<Med
             .bind(&[media_id.into(), loc.into()])?,
             db.prepare("SELECT overview, genres, \"cast\" FROM media_detail WHERE media_id = ?1 AND locale = ?2").bind(&[media_id.into(), loc.into()])?,
             db.prepare("SELECT season, episodes FROM media_season WHERE media_id = ?1 ORDER BY season").bind(&[media_id.into()])?,
+            db.prepare("SELECT p.tmdb_id, p.anilist_id, p.name, mp.role FROM media_person mp JOIN person p ON p.id = mp.person_id WHERE mp.media_id = ?1 ORDER BY mp.position")
+                .bind(&[media_id.into()])?,
         ])
         .await?;
     let Some(e) = res[0].results::<EntityRow>()?.into_iter().next() else {
@@ -141,6 +152,20 @@ async fn read_detail(db: &D1Database, media_id: &str, loc: &str) -> R<Option<Med
                 episodes: r.episodes,
             })
             .collect(),
+        authors: res[3]
+            .results::<AuthorRow>()?
+            .into_iter()
+            .filter_map(|r| {
+                Some(AuthorDto {
+                    key: r
+                        .tmdb_id
+                        .map(|i| format!("tmdb:{i}"))
+                        .or(r.anilist_id.map(|i| format!("anilist:{i}")))?,
+                    name: r.name,
+                    role: r.role,
+                })
+            })
+            .collect(),
     }))
 }
 
@@ -158,6 +183,19 @@ async fn detail_inner(req: &Request, env: &Env, media_id: &str) -> R<Response> {
     if !has {
         // Best effort: a catalogue that is down or not configured just means no synopsis for now.
         let _ = catalog::fill_locale(env, &db, &s.user_id, media_id, locale).await;
+    }
+    // Titles stored before genres and authors existed get them on first view (best effort, counted).
+    let needs_v2 = db
+        .prepare("SELECT catalog_v2_at FROM media_entity WHERE id = ?1")
+        .bind(&[media_id.into()])?
+        .first::<serde_json::Value>(None)
+        .await?
+        .is_some_and(|r| {
+            r.get("catalog_v2_at")
+                .is_none_or(serde_json::Value::is_null)
+        });
+    if needs_v2 {
+        let _ = catalog::fill_v2(env, &db, &s.user_id, media_id, true).await;
     }
     json(
         &read_detail(&db, media_id, loc)

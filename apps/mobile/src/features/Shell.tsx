@@ -163,8 +163,9 @@ function TabBar({ circleId, rail }: { circleId: string; rail: boolean }) {
       active={a.me}
       rail={rail}
       avatar={
-        <View style={{ borderRadius: 999, padding: 2, margin: -2, borderWidth: 2, borderColor: a.me ? c.accent : "transparent" }}>
-          <Avatar name={me?.name ?? ""} image={me?.image} size={24} />
+        <View style={{ width: 22, height: 22, alignItems: "center", justifyContent: "center" }}>
+          <Avatar name={me?.name ?? ""} image={me?.image} size={22} />
+          {a.me ? <View aria-hidden style={{ position: "absolute", top: -3, left: -3, right: -3, bottom: -3, borderRadius: 999, borderWidth: 2, borderColor: c.accent }} /> : null}
         </View>
       }
     />

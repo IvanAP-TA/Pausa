@@ -68,6 +68,22 @@ check("year range", names((await q("yearFrom=1992&yearTo=1993&minVotes=0")).item
 check("search ignores case and accents", names((await q("q=TITOLO%204")).items) === "T4");
 check("sort=year (newest release first)", names((await q("sort=year&minVotes=0")).items) === "T8,T7,T6,T5,T4,T3,T2,T1", names((await q("sort=year&minVotes=0")).items));
 check("sort=title", names((await q("sort=title")).items) === "T1,T2,T3,T4,T5,T6,T7");
+{
+  const asc = (await q("dir=asc")).items.map((i) => i.avg);
+  const desc = R0.items.map((i) => i.avg);
+  const sorted = (a, cmp) => a.every((v, i) => i === 0 || cmp(a[i - 1], v));
+  check("ranking: dir=asc orders by average ascending (worst first), default stays descending", asc.length === desc.length && sorted(asc, (x, y) => x <= y) && sorted(desc, (x, y) => x >= y) && asc[0] < asc.at(-1) && asc[0] === desc.at(-1) && asc.at(-1) === desc[0], JSON.stringify(asc));
+  const t = (await q("sort=title")).items.map((i) => i.media.title);
+  check("ranking: sort=title without dir stays A to Z, dir=desc gives Z to A", t[0] < t.at(-1) && (await q("sort=title&dir=desc")).items[0].media.title === t.at(-1));
+}
+
+sql(`INSERT INTO media_genre VALUES ('${T[1]}','drama'),('${T[2]}','drama'),('${T[3]}','comedy')`);
+{
+  const gd = await q("genre=drama");
+  check("ranking: genre filter", gd.items.every((i) => [T[1], T[2]].includes(i.media.id)) && gd.total === 2, JSON.stringify(gd.items.map((i) => i.media.title)));
+  check("ranking: genres present for the menu", JSON.stringify((await q("kind=movie")).genres) === JSON.stringify(["comedy", "drama"]));
+  check("ranking: unknown genre ignored", (await q("genre=nope")).total === (await q("")).total);
+}
 
 // pagination: 50 more titles rated by p1
 const bulk = Array.from({ length: 50 }, (_, i) => `bulk${i}-${run}`);

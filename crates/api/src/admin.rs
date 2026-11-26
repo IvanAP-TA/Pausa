@@ -4,7 +4,8 @@
 //! else gets a 404 on `/api/admin/*`: its existence is not revealed. Nothing is hidden automatically by a report; the operator
 //! decides, and removing something is limited to the Cerchia where it was reported.
 
-use crate::diary::{num, rating_refresh};
+use crate::catalog;
+use crate::diary::{num, query_param, rating_refresh};
 use crate::http::{body, finish, json, no_content, now_ms, Fail, R};
 use crate::session;
 use pausa_core::dto::{
@@ -463,4 +464,61 @@ mod tests {
         assert!(!in_operator_list("a@x.it,,", ""));
         assert!(!in_operator_list("aa@x.it", "a@x.it"));
     }
+}
+
+#[derive(Deserialize)]
+struct BackfillIdRow {
+    id: String,
+}
+
+#[derive(Deserialize)]
+struct BackfillCount {
+    n: i64,
+}
+
+/// `POST /api/admin/catalog-backfill?limit=5`: genres and authors for titles stored before migration 0003, a few per call
+/// (each title is one or two catalogue requests; the CPU budget is 10 ms, network waits do not count). The final COUNT reads
+/// every `media_entity` row: acceptable because the backfill runs only a few times.
+pub async fn catalog_backfill(req: Request, env: Env) -> Result<Response> {
+    finish(catalog_backfill_inner(&req, &env).await)
+}
+
+async fn catalog_backfill_inner(req: &Request, env: &Env) -> R<Response> {
+    let db = env.d1("DB")?;
+    let user_id = require_operator(req, env, &db).await?;
+    let limit = query_param(req, "limit")
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(5)
+        .clamp(1, 10);
+    let ids: Vec<BackfillIdRow> = db
+        .prepare(
+            "SELECT id FROM media_entity WHERE catalog_v2_at IS NULL ORDER BY created_at LIMIT ?1",
+        )
+        .bind(&[num(limit)])?
+        .all()
+        .await?
+        .results()?;
+    let (mut done, mut failed) = (0, 0);
+    for r in &ids {
+        // Not counted against the operator's catalogue limit: the CLI paces the calls. A transient error (catalogue down, no
+        // token, rate limited) leaves the title unstamped for a later call; a rate limit or outage stops the batch.
+        match catalog::fill_v2(env, &db, &user_id, &r.id, false).await {
+            Ok(()) => done += 1,
+            Err(f) => {
+                failed += 1;
+                if f.status == 429 || f.status == 503 {
+                    break;
+                }
+            }
+        }
+    }
+    let left = db
+        .prepare("SELECT COUNT(*) AS n FROM media_entity WHERE catalog_v2_at IS NULL")
+        .first::<BackfillCount>(None)
+        .await?
+        .map_or(0, |c| c.n);
+    json(
+        &serde_json::json!({ "done": done, "failed": failed, "left": left }),
+        200,
+    )
 }

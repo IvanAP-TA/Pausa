@@ -107,9 +107,14 @@ test("flow 3, Registra: the rating is a slider with a value and a spoken value, 
   // the "1,5 stelle su 5" text next to it is a polite live region
   expect(live(tree).length, "the tree has a live region").toBeGreaterThan(0);
   await expect(page.locator('[aria-live="polite"]').filter({ hasText: /stelle su 5/ }), "and the rating phrase is inside one").toHaveCount(1);
-  // a future date: the field says why, and the submit is an alert-free, named button
+  // a future date (only an existing viewing can change its date): the edit form, where the field says why, and the submit is an alert-free, named button
+  const own = (await logApi(u, { mediaKey: "tmdb:movie:603", rating: 5, circles: [cid] })).json.id;
+  await page.goto(`/it/log/${own}`);
+  await page.getByTestId("log-details").waitFor();
   const disclosure = page.getByTestId("log-details");
-  expect(await disclosure.getAttribute("aria-expanded"), "the folded details say they are closed").toBe("false");
+  expect(await disclosure.getAttribute("aria-expanded"), "an edit starts with the details open").toBe("true");
+  await disclosure.click();
+  expect(await disclosure.getAttribute("aria-expanded"), "and the disclosure closes").toBe("false");
   await disclosure.click();
   expect(await disclosure.getAttribute("aria-expanded")).toBe("true");
   const date = page.getByTestId("watched-on");

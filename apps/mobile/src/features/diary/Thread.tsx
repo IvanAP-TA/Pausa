@@ -238,7 +238,7 @@ function AddToList({ circleId, mediaId }: { circleId: string; mediaId: string })
           disabled={listId === "" || state !== null}
           busy={add.busy}
           testID="add-to-list-go"
-          style={{ minHeight: control }}
+          style={{ minHeight: control, alignSelf: "flex-end" }}
           onPress={async () => {
             const res = await add.run(() => listsApi.addItem(listId, { mediaId }));
             if (res) setState(res.value.added ? "added" : "already");

@@ -12,6 +12,7 @@ import { MediaPoster } from "@/ui/MediaPoster";
 import { Section } from "@/ui/Section";
 import { ErrorState, Heading, Loading, RowList, Screen, Tag, Text } from "@/ui";
 import { RequireSession } from "../session";
+import { Authors } from "./Authors";
 import { ProgressCard } from "./MyDiary";
 import { CardList, KindTag, LogCard, num } from "./shared";
 import "./diary.messages";
@@ -77,6 +78,7 @@ function TitleBody({ id }: { id: string }) {
           <Heading level={1} style={{ fontSize: 40, lineHeight: 44 }}>
             {d.media.title}
           </Heading>
+          <Authors authors={d.authors ?? []} />
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs, alignItems: "center" }}>
             {year ? (
               <Text variant="small" tone="muted">

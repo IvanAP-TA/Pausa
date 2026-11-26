@@ -24,6 +24,24 @@ impl Sort {
     }
 }
 
+/// Direction of the primary sort key. The name tiebreak is always A to Z.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Dir {
+    #[default]
+    Desc,
+    Asc,
+}
+
+impl Dir {
+    pub fn parse(s: Option<&str>) -> Dir {
+        if s == Some("asc") {
+            Dir::Asc
+        } else {
+            Dir::Desc
+        }
+    }
+}
+
 /// One title as the Cerchia sees it.
 #[derive(Clone, Debug)]
 pub struct Title {
@@ -37,6 +55,8 @@ pub struct Title {
     pub watched_by: Vec<String>,
     /// `YYYY-MM-DD` of the most recent viewing.
     pub last_watched: String,
+    /// Genre slugs (see `genre::SLUGS`).
+    pub genres: Vec<String>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -52,6 +72,9 @@ pub struct Filters {
     /// Only titles this person watched.
     pub by: Option<String>,
     pub sort: Option<Sort>,
+    pub dir: Dir,
+    /// Only titles with this genre slug.
+    pub genre: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -111,30 +134,41 @@ pub fn rank(titles: Vec<Title>, people: &[String], f: &Filters) -> Vec<Ranked> {
                 && r.votes >= f.min_votes.unwrap_or(1)
                 && (!f.everyone || people.iter().all(|p| t.watched_by.contains(p)))
                 && f.by.as_ref().is_none_or(|b| t.watched_by.contains(b))
+                && f.genre
+                    .as_ref()
+                    .is_none_or(|g| t.genres.iter().any(|x| x == g))
         })
         .collect();
     let desc = |a: f64, b: f64| b.partial_cmp(&a).unwrap_or(std::cmp::Ordering::Equal);
-    out.sort_by(|a, b| match f.sort.unwrap_or(Sort::Avg) {
-        Sort::Votes => b
-            .votes
-            .cmp(&a.votes)
-            .then(desc(a.avg.unwrap_or(0.0), b.avg.unwrap_or(0.0)))
-            .then(by_name(&a.title, &b.title)),
-        Sort::Year => b
-            .title
-            .year
-            .unwrap_or(0)
-            .cmp(&a.title.year.unwrap_or(0))
-            .then(by_name(&a.title, &b.title)),
-        Sort::Recent => b
-            .title
-            .last_watched
-            .cmp(&a.title.last_watched)
-            .then(by_name(&a.title, &b.title)),
-        Sort::Title => by_name(&a.title, &b.title),
-        Sort::Avg => desc(a.avg.unwrap_or(-1.0), b.avg.unwrap_or(-1.0))
-            .then(b.votes.cmp(&a.votes))
-            .then(by_name(&a.title, &b.title)),
+    let primary = |a: &Ranked, b: &Ranked| -> std::cmp::Ordering {
+        match f.sort.unwrap_or(Sort::Avg) {
+            Sort::Votes => b
+                .votes
+                .cmp(&a.votes)
+                .then(desc(a.avg.unwrap_or(0.0), b.avg.unwrap_or(0.0))),
+            Sort::Year => b.title.year.unwrap_or(0).cmp(&a.title.year.unwrap_or(0)),
+            Sort::Recent => b.title.last_watched.cmp(&a.title.last_watched),
+            Sort::Title => by_name(&a.title, &b.title).reverse(),
+            Sort::Avg => {
+                desc(a.avg.unwrap_or(-1.0), b.avg.unwrap_or(-1.0)).then(b.votes.cmp(&a.votes))
+            }
+        }
+    };
+    // A title without the sorted value (no year, no rating, never watched) goes last in both directions: ascending must not open
+    // the list with the blanks.
+    let blank = |r: &Ranked| match f.sort.unwrap_or(Sort::Avg) {
+        Sort::Year => r.title.year.is_none(),
+        Sort::Avg | Sort::Votes => r.avg.is_none(),
+        Sort::Recent => r.title.last_watched.is_empty(),
+        Sort::Title => false,
+    };
+    out.sort_by(|a, b| {
+        let p = primary(a, b);
+        let p = if f.dir == Dir::Asc { p.reverse() } else { p };
+        blank(a)
+            .cmp(&blank(b))
+            .then(p)
+            .then(by_name(&a.title, &b.title))
     });
     out
 }
@@ -214,6 +248,7 @@ mod tests {
             ratings: ratings.iter().map(|(u, r)| (u.to_string(), *r)).collect(),
             watched_by: watched.iter().map(|s| s.to_string()).collect(),
             last_watched: last.into(),
+            genres: vec![],
         }
     }
 
@@ -286,9 +321,30 @@ mod tests {
     }
 
     #[test]
+    fn genre_filter_keeps_titles_with_that_slug() {
+        let mut s = sample();
+        s[0].genres = vec!["romance".into(), "comedy".into()];
+        s[1].genres = vec!["action".into()];
+        let r = rank(
+            s,
+            &people(),
+            &Filters {
+                genre: Some("action".into()),
+                ..Default::default()
+            },
+        );
+        assert_eq!(ids(&r), ["b"]);
+    }
+
+    #[test]
     fn sorts() {
         let f = |s| Filters {
             sort: Some(s),
+            dir: if s == Sort::Title {
+                Dir::Asc
+            } else {
+                Dir::Desc
+            },
             min_votes: Some(0),
             ..Default::default()
         };
@@ -310,6 +366,79 @@ mod tests {
         );
         assert_eq!(Sort::parse(Some("year")), Sort::Year);
         assert_eq!(Sort::parse(Some("nonsense")), Sort::Avg);
+    }
+
+    #[test]
+    fn ascending_reverses_the_primary_key_but_not_the_name_tiebreak() {
+        let f = |sort, dir| Filters {
+            sort: Some(sort),
+            dir,
+            ..Default::default()
+        };
+        assert_eq!(
+            ids(&rank(sample(), &people(), &f(Sort::Avg, Dir::Asc))),
+            ["c", "a", "e", "b"],
+            "worst first; Amélie/Eva tie keeps A before E"
+        );
+        assert_eq!(
+            ids(&rank(sample(), &people(), &f(Sort::Votes, Dir::Asc))),
+            ["c", "a", "e", "b"]
+        );
+        assert_eq!(
+            ids(&rank(sample(), &people(), &f(Sort::Year, Dir::Asc))),
+            ["e", "b", "a", "c"],
+            "oldest first"
+        );
+        assert_eq!(
+            ids(&rank(sample(), &people(), &f(Sort::Avg, Dir::Desc))),
+            ["b", "a", "e", "c"],
+            "desc unchanged"
+        );
+    }
+
+    #[test]
+    fn blanks_go_last_in_both_directions() {
+        let mut titles = sample();
+        titles[0].year = None; // Amélie: no year
+        let f = |sort, dir| Filters {
+            sort: Some(sort),
+            dir,
+            min_votes: Some(0),
+            ..Default::default()
+        };
+        for dir in [Dir::Asc, Dir::Desc] {
+            let by_year = rank(titles.clone(), &people(), &f(Sort::Year, dir));
+            assert_eq!(
+                *ids(&by_year).last().unwrap(),
+                "a",
+                "no year last ({dir:?})"
+            );
+            let by_avg = rank(titles.clone(), &people(), &f(Sort::Avg, dir));
+            assert_eq!(
+                *ids(&by_avg).last().unwrap(),
+                "d",
+                "no rating last ({dir:?})"
+            );
+            let by_votes = rank(titles.clone(), &people(), &f(Sort::Votes, dir));
+            assert_eq!(
+                *ids(&by_votes).last().unwrap(),
+                "d",
+                "no votes last ({dir:?})"
+            );
+        }
+        assert_eq!(
+            ids(&rank(titles.clone(), &people(), &f(Sort::Year, Dir::Asc))),
+            ["e", "b", "c", "d", "a"]
+        );
+        let mut unseen = sample();
+        unseen[1].last_watched = String::new(); // Berserk: never watched
+        assert_eq!(
+            *ids(&rank(unseen, &people(), &f(Sort::Recent, Dir::Asc)))
+                .last()
+                .unwrap(),
+            "b",
+            "never watched last"
+        );
     }
 
     #[test]

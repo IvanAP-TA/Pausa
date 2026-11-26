@@ -159,7 +159,10 @@ async fn sign_in_inner(req: &mut Request, env: &Env) -> R<Response> {
     }
 
     let mut res = if input.native == Some(true) {
-        json(&serde_json::json!({ "token": token, "circleId": REVIEW_CIRCLE_ID }), 200)?
+        json(
+            &serde_json::json!({ "token": token, "circleId": REVIEW_CIRCLE_ID }),
+            200,
+        )?
     } else {
         let mut r = json(&serde_json::json!({ "circleId": REVIEW_CIRCLE_ID }), 200)?;
         r.headers_mut()

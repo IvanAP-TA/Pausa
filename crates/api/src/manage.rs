@@ -1,14 +1,17 @@
 //! Managing a Cerchia: detail, invites, settings, roles, removal, leaving, hand-over, deletion.
 //! Rule everywhere: someone who is not in the Cerchia gets 404 (its existence is private), a member without the right gets 403.
 
+use crate::diary::locale_of;
 use crate::http::{body, finish, json, new_id, no_content, now_ms, random, Fail, R};
 use crate::{catalog, limit, session};
-use crate::diary::locale_of;
 use pausa_core::circles::{
     can_remove, can_set_role, clean_description, clean_name, invite_code, leave_outcome,
     valid_cover, Denied, LeaveOutcome, EXPIRY_CHOICES, MAX_USES_CHOICES,
 };
-use pausa_core::dto::{CircleDetail, CircleExtras, ErrorCode, MemoryDto, InviteDto, MediaDto, MemberDto, PersonDto, Role, WatchingDto};
+use pausa_core::dto::{
+    CircleDetail, CircleExtras, ErrorCode, InviteDto, MediaDto, MemberDto, MemoryDto, PersonDto,
+    Role, WatchingDto,
+};
 use pausa_core::limits;
 use serde::Deserialize;
 use worker::wasm_bindgen::JsValue;
@@ -102,7 +105,9 @@ async fn detail_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response> 
     let db = env.d1("DB")?;
     let s = session::require(req, &db).await?;
     let now = now_ms();
-    let year: i64 = pausa_core::diary::date_of_ms(now)[..4].parse().unwrap_or(1970);
+    let year: i64 = pausa_core::diary::date_of_ms(now)[..4]
+        .parse()
+        .unwrap_or(1970);
     let loc = catalog::locale_code(locale_of(req));
     let results = db
         .batch(vec![
@@ -128,15 +133,29 @@ async fn detail_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response> 
             .bind(&[circle_id.into(), s.user_id.as_str().into(), loc.into()])?,
         ])
         .await?;
-    let logs_this_year = results[3].results::<CountRow>()?.first().map(|r| r.n).unwrap_or(0);
+    let logs_this_year = results[3]
+        .results::<CountRow>()?
+        .first()
+        .map(|r| r.n)
+        .unwrap_or(0);
     let mut seen = std::collections::HashSet::new();
     let watching: Vec<WatchingDto> = results[4]
         .results::<WatchingRow>()?
         .into_iter()
         .filter(|r| seen.insert(r.user_id.clone()))
         .map(|r| WatchingDto {
-            user: PersonDto { id: r.user_id, name: r.name, image: r.image },
-            media: MediaDto { id: r.media_id, kind: r.kind, title: r.loc_title.unwrap_or(r.original_title), year: r.year, poster_path: r.poster_path },
+            user: PersonDto {
+                id: r.user_id,
+                name: r.name,
+                image: r.image,
+            },
+            media: MediaDto {
+                id: r.media_id,
+                kind: r.kind,
+                title: r.loc_title.unwrap_or(r.original_title),
+                year: r.year,
+                poster_path: r.poster_path,
+            },
             season: r.season,
             episode: r.episode,
             updated_at: r.updated_at,
@@ -257,26 +276,56 @@ async fn extras_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response> 
             .bind(&[circle_id.into(), s.user_id.as_str().into(), loc.into(), days_json.into(), num(this_year)])?,
         ])
         .await?;
-    let steps = res[0].results::<StepsRow>()?.into_iter().next().unwrap_or(StepsRow { mine: 0, members: 1, serate: 0 });
+    let steps = res[0]
+        .results::<StepsRow>()?
+        .into_iter()
+        .next()
+        .unwrap_or(StepsRow {
+            mine: 0,
+            members: 1,
+            serate: 0,
+        });
     let mut rows = res[1].results::<MemoryRow>()?;
     // Closest to today's date first, then the most recent year (v1 memoriesFor).
     rows.sort_by_key(|r| {
         (
             pausa_core::diary::memory_distance(&days, r.watched_on.get(5..).unwrap_or("")),
-            this_year - r.watched_on.get(..4).and_then(|y| y.parse::<i64>().ok()).unwrap_or(0),
+            this_year
+                - r.watched_on
+                    .get(..4)
+                    .and_then(|y| y.parse::<i64>().ok())
+                    .unwrap_or(0),
         )
     });
     let memories = rows
         .into_iter()
         .take(3)
         .map(|r| MemoryDto {
-            years_ago: this_year - r.watched_on.get(..4).and_then(|y| y.parse::<i64>().ok()).unwrap_or(this_year),
+            years_ago: this_year
+                - r.watched_on
+                    .get(..4)
+                    .and_then(|y| y.parse::<i64>().ok())
+                    .unwrap_or(this_year),
             log_id: r.log_id,
-            media: MediaDto { id: r.media_id, kind: r.kind, title: r.loc_title.unwrap_or(r.original_title), year: r.year, poster_path: r.poster_path },
-            author: PersonDto { id: r.user_id, name: r.name, image: r.image },
+            media: MediaDto {
+                id: r.media_id,
+                kind: r.kind,
+                title: r.loc_title.unwrap_or(r.original_title),
+                year: r.year,
+                poster_path: r.poster_path,
+            },
+            author: PersonDto {
+                id: r.user_id,
+                name: r.name,
+                image: r.image,
+            },
             watched_on: r.watched_on,
             rating: r.rating,
-            review: if r.contains_spoilers != 0 { None } else { r.review },
+            review: if r.contains_spoilers != 0 {
+                None
+            } else {
+                r.review
+            },
         })
         .collect();
     json(

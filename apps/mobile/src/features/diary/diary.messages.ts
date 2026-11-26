@@ -7,7 +7,7 @@ const it = {
   diary: {
     rating: { less: "Mezza stella in meno", more: "Mezza stella in più", clear: "Senza voto" },
     episodeOf: "Stagione {season} · episodio {episode}",
-    nav: { label: "Sezioni della Cerchia", feed: "Feed", people: "Persone", recent: "Ultime visioni", allFeed: "Tutto il feed" },
+    authors: { director: "Regia", creator: "Creata da", author: "Autore originale" },
     feed: {
       refresh: "Aggiorna",
       active: "{count, plural, one {# filtro} other {# filtri}}",
@@ -28,7 +28,11 @@ const it = {
     },
     log: {
       minChars: "Scrivi almeno due lettere.",
-      change: "Cambia titolo",
+      searchBy: "Cerca per",
+      byTitle: "Titolo",
+      byPerson: "Regista/autore",
+      searchPerson: "Cerca un regista o un autore",
+      back: "Indietro",
       today: "Oggi",
       yesterday: "Ieri",
       dateInvalid: "Scrivi la data così: 2026-11-25.",
@@ -63,7 +67,7 @@ const en = {
   diary: {
     rating: { less: "Half a star less", more: "Half a star more", clear: "No rating" },
     episodeOf: "Season {season} · episode {episode}",
-    nav: { label: "Sections of the Circle", feed: "Feed", people: "People", recent: "Latest viewings", allFeed: "The whole feed" },
+    authors: { director: "Directed by", creator: "Created by", author: "Original author" },
     feed: {
       refresh: "Refresh",
       active: "{count, plural, one {# filter} other {# filters}}",
@@ -84,7 +88,11 @@ const en = {
     },
     log: {
       minChars: "Type at least two letters.",
-      change: "Change title",
+      searchBy: "Search by",
+      byTitle: "Title",
+      byPerson: "Director/author",
+      searchPerson: "Search for a director or author",
+      back: "Back",
       today: "Today",
       yesterday: "Yesterday",
       dateInvalid: "Write the date like this: 2026-11-25.",
@@ -119,7 +127,7 @@ const es = {
   diary: {
     rating: { less: "Media estrella menos", more: "Media estrella más", clear: "Sin nota" },
     episodeOf: "Temporada {season} · episodio {episode}",
-    nav: { label: "Secciones del Círculo", feed: "Feed", people: "Personas", recent: "Últimos visionados", allFeed: "Todo el feed" },
+    authors: { director: "Dirección", creator: "Creada por", author: "Autor original" },
     feed: {
       refresh: "Actualizar",
       active: "{count, plural, one {# filtro} other {# filtros}}",
@@ -140,7 +148,11 @@ const es = {
     },
     log: {
       minChars: "Escribe al menos dos letras.",
-      change: "Cambiar título",
+      searchBy: "Buscar por",
+      byTitle: "Título",
+      byPerson: "Director/autor",
+      searchPerson: "Busca un director o autor",
+      back: "Atrás",
       today: "Hoy",
       yesterday: "Ayer",
       dateInvalid: "Escribe la fecha así: 2026-11-25.",

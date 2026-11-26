@@ -12,12 +12,12 @@ use pausa_core::dto::{
 use pausa_core::limits;
 use pausa_core::profile::GUEST_AVATARS;
 use pausa_core::serata::{
-    build_roster, normalize_code, room_code, Candidate, Mode, NewRoom, Participant, Room, Timing, MAX_CANDIDATES,
-    MIN_CANDIDATES, RosterTitle,
+    build_roster, normalize_code, room_code, Candidate, Mode, NewRoom, Participant, Room,
+    RosterTitle, Timing, MAX_CANDIDATES, MIN_CANDIDATES,
 };
 use pausa_core::streaming::{common_providers, default_country, is_country, Provider};
-use std::collections::{HashMap, HashSet};
 use serde::Deserialize;
+use std::collections::{HashMap, HashSet};
 use worker::wasm_bindgen::JsValue;
 use worker::*;
 

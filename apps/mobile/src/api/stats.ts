@@ -14,7 +14,9 @@ export type RankingQuery = {
   minVotes?: number;
   everyone?: boolean;
   by?: string;
+  genre?: string;
   sort?: RankingSort;
+  dir?: "asc" | "desc";
   page?: number;
 };
 

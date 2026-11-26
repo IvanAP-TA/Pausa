@@ -13,8 +13,8 @@ use crate::http::{body, finish, json, new_id, now_ms, Fail, R};
 use crate::{limit, manage, session};
 use pausa_core::catalog::{Key, Kind};
 use pausa_core::dto::{
-    BulkDayDto, BulkDayUndone, ChunkResult, ErrorCode, IdOnly, ImportBatchDto, ImportConfig, ImportUndone, ListChunkResult, Locale,
-    RejectedRow,
+    BulkDayDto, BulkDayUndone, ChunkResult, ErrorCode, IdOnly, ImportBatchDto, ImportConfig,
+    ImportUndone, ListChunkResult, Locale, RejectedRow,
 };
 use pausa_core::import::{
     clean_row, created_at_for, today_of, Clean, ImportRow, CHUNK_LIMIT, SOURCES,
@@ -970,9 +970,13 @@ async fn bulk_days_inner(req: &Request, env: &Env) -> R<Response> {
 fn valid_day(day: &str) -> bool {
     let b = day.as_bytes();
     b.len() == 10
-        && b.iter()
-            .enumerate()
-            .all(|(i, c)| if i == 4 || i == 7 { *c == b'-' } else { c.is_ascii_digit() })
+        && b.iter().enumerate().all(|(i, c)| {
+            if i == 4 || i == 7 {
+                *c == b'-'
+            } else {
+                c.is_ascii_digit()
+            }
+        })
 }
 
 /// The viewings of a bulk day, or `not_found` when the day is not a block (or does not exist).
@@ -1072,5 +1076,10 @@ pub async fn config(req: Request, env: Env) -> Result<Response> {
 async fn config_inner(req: &Request, env: &Env) -> R<Response> {
     let db = env.d1("DB")?;
     session::require(req, &db).await?;
-    json(&ImportConfig { tmdb: catalog::tmdb_enabled(env) }, 200)
+    json(
+        &ImportConfig {
+            tmdb: catalog::tmdb_enabled(env),
+        },
+        200,
+    )
 }

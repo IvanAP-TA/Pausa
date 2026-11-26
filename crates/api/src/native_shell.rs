@@ -3,6 +3,7 @@
 //!   1. the page sends the WebView to `/api/native/start`: the shell catches that address and opens it in the system browser;
 //!   2. the browser signs in (Google, or the email link) and ends on `/api/native/done`, which opens `pausa://auth?token=&next=`;
 //!   3. the shell loads `/api/native/exchange?token=&next=` in its WebView, which swaps the single-use code for a web session.
+//!
 //! The code is the same `native_code` login token the Expo app uses: single use, 3 minutes.
 
 use crate::auth::{encode, locale_code, native_page};
@@ -24,7 +25,11 @@ fn query(url: &Url, key: &str) -> Option<String> {
 fn next_of(url: &Url) -> (String, Locale) {
     let next = safe_next(query(url, "next").as_deref(), "/it/home");
     // Never bounce back into these endpoints.
-    let next = if next.starts_with("/api/") { "/it/home".to_string() } else { next };
+    let next = if next.starts_with("/api/") {
+        "/it/home".to_string()
+    } else {
+        next
+    };
     let locale = next
         .split('/')
         .nth(1)
@@ -112,7 +117,12 @@ async fn exchange_inner(req: &Request, env: &Env) -> R<Response> {
         return redirect(&url, &back, 302);
     };
     let db = env.d1("DB")?;
-    limit::check(&db, &format!("native:ip:{}", client_ip(req)), limits::NATIVE_EXCHANGE).await?;
+    limit::check(
+        &db,
+        &format!("native:ip:{}", client_ip(req)),
+        limits::NATIVE_EXCHANGE,
+    )
+    .await?;
     let now = now_ms();
     // Only codes made without an app verifier: the Expo app's PKCE-bound codes cannot be spent here.
     let used = db

@@ -21,6 +21,7 @@ mod mail;
 mod manage;
 mod media;
 mod native_shell;
+mod people_catalog;
 mod profile;
 mod push;
 mod review;
@@ -131,6 +132,8 @@ async fn route(req: Request, env: Env) -> Result<Response> {
         (Method::Get, ["api", "media", "search"]) => media::search(req, env).await,
         (Method::Post, ["api", "media", "resolve"]) => media::resolve(req, env).await,
         (Method::Get, ["api", "media", id]) => media::detail(req, env, id).await,
+        (Method::Get, ["api", "people", "search"]) => people_catalog::search(req, env).await,
+        (Method::Get, ["api", "people", key]) => people_catalog::page(req, env, key).await,
         (Method::Put, ["api", "media", id, "progress"]) => media::set(req, env, id).await,
         (Method::Post, ["api", "media", id, "progress", "advance"]) => {
             media::advance_one(req, env, id).await
@@ -165,6 +168,9 @@ async fn route(req: Request, env: Env) -> Result<Response> {
         (Method::Get, ["api", "admin", "reports"]) => admin::reports(req, env).await,
         (Method::Post, ["api", "admin", "reports", id, "resolve"]) => {
             admin::resolve(req, env, id).await
+        }
+        (Method::Post, ["api", "admin", "catalog-backfill"]) => {
+            admin::catalog_backfill(req, env).await
         }
         (Method::Get, ["api", "admin", "metrics"]) => admin::metrics(req, env).await,
         (Method::Get, ["api", "review"]) => review::status(env).await,

@@ -9,7 +9,7 @@ use pausa_core::dto::{
     Counted, Insights, LovedBy, MediaDto, PairDto, PersonCount, PersonDto, PersonRating, RankedDto,
     RankingPage, Recommendation, TogetherDto, YearReview,
 };
-use pausa_core::ranking::{agree_and_split, rank, year_span, Filters, Ranked, Sort, Title};
+use pausa_core::ranking::{agree_and_split, rank, year_span, Dir, Filters, Ranked, Sort, Title};
 use serde::Deserialize;
 use std::collections::HashMap;
 use worker::*;
@@ -60,6 +60,12 @@ fn media_dto(m: &MediaRow) -> MediaDto {
     }
 }
 
+#[derive(Deserialize)]
+struct GenreRow {
+    media_id: String,
+    genre: String,
+}
+
 /// Everything the three endpoints need, read in one batch: members (in the order they joined), the ratings that count here, who
 /// watched what, and the titles themselves.
 struct CircleData {
@@ -67,6 +73,7 @@ struct CircleData {
     ratings: Vec<RatingRow>,
     watched: Vec<WatchRow>,
     media: Vec<MediaRow>,
+    genres: Vec<GenreRow>,
 }
 
 async fn load(db: &D1Database, circle_id: &str, loc: &str) -> R<CircleData> {
@@ -89,6 +96,8 @@ async fn load(db: &D1Database, circle_id: &str, loc: &str) -> R<CircleData> {
                  WHERE e.id IN (SELECT l.media_id FROM log_share s JOIN log l ON l.id = s.log_id WHERE s.circle_id = ?1)",
             )
             .bind(&[circle_id.into(), loc.into()])?,
+            db.prepare("SELECT g.media_id, g.genre FROM media_genre g WHERE g.media_id IN (SELECT l.media_id FROM log_share s JOIN log l ON l.id = s.log_id WHERE s.circle_id = ?1)")
+                .bind(&[circle_id.into()])?,
         ])
         .await?;
     Ok(CircleData {
@@ -96,6 +105,7 @@ async fn load(db: &D1Database, circle_id: &str, loc: &str) -> R<CircleData> {
         ratings: res[1].results()?,
         watched: res[2].results()?,
         media: res[3].results()?,
+        genres: res[4].results()?,
     })
 }
 
@@ -116,6 +126,7 @@ fn titles_of(d: &CircleData) -> Vec<Title> {
                 ratings: Vec::new(),
                 watched_by: Vec::new(),
                 last_watched: String::new(),
+                genres: Vec::new(),
             },
         );
     }
@@ -125,6 +136,11 @@ fn titles_of(d: &CircleData) -> Vec<Title> {
             if w.last > t.last_watched {
                 t.last_watched = w.last.clone();
             }
+        }
+    }
+    for g in &d.genres {
+        if let Some(t) = by.get_mut(g.media_id.as_str()) {
+            t.genres.push(g.genre.clone());
         }
     }
     for r in &d.ratings {
@@ -171,7 +187,7 @@ fn person(m: &MemberRow) -> PersonDto {
     }
 }
 
-/// `GET /api/circles/:id/ranking?q=&kind=&yearFrom=&yearTo=&minVotes=&everyone=1&by=&sort=avg|votes|year|recent|title&page=`
+/// `GET /api/circles/:id/ranking?q=&kind=&yearFrom=&yearTo=&minVotes=&everyone=1&by=&sort=avg|votes|year|recent|title&dir=asc|desc&page=`
 pub async fn ranking(req: Request, env: Env, circle_id: &str) -> Result<Response> {
     finish(ranking_inner(&req, &env, circle_id).await)
 }
@@ -184,6 +200,7 @@ async fn ranking_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response>
     let titles = titles_of(&d);
     let span = year_span(&titles);
     let num_param = |k: &str| query_param(req, k).and_then(|v| v.parse::<i64>().ok());
+    let sort = Sort::parse(query_param(req, "sort").as_deref());
     let filters = Filters {
         q: query_param(req, "q"),
         kind: query_param(req, "kind").filter(|k| matches!(k.as_str(), "movie" | "tv" | "anime")),
@@ -192,9 +209,24 @@ async fn ranking_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response>
         min_votes: num_param("minVotes").map(|v| v.clamp(0, 50) as usize),
         everyone: query_param(req, "everyone").as_deref() == Some("1"),
         by: query_param(req, "by"),
-        sort: Some(Sort::parse(query_param(req, "sort").as_deref())),
+        sort: Some(sort),
+        // `sort=title` without `dir` keeps its historical A to Z order.
+        dir: match query_param(req, "dir").as_deref() {
+            Some(d) => Dir::parse(Some(d)),
+            None if sort == Sort::Title => Dir::Asc,
+            None => Dir::Desc,
+        },
+        genre: query_param(req, "genre").filter(|g| pausa_core::genre::SLUGS.contains(&g.as_str())),
     };
     let people: Vec<String> = d.members.iter().map(|m| m.id.clone()).collect();
+    let kind = filters.kind.clone();
+    let mut genres: Vec<String> = titles
+        .iter()
+        .filter(|t| kind.as_ref().is_none_or(|k| &t.kind == k))
+        .flat_map(|t| t.genres.iter().cloned())
+        .collect();
+    genres.sort();
+    genres.dedup();
     let ranked = rank(titles, &people, &filters);
     let total = ranked.len() as u32;
     let page = num_param("page").unwrap_or(0).max(0) as usize;
@@ -212,6 +244,7 @@ async fn ranking_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response>
             page_size: PAGE as u32,
             year_min: span.map(|x| x.0),
             year_max: span.map(|x| x.1),
+            genres,
         },
         200,
     )
@@ -264,16 +297,29 @@ fn together_of(d: &CircleData, rows: &[TogetherRow]) -> Option<TogetherDto> {
     let mut counts: HashMap<(String, String), u32> = HashMap::new();
     for r in rows {
         let mut group: Vec<&str> = std::iter::once(r.user_id.as_str())
-            .chain(r.with_ids.as_deref().unwrap_or("").split(',').filter(|x| !x.is_empty()))
+            .chain(
+                r.with_ids
+                    .as_deref()
+                    .unwrap_or("")
+                    .split(',')
+                    .filter(|x| !x.is_empty()),
+            )
             .filter(|id| members.contains_key(id))
             .collect();
         group.sort();
         group.dedup();
         for i in 0..group.len() {
             for j in i + 1..group.len() {
-                let key = (r.media_id.clone(), r.watched_on.clone(), group[i].to_string(), group[j].to_string());
+                let key = (
+                    r.media_id.clone(),
+                    r.watched_on.clone(),
+                    group[i].to_string(),
+                    group[j].to_string(),
+                );
                 if seen.insert(key) {
-                    *counts.entry((group[i].to_string(), group[j].to_string())).or_default() += 1;
+                    *counts
+                        .entry((group[i].to_string(), group[j].to_string()))
+                        .or_default() += 1;
                 }
             }
         }

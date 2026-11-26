@@ -13,6 +13,7 @@ import { Section } from "@/ui/Section";
 import { Stars } from "@/ui/Stars";
 import { ErrorState, Heading, Loading, Screen, Tag, Text } from "@/ui";
 import { RequireSession } from "../session";
+import { Authors } from "./Authors";
 import { CardList, KindTag, LogCard, num, useCircleScope } from "./shared";
 import "./diary.messages";
 
@@ -65,6 +66,7 @@ function CircleTitleBody({ circleId, mediaId }: { circleId: string; mediaId: str
             {d.media.title}
           </Heading>
           {m.originalTitle !== d.media.title ? <Text tone="ink2">{m.originalTitle}</Text> : null}
+          <Authors authors={d.authors ?? []} circleId={circleId} />
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs, alignItems: "center" }}>
             <KindTag media={d.media} />
             {year ? (

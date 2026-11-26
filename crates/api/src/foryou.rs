@@ -139,7 +139,9 @@ async fn for_you_inner(req: &Request, env: &Env) -> R<Response> {
             .unwrap_or_else(|| default_country(catalog::locale_code(locale)).to_string());
         for p in &mut picks {
             let mut parts = p.key.split(':').skip(1);
-            let (Some(kind), Some(id)) = (parts.next(), parts.next()) else { continue };
+            let (Some(kind), Some(id)) = (parts.next(), parts.next()) else {
+                continue;
+            };
             match catalog::tmdb_get(env, &caller, &format!("/{kind}/{id}/watch/providers")).await {
                 Ok(v) => p.on = on_my_services(&parse_watch_providers(&v, &country), &mine),
                 Err(f) if f.status == 429 => break,

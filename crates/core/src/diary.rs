@@ -234,7 +234,9 @@ pub fn cut_at_sentence(text: &str, max: usize) -> String {
 /// "MM-DD" of the days around `today` (YYYY-MM-DD), `window` either side, oldest first: the calendar days a memory may fall on.
 /// Counted on a leap year (v1 used 2024) so 29 February always exists and its neighbours are right.
 pub fn memory_days(today: &str, window: i64) -> Vec<String> {
-    let Some((_, m, d)) = parse_date(today) else { return Vec::new() };
+    let Some((_, m, d)) = parse_date(today) else {
+        return Vec::new();
+    };
     let base = days_from_civil(2024, m, d);
     (-window..=window)
         .map(|i| {
@@ -247,15 +249,24 @@ pub fn memory_days(today: &str, window: i64) -> Vec<String> {
 /// How far a memory's "MM-DD" sits from today in `days` (as returned by `memory_days`): 0 is today. Unknown days go last.
 pub fn memory_distance(days: &[String], month_day: &str) -> i64 {
     let window = (days.len() as i64 - 1) / 2;
-    days.iter().position(|d| d == month_day).map(|i| (i as i64 - window).abs()).unwrap_or(i64::MAX)
+    days.iter()
+        .position(|d| d == month_day)
+        .map(|i| (i as i64 - window).abs())
+        .unwrap_or(i64::MAX)
 }
 
 #[cfg(test)]
 mod tests {
     #[test]
     fn memory_days_cross_months_and_keep_29_february() {
-        assert_eq!(memory_days("2026-03-01", 1), vec!["02-29", "03-01", "03-02"]);
-        assert_eq!(memory_days("2027-01-01", 2), vec!["12-30", "12-31", "01-01", "01-02", "01-03"]);
+        assert_eq!(
+            memory_days("2026-03-01", 1),
+            vec!["02-29", "03-01", "03-02"]
+        );
+        assert_eq!(
+            memory_days("2027-01-01", 2),
+            vec!["12-30", "12-31", "01-01", "01-02", "01-03"]
+        );
         assert!(memory_days("nope", 3).is_empty());
         let days = memory_days("2026-11-26", 3);
         assert_eq!(memory_distance(&days, "11-26"), 0);

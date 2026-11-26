@@ -19,12 +19,13 @@ const movie = (lang) => ({
   imdb_id: "tt0133093",
   original_language: "en",
   genres: [{ id: 28, name: "Azione" }, { id: 878, name: "Fantascienza" }],
-  credits: { cast: [{ name: "Keanu Reeves", character: "Neo" }, { name: "Laurence Fishburne", character: "Morpheus" }] },
+  credits: { cast: [{ name: "Keanu Reeves", character: "Neo" }, { name: "Laurence Fishburne", character: "Morpheus" }], crew: [{ id: 9339, name: "Lana Wachowski", job: "Director", profile_path: "/lana.jpg" }, { id: 9340, name: "Lilly Wachowski", job: "Director" }] },
 });
 
 // More films, for the import tests: id -> [title it, original title, release date, runtime]
 const FILMS = {
   194: ["Amélie", "Le Fabuleux Destin d'Amélie Poulain", "2001-04-25", 122],
+  604: ["Matrix Reloaded", "The Matrix Reloaded", "2003-05-15", 138], // on the director page (person 9339), resolved on click
   807: ["Se7en", "Se7en", "1995-09-22", 127],
   27205: ["Inception", "Inception", "2010-07-15", 148],
 };
@@ -41,6 +42,7 @@ const series = (id, lang) =>
         id: 1396, name: lang.startsWith("en") ? "Breaking Bad (en)" : "Breaking Bad", original_name: "Breaking Bad", first_air_date: "2008-01-20",
         episode_run_time: [47], poster_path: "/ggFHVNu6YYI5L9pCfOacjizRGt.jpg", overview: "Un professore di chimica.", original_language: "en",
         genres: [{ id: 18, name: "Drammatico" }], external_ids: { imdb_id: "tt0903747" },
+        created_by: [{ id: 66633, name: "Vince Gilligan", profile_path: "/vg.jpg" }],
         seasons: [{ season_number: 0, episode_count: 9 }, { season_number: 1, episode_count: 7 }, { season_number: 2, episode_count: 13 }],
         credits: { cast: [{ name: "Bryan Cranston", character: "Walter White" }] },
       }
@@ -99,6 +101,16 @@ const server = http.createServer((req, res) => {
     req.on("data", (c) => (raw += c));
     req.on("end", () => {
       const { query, variables } = JSON.parse(raw || "{}");
+      if (query.includes("staff(search")) {
+        const q = String(variables?.q ?? "").toLowerCase();
+        const staff = [];
+        if (q.includes("oda")) staff.push({ id: 96881, name: { full: "Eiichiro Oda" }, primaryOccupations: ["Mangaka"], image: { large: "https://s4.anilist.co/oda.jpg" } });
+        return send(200, { data: { Page: { staff } } });
+      }
+      if (query.includes("Staff(id")) {
+        if (variables?.id !== 96881) return send(200, { errors: [{ message: "Not Found." }], data: { Staff: null } });
+        return send(200, { data: { Staff: { id: 96881, name: { full: "Eiichiro Oda" }, image: { large: "https://s4.anilist.co/oda.jpg" }, description: "Mangaka.", dateOfBirth: { year: 1975, month: 1, day: 1 }, dateOfDeath: {}, homeTown: "Kumamoto", staffMedia: { edges: [{ staffRole: "Original Creator", node: { id: 21, type: "ANIME", title: { romaji: "ONE PIECE", english: "One Piece" }, seasonYear: 1999, startDate: { year: 1999 }, coverImage: { large: "https://s4.anilist.co/file/op.jpg" } } }] } } } });
+      }
       if (query.includes("Page(")) {
         const q = String(variables?.q ?? "").toLowerCase();
         const media = [];
@@ -107,7 +119,7 @@ const server = http.createServer((req, res) => {
         return send(200, { data: { Page: { media } } });
       }
       const id = variables?.id;
-      if (id === 21) return send(200, { data: { Media: { id: 21, idMal: 21, title: { romaji: "ONE PIECE", english: "One Piece" }, seasonYear: 1999, episodes: 1100, duration: 24, description: "Pirati.", genres: ["Action"], isAdult: false, coverImage: { large: "https://s4.anilist.co/file/op.jpg" } } } });
+      if (id === 21) return send(200, { data: { Media: { id: 21, idMal: 21, title: { romaji: "ONE PIECE", english: "One Piece" }, seasonYear: 1999, episodes: 1100, duration: 24, description: "Pirati.", genres: ["Action"], isAdult: false, staff: { edges: [{ role: "Original Creator", node: { id: 96881, name: { full: "Eiichiro Oda" }, image: { large: "https://s4.anilist.co/oda.jpg" } } }, { role: "Director", node: { id: 1, name: { full: "Konosuke Uda" } } }] },  coverImage: { large: "https://s4.anilist.co/file/op.jpg" } } } });
       if (id === 1535) return send(200, { data: { Media: { id: 1535, idMal: 1535, title: { romaji: "DEATH NOTE", english: "Death Note" }, seasonYear: 2006, episodes: 37, duration: 23, description: "Un quaderno.<br>Un dio della morte.", genres: ["Mystery", "Thriller"], isAdult: false, coverImage: { large: "https://s4.anilist.co/file/dn.jpg" } } } });
       return send(200, { errors: [{ message: "Not Found." }], data: { Media: null } });
     });
@@ -117,6 +129,20 @@ const server = http.createServer((req, res) => {
   if (req.headers.authorization !== "Bearer test-token") return send(401, { status_message: "Invalid API key" });
   const lang = url.searchParams.get("language") ?? "en-US";
   if (url.pathname === "/search/multi") return send(200, search(url.searchParams.get("query") ?? ""));
+  if (url.pathname === "/search/person") {
+    const q = (url.searchParams.get("query") ?? "").toLowerCase();
+    const results = [];
+    if (q.includes("simon")) results.push({ id: 1223786, name: "David Simon", known_for_department: "Writing", known_for: [{ media_type: "tv", name: "The Wire" }], profile_path: "/ds.jpg" }, { id: 2, name: "Simon Actor", known_for_department: "Acting" });
+    if (q.includes("wachowski")) results.push({ id: 9339, name: "Lana Wachowski", known_for_department: "Directing", known_for: [{ media_type: "movie", title: "Matrix" }], profile_path: "/lana.jpg" });
+    return send(200, { page: 1, results });
+  }
+  if (url.pathname === "/person/9339") {
+    return send(200, { id: 9339, name: "Lana Wachowski", profile_path: "/lana.jpg", birthday: "1965-06-21", place_of_birth: "Chicago, Illinois, USA", biography: "Regista e sceneggiatrice.", combined_credits: { crew: [
+      { id: 603, media_type: "movie", title: "Matrix", release_date: "1999-03-30", poster_path: "/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg", job: "Director", genre_ids: [28, 878], original_language: "en" },
+      { id: 604, media_type: "movie", title: "Matrix Reloaded", release_date: "2003-05-15", poster_path: "/mr.jpg", job: "Director", genre_ids: [28, 878], original_language: "en" },
+      { id: 603, media_type: "movie", title: "Matrix", job: "Producer" },
+    ] } });
+  }
   if (url.pathname === "/movie/603") return send(200, movie(lang));
   // Watch providers: Matrix (603) streams on Netflix and Prime in Italy, nowhere in France; the IT catalogue has four services.
   if (url.pathname === "/movie/603/watch/providers") {

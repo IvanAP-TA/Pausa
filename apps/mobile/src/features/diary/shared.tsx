@@ -1,7 +1,7 @@
 import type { LogDto, MediaDto, ReactionCount } from "@pausa/api-types";
 import { Link, type Href } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { diaryApi, REACTIONS } from "@/api/diary";
 import { errorMessage } from "@/api/errors";
 import { useAction } from "@/api/useAction";
@@ -378,45 +378,5 @@ function LastComment({ log, to }: { log: LogDto; to: string }) {
         </View>
       </Pressable>
     </Link>
-  );
-}
-
-/** The links among a Cerchia's screens: a strip that scrolls sideways on a phone, the current one marked. */
-export function CircleNav({ circleId, current }: { circleId: string; current: "hub" | "feed" | "ranking" | "insights" | "people" | "lists" | "serate" | "settings" }) {
-  const { t, href } = useI18n();
-  const { c } = useTheme();
-  const items: Array<{ key: typeof current; label: string; to: string }> = [
-    { key: "feed", label: t("diary.nav.feed"), to: href(`/c/${circleId}`) },
-    { key: "ranking", label: t("tabs.ranking"), to: href(`/c/${circleId}/ranking`) },
-    { key: "insights", label: t("insights.title"), to: href(`/c/${circleId}/insights`) },
-    { key: "people", label: t("diary.nav.people"), to: href(`/c/${circleId}/members`) },
-    { key: "lists", label: t("tabs.lists"), to: href(`/lists?circle=${circleId}`) },
-    { key: "serate", label: t("tabs.serata"), to: href(`/c/${circleId}/serate`) },
-    { key: "settings", label: t("app.circle.settings"), to: href(`/c/${circleId}/settings`) },
-  ];
-  return (
-    <View role="navigation" aria-label={t("diary.nav.label")}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.xs }}>
-        {items.map((i) => {
-          const on = i.key === current || (current === "hub" && i.key === "people");
-          return (
-            <Link key={i.key} href={i.to as Href} asChild>
-              <Pressable
-                role="link"
-                aria-current={on ? "page" : undefined}
-                style={StyleSheet.flatten([
-                  { minHeight: control, paddingHorizontal: space.md, justifyContent: "center", borderWidth: hair, borderColor: on ? c.ink : c.rule, backgroundColor: on ? c.paper3 : "transparent" },
-                  web({ cursor: "pointer" }),
-                ])}
-              >
-                <Text variant={on ? "strong" : "body"} tone={on ? "ink" : "ink2"}>
-                  {i.label}
-                </Text>
-              </Pressable>
-            </Link>
-          );
-        })}
-      </ScrollView>
-    </View>
   );
 }

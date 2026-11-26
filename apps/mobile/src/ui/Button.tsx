@@ -23,6 +23,8 @@ export type ButtonProps = {
   size?: "sm" | "md" | "lg";
   /** A lucide icon before the label (v1: Classifica with the trophy, Modifica with the pencil). */
   icon?: ComponentType<{ size?: number; strokeWidth?: number; color?: string }>;
+  /** Rendered as `data-*` on web (tests and styling hooks). */
+  dataSet?: Record<string, string>;
 };
 
 const SIZES = {
@@ -36,7 +38,7 @@ const SIZES = {
  * (accent-hover under the pointer; disabled, an empty rule outline with muted text); secondary a 1px ink outline that takes
  * paper-3 under the pointer; quiet a rule outline whose edge and text darken under the pointer. Press: scale 0.97.
  */
-export function Button({ label, onPress, href, variant = "primary", disabled, busy, accessibilityLabel, fullWidth, style, testID, size = "md", icon: Icon }: ButtonProps) {
+export function Button({ label, onPress, href, variant = "primary", disabled, busy, accessibilityLabel, fullWidth, style, testID, size = "md", icon: Icon, dataSet }: ButtonProps) {
   const { c } = useTheme();
   const { pressed, hovered, bind } = usePressed();
   const off = disabled || busy;
@@ -57,6 +59,8 @@ export function Button({ label, onPress, href, variant = "primary", disabled, bu
       disabled={off}
       onPress={onPress}
       testID={testID}
+      // react-native-web renders `dataSet` as data-* attributes; the native Pressable types do not know it.
+      {...(dataSet ? ({ dataSet } as object) : null)}
       {...bind}
       // One flat object (see usePressed): `Link asChild` cannot take a style function or array.
       style={StyleSheet.flatten([

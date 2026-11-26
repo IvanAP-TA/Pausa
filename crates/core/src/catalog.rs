@@ -87,10 +87,14 @@ pub struct Draft {
     pub seasons: Vec<(i64, i64)>,
     pub overview: Option<String>,
     pub genres: Vec<String>,
+    /// Stable codes from [`crate::genre`], sorted and unique.
+    pub genre_slugs: Vec<&'static str>,
     pub cast: Vec<(String, Option<String>)>,
+    /// Directors (films), creators (series) or original authors (anime), at most 3.
+    pub people: Vec<crate::people::Credit>,
 }
 
-fn s(v: &Value, k: &str) -> Option<String> {
+pub(crate) fn s(v: &Value, k: &str) -> Option<String> {
     v.get(k)
         .and_then(Value::as_str)
         .map(str::trim)
@@ -98,11 +102,11 @@ fn s(v: &Value, k: &str) -> Option<String> {
         .map(str::to_string)
 }
 
-fn n(v: &Value, k: &str) -> Option<i64> {
+pub(crate) fn n(v: &Value, k: &str) -> Option<i64> {
     v.get(k).and_then(Value::as_i64)
 }
 
-fn year_of(date: Option<String>) -> Option<i64> {
+pub(crate) fn year_of(date: Option<String>) -> Option<i64> {
     date?
         .get(..4)?
         .parse()
@@ -111,7 +115,7 @@ fn year_of(date: Option<String>) -> Option<i64> {
 }
 
 /// Japanese animation series are "anime" (TMDB genre 16 + original language ja); a Japanese animated *film* stays a movie.
-fn tmdb_kind(tv: bool, genre_ids: &[i64], lang: Option<&str>) -> Kind {
+pub(crate) fn tmdb_kind(tv: bool, genre_ids: &[i64], lang: Option<&str>) -> Kind {
     if !tv {
         Kind::Movie
     } else if genre_ids.contains(&16) && lang == Some("ja") {
@@ -133,7 +137,12 @@ fn genre_ids(v: &Value) -> Vec<i64> {
 
 /// A TMDB poster path ("/abc.jpg"): anything else is not stored (it ends up in an image URL).
 fn tmdb_poster(v: &Value) -> Option<String> {
-    s(v, "poster_path").filter(|p| {
+    tmdb_poster_str(s(v, "poster_path"))
+}
+
+/// Same validation for a path that is not under `poster_path` (e.g. a person's `profile_path`).
+pub(crate) fn tmdb_poster_str(path: Option<String>) -> Option<String> {
+    path.filter(|p| {
         p.starts_with('/')
             && p.len() < 100
             && p.bytes()
@@ -247,7 +256,13 @@ pub fn draft_from_tmdb(tv: bool, body: &Value) -> Option<Draft> {
         seasons,
         overview: s(body, "overview"),
         genres,
+        genre_slugs: crate::genre::collect(
+            genre_ids(body)
+                .into_iter()
+                .flat_map(|id| crate::genre::from_tmdb(id).iter().copied()),
+        ),
         cast,
+        people: crate::people::credits_from_tmdb(tv, body),
         ..Default::default()
     })
 }
@@ -284,14 +299,14 @@ pub fn strip_html(html: &str) -> String {
 }
 
 /// Only AniList's own CDN is accepted as a poster URL.
-fn anilist_poster(m: &Value) -> Option<String> {
+pub(crate) fn anilist_poster(m: &Value) -> Option<String> {
     let url = m
         .get("coverImage")
         .and_then(|c| s(c, "large").or_else(|| s(c, "medium")))?;
     url.starts_with("https://s4.anilist.co/").then_some(url)
 }
 
-fn anilist_titles(m: &Value) -> Option<(String, String)> {
+pub(crate) fn anilist_titles(m: &Value) -> Option<(String, String)> {
     let t = m.get("title")?;
     let (romaji, english, native) = (s(t, "romaji"), s(t, "english"), s(t, "native"));
     let original = romaji.clone().or(english.clone()).or(native.clone())?;
@@ -299,7 +314,7 @@ fn anilist_titles(m: &Value) -> Option<(String, String)> {
     Some((original, shown))
 }
 
-fn anilist_year(m: &Value) -> Option<i64> {
+pub(crate) fn anilist_year(m: &Value) -> Option<i64> {
     n(m, "seasonYear").or_else(|| m.get("startDate").and_then(|d| n(d, "year")))
 }
 
@@ -330,6 +345,18 @@ pub fn candidates_from_anilist(body: &Value, max: usize) -> Vec<Candidate> {
 pub fn draft_from_anilist(body: &Value) -> Option<Draft> {
     let m = body.pointer("/data/Media")?;
     let (original, shown) = anilist_titles(m)?;
+    // Slugs come from every AniList genre, not only the four kept for display.
+    let names: Vec<&str> = m
+        .get("genres")
+        .and_then(Value::as_array)
+        .map(|a| a.iter().filter_map(Value::as_str).collect())
+        .unwrap_or_default();
+    let genre_slugs = crate::genre::collect(
+        names
+            .iter()
+            .flat_map(|name| crate::genre::from_anilist(name).iter().copied())
+            .chain(["animation"]),
+    );
     Some(Draft {
         kind: Some(Kind::Anime),
         anilist_id: Some(n(m, "id")?),
@@ -354,6 +381,8 @@ pub fn draft_from_anilist(body: &Value) -> Option<Draft> {
                     .collect()
             })
             .unwrap_or_default(),
+        genre_slugs,
+        people: crate::people::credits_from_anilist(m),
         ..Default::default()
     })
 }
@@ -547,6 +576,20 @@ mod tests {
             Some("Gold Roger. Il mare & l'avventura.")
         );
         assert_eq!(d.genres.len(), 4, "at most four genres");
+    }
+
+    #[test]
+    fn drafts_carry_stable_genre_slugs() {
+        let tv = json!({"id": 1, "name": "X", "genres": [{"id": 10759, "name": "Azione e avventura"}, {"id": 18, "name": "Dramma"}]});
+        assert_eq!(
+            draft_from_tmdb(true, &tv).unwrap().genre_slugs,
+            vec!["action", "adventure", "drama"]
+        );
+        let ani = json!({"data": {"Media": {"id": 5, "title": {"romaji": "X"}, "genres": ["Action", "Slice of Life"]}}});
+        assert_eq!(
+            draft_from_anilist(&ani).unwrap().genre_slugs,
+            vec!["action", "animation"]
+        );
     }
 
     #[test]

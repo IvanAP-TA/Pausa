@@ -166,11 +166,13 @@ const diaryTitles = async (p: Person) => ((await api<{ items: Array<{ media: { t
 const serverOrder = async (p: Person) => ((await api<{ items: Array<{ watchedOn: string; arrivedAt: number }> }>(p, "GET", "/api/me/diary?locale=it")).json.items).sort((a, b) => a.arrivedAt - b.arrivedAt).map((l) => l.watchedOn);
 
 async function pickMatrix(page: Page, day: string) {
+  // a new viewing has no date field (it is today): make "today" the wanted day
+  await page.clock.setFixedTime(new Date(`${day}T12:00:00`));
   await page.goto("/it/log");
   await page.getByLabel("Cerca un film, una serie, un anime…").fill("matrix");
   await page.getByRole("button", { name: /^Matrix/ }).first().click();
-  await page.getByTestId("log-details").click(); // the date waits behind "Aggiungi dettagli"
-  await page.getByTestId("watched-on").fill(day);
+  await page.getByTestId("picked-title").waitFor(); // the form has taken its date (the fixed "today") ...
+  await page.clock.resume(); // ... now time runs again, so outbox timestamps advance
 }
 
 test("outbox: scene", async ({ browser }) => {

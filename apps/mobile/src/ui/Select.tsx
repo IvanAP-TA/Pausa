@@ -24,6 +24,7 @@ export function Select<V extends string>({ label, value, options, onChange, test
         value={value}
         onChange={(e) => onChange(e.target.value as V)}
         style={{
+          boxSizing: "border-box",
           minHeight: control,
           minWidth: 0,
           width: "100%",
