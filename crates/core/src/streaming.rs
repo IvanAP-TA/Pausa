@@ -153,6 +153,8 @@ pub struct Availability {
     pub mine: Vec<Provider>,
     /// False when the catalogue could not be asked and nothing is stored: "unknown", not "nowhere".
     pub known: bool,
+    /// For an anime TMDB does not know: the streaming sites AniList lists (links, not per-country providers). Empty otherwise.
+    pub links: Vec<crate::dto::StreamLink>,
 }
 
 #[cfg(test)]

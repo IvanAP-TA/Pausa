@@ -579,7 +579,7 @@
       "items": [
         {
           "title": "Solo quien invitáis",
-          "body": "El diario lo ven solo los miembros del Círculo. No hay perfiles públicos ni rankings globales."
+          "body": "El diario lo ven solo los miembros del Círculo. Ningún perfil público salvo que tú lo actives: la clasificación de Pausa y la página pública son opcionales, con un nombre público que eliges y quitas cuando quieras."
         },
         {
           "title": "Invitaciones que se cierran",
@@ -612,7 +612,7 @@
         },
         {
           "q": "¿Quién ve lo que escribo?",
-          "a": "Solo los miembros de los Círculos en los que estás. Nada es público. Lo único que sale es la Card, si decides compartirla."
+          "a": "Solo los miembros de los Círculos en los que estás. Nada es público. Lo único que sale es la Card, si decides compartirla. Las únicas excepciones son la clasificación de Pausa y la página pública, si eliges entrar: muestran un nombre público, los logros y la puntuación, nunca lo que has visto."
         },
         {
           "q": "¿Sirve para series y anime?",
@@ -1331,7 +1331,7 @@
     }
   },
   "legal": {
-    "updatedOn": "2026-11-17",
+    "updatedOn": "2026-11-27",
     "privacy": {
       "title": "Política de privacidad",
       "updated": "Última actualización",
@@ -1342,13 +1342,14 @@
           "p": [
             "Cuenta: tu email y el nombre que elijas (con Google, también la imagen de perfil). Si entras en una Serata como invitado, solo el nombre que escribas.",
             "Contenido: películas, series y anime que registras, valoraciones, reseñas, comentarios, reacciones, listas, el estado «estoy viendo», tus votos en las Serate.",
-            "Técnicos: dirección IP y user agent de las sesiones, para la seguridad del acceso y limitar abusos."
+            "Técnicos: dirección IP y user agent de las sesiones, para la seguridad del acceso y limitar abusos.",
+            "Clasificación, solo si entras: el nombre público que eliges para ella, si has activado la página pública, y la puntuación calculada cada hora con las visiones que registras a mano (no las importadas)."
           ]
         },
         {
           "h": "Quién ve tu contenido",
           "p": [
-            "Solo los miembros de las Cerchie a las que perteneces. Pausa no tiene perfiles ni feeds públicos. Lo único pensado para salir de la app es la Card de la Serata, que muestra el título elegido y no quién votó qué."
+            "Solo los miembros de las Cerchie a las que perteneces. Pausa no tiene feeds públicos. Dos excepciones, solo si las eliges tú: la clasificación de Pausa (quien está inscrito ve tu nombre público y la puntuación, nunca lo que has visto) y la página pública (quien tenga el enlace ve tu nombre público, los logros alcanzados y la puntuación). Puedes salir cuando quieras: nombre y puntuación se borran al momento. Lo otro pensado para salir de la app es la Card de la Serata, que muestra el título elegido y no quién votó qué."
           ]
         },
         {

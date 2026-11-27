@@ -33,6 +33,9 @@ export { default as Star } from "lucide-react-native/icons/star";
 export { default as SunMoon } from "lucide-react-native/icons/sun-moon";
 export { default as Trash2 } from "lucide-react-native/icons/trash-2";
 export { default as Trophy } from "lucide-react-native/icons/trophy";
+export { default as ChartColumn } from "lucide-react-native/icons/chart-column";
+export { default as QrCodeIcon } from "lucide-react-native/icons/qr-code";
+export { default as ExternalLink } from "lucide-react-native/icons/external-link";
 export { default as Users } from "lucide-react-native/icons/users";
 export { default as X } from "lucide-react-native/icons/x";
 

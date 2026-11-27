@@ -16,6 +16,9 @@ import { Avatar } from "@/ui/Avatar";
 import { useCircleScope } from "./diary/shared";
 import { PushToggle } from "./people/PushToggle";
 import { inviteLink } from "./circle-links";
+import { QrCode } from "@/ui/QrCode";
+import { QrCodeIcon } from "@/ui/lucide";
+import "./circle-qr.messages";
 import { RequireSession, useMe, useSession } from "./session";
 
 const EXPIRY = ["1d", "7d", "30d", "never"] as const;
@@ -35,6 +38,7 @@ function Invite({ circleId, invite, canRevoke, onChanged }: { circleId: string; 
   const { t, locale, date } = useI18n();
   const { c } = useTheme();
   const [copied, setCopied] = useState(false);
+  const [qr, setQr] = useState(false);
   const revoke = useAction();
   const link = inviteLink(locale, invite.code);
   const copy = async () => {
@@ -61,6 +65,7 @@ function Invite({ circleId, invite, canRevoke, onChanged }: { circleId: string; 
       </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.xs }}>
         <Button label={copied ? t("circle.copied") : t("circle.copy")} onPress={copy} testID={`invite-copy-${invite.id}`} />
+        <Button label={qr ? t("circleQr.hide") : t("circleQr.show")} variant="secondary" icon={QrCodeIcon} onPress={() => setQr((v) => !v)} testID={`invite-qr-${invite.id}`} />
         {canRevoke ? (
           <ConfirmButton
             label={t("circle.invites.revoke")}
@@ -72,6 +77,12 @@ function Invite({ circleId, invite, canRevoke, onChanged }: { circleId: string; 
           />
         ) : null}
       </View>
+      {qr ? (
+        <View style={{ gap: space.xs, alignItems: "flex-start" }}>
+          <QrCode text={link} size={200} label={t("circleQr.alt")} testID={`invite-qr-code-${invite.id}`} />
+          <Text variant="small" tone="muted">{t("circleQr.hint")}</Text>
+        </View>
+      ) : null}
       {revoke.error ? <Text tone="error" role="alert">{errorMessage(t, revoke.error)}</Text> : null}
     </View>
   );

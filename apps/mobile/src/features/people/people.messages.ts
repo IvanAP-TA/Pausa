@@ -4,7 +4,7 @@ import { registerArea } from "@/i18n/messages";
 
 const it = {
   people: {
-    me: { diaryBody: "Tutto quello che hai visto, e con chi lo condividi.", settingsBody: "Lingua, paese, avvisi e silenzi per Cerchia." },
+    me: { achievementsTitle: "Traguardi e classifica", achievementsBody: "I tuoi traguardi e, se vuoi, la classifica di tutta Pausa.", statsTitle: "Statistiche", statsBody: "Ore viste, generi, voti, anno per anno.", diaryBody: "Tutto quello che hai visto, e con chi lo condividi.", settingsBody: "Lingua, paese, avvisi e silenzi per Cerchia." },
     edit: {
       addFavorite: "Aggiungi un preferito",
       favoriteNone: "Qui trovi solo i titoli che sono già in Pausa. Se non c'è, registralo dal diario e poi aggiungilo.",
@@ -33,7 +33,7 @@ const it = {
 
 const en = {
   people: {
-    me: { diaryBody: "Everything you watched, and who you share it with.", settingsBody: "Language, country, alerts and silences per Circle." },
+    me: { achievementsTitle: "Milestones and leaderboard", achievementsBody: "Your milestones and, if you like, the leaderboard of all of Pausa.", statsTitle: "Statistics", statsBody: "Hours watched, genres, ratings, year by year.", diaryBody: "Everything you watched, and who you share it with.", settingsBody: "Language, country, alerts and silences per Circle." },
     edit: {
       addFavorite: "Add a favourite",
       favoriteNone: "Only titles already in Pausa show up here. If it is missing, log it in your diary first, then add it.",
@@ -62,7 +62,7 @@ const en = {
 
 const es = {
   people: {
-    me: { diaryBody: "Todo lo que has visto y con quién lo compartes.", settingsBody: "Idioma, país, avisos y silencios por Círculo." },
+    me: { achievementsTitle: "Logros y clasificación", achievementsBody: "Tus logros y, si quieres, la clasificación de todo Pausa.", statsTitle: "Estadísticas", statsBody: "Horas vistas, géneros, notas, año por año.", diaryBody: "Todo lo que has visto y con quién lo compartes.", settingsBody: "Idioma, país, avisos y silencios por Círculo." },
     edit: {
       addFavorite: "Añadir un favorito",
       favoriteNone: "Aquí solo salen los títulos que ya están en Pausa. Si falta, regístralo en tu diario y luego añádelo.",

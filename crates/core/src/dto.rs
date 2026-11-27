@@ -1150,3 +1150,152 @@ pub struct CircleMediaDto {
     pub average: Option<i64>,
     pub rated: i64,
 }
+
+/// A milestone ladder (`crate::achievements::steps`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(export)]
+pub enum MilestoneKind {
+    /// Viewings logged (imports included).
+    Viewings,
+    /// Viewings with a written review.
+    Reviews,
+    /// Serate taken part in.
+    Serate,
+    /// Serate opened as host.
+    Hosted,
+    /// Distinct genres among the titles seen.
+    Genres,
+    /// Viewings marked as a rewatch.
+    Rewatches,
+}
+
+/// Where one count stands on its ladder.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct Milestone {
+    pub kind: MilestoneKind,
+    pub value: i64,
+    /// The last step reached; 0 = none yet.
+    pub reached: i64,
+    /// The next step; `None` at the top of the ladder.
+    pub next: Option<i64>,
+    pub level: u32,
+    pub levels: u32,
+}
+
+/// The person's own place on the global board (all `None`/false while they have not joined).
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct BoardMe {
+    pub joined: bool,
+    pub public_name: Option<String>,
+    /// The public profile page (`/u/:handle`) is on.
+    pub public_profile: bool,
+    pub handle: Option<String>,
+    pub score_all: Option<i64>,
+    pub score_month: Option<i64>,
+    pub rank_all: Option<i64>,
+    pub rank_month: Option<i64>,
+}
+
+/// `GET /api/me/achievements`.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct AchievementsDto {
+    pub milestones: Vec<Milestone>,
+    pub board: BoardMe,
+    /// Viewings logged by hand that count per day on the board.
+    pub daily_cap: i64,
+}
+
+/// `PUT /api/me/leaderboard`: join the board, or change the public name / public page.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct JoinBoardInput {
+    pub public_name: String,
+    pub public_profile: bool,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct BoardRow {
+    pub rank: i64,
+    pub public_name: String,
+    pub score: i64,
+    /// Only for people who turned their public page on.
+    pub handle: Option<String>,
+    pub me: bool,
+}
+
+/// `GET /api/leaderboard?period=all|month`.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct BoardDto {
+    /// `all` or `YYYY-MM`.
+    pub period: String,
+    pub rows: Vec<BoardRow>,
+    /// When the scores were last computed (ms); `None` before the first run.
+    pub computed_at: Option<f64>,
+    pub members: i64,
+}
+
+/// `GET /api/u/:handle`, no sign-in: what a person chose to show. Nothing about their Cerchie or what they watched.
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct PublicProfileDto {
+    pub public_name: String,
+    pub milestones: Vec<Milestone>,
+    pub score_all: Option<i64>,
+    pub rank_all: Option<i64>,
+    pub since: f64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CountBy {
+    pub key: String,
+    pub count: i64,
+}
+
+/// `GET /api/me/stats`: the person's own numbers, over everything they logged (imports included).
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct PersonalStatsDto {
+    pub viewings: i64,
+    pub films: i64,
+    /// Series and anime viewings (whole titles and episodes).
+    pub series: i64,
+    pub episodes: i64,
+    /// Minutes, from each title's runtime (an episode counts its episode runtime); titles with no runtime count 0.
+    pub minutes: i64,
+    /// Viewings whose title has no runtime: the hours are a floor, the screen says so.
+    pub without_runtime: i64,
+    pub rated: i64,
+    /// Mean rating in half stars (1..10), `None` with no ratings.
+    pub average: Option<f64>,
+    /// Genre slugs (`profile.genres.*`), most watched first.
+    pub genres: Vec<CountBy>,
+    /// `YYYY` → viewings, oldest first.
+    pub years: Vec<CountBy>,
+    /// Ratings 1..10 → how many.
+    pub ratings: Vec<CountBy>,
+}
+
+/// A streaming site as AniList lists it for an anime (no per-country data, so it is shown as a link, not as "on your services").
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct StreamLink {
+    pub site: String,
+    pub url: String,
+}

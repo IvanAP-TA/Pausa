@@ -3,6 +3,7 @@
 //! The types in [`dto`] are the API contract. `cargo test` writes them as TypeScript to `packages/api-types/src`
 //! (see `.cargo/config.toml`), so the client never re-declares a shape by hand.
 
+pub mod achievements;
 pub mod auth;
 pub mod catalog;
 pub mod circles;
@@ -20,6 +21,7 @@ pub mod push;
 pub mod ranking;
 pub mod rating;
 pub mod review;
+pub mod sentry;
 pub mod serata;
 pub mod shell;
 pub mod streaming;

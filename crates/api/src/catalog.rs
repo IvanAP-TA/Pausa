@@ -123,7 +123,12 @@ async fn tmdb_fetch(env: &Env, caller: &Caller<'_>, path_and_query: &str) -> R<O
     Ok(Some(v))
 }
 
-async fn anilist_post(env: &Env, caller: &Caller<'_>, query: &str, vars: Value) -> R<Value> {
+pub(crate) async fn anilist_post(
+    env: &Env,
+    caller: &Caller<'_>,
+    query: &str,
+    vars: Value,
+) -> R<Value> {
     anilist_fetch(env, caller, query, vars)
         .await?
         .ok_or_else(unavailable)

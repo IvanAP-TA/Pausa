@@ -16,6 +16,7 @@ import { isEmbeddedBrowser, isNativeShell, nativeDoneUrl } from "./embedded-brow
 import { safeNext } from "./next";
 import { openGoogle } from "./google-sign-in";
 import { useSession } from "./session";
+import "./signin-errors.messages";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -24,7 +25,7 @@ export function SignIn() {
   const { c } = useTheme();
   const { width } = useWindowDimensions();
   const { state } = useSession();
-  const params = useLocalSearchParams<{ next?: string; google_error?: string }>();
+  const params = useLocalSearchParams<{ next?: string; google_error?: string; signin_error?: string }>();
   const next = safeNext(params.next, href("/home"));
   const [email, setEmail] = useState("");
   const [invalid, setInvalid] = useState(false);
@@ -105,6 +106,11 @@ export function SignIn() {
     <View style={{ gap: space.md }}>
       {googleOn && embedded ? <Text variant="small" tone="ink2">{t("auth.embeddedHint")}</Text> : null}
       {googleError || params.google_error === "1" ? <Notice tone="ink2">{t("app.signIn.googleError")}</Notice> : null}
+      {params.signin_error === "link" || params.signin_error === "disabled" ? (
+        <View testID="signin-error">
+          <Notice tone="ink2">{t(params.signin_error === "link" ? "signinError.link" : "signinError.disabled")}</Notice>
+        </View>
+      ) : null}
       {googleOn && !embedded ? (
         <>
           <Button label={t("auth.google")} variant="secondary" icon={GoogleMark} busy={googleBusy} onPress={startGoogle} fullWidth />

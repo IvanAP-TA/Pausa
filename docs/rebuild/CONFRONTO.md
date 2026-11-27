@@ -55,10 +55,54 @@ Ramo `fix/correzione-2-s3`, partito da `main` 5f3731a.
 | Tema chiaro sulle pagine pubbliche | Cookie letto dal server | `/public.js` (bloccante in testa alla pagina, quindi prima del primo disegno) applica la scelta salvata dall'app su landing, guide, legali, 404, "rallenta". Il pulsante tema della landing ora la salva. | e2e su 4 pagine; screenshot 375/412/1280 chiaro/scuro in it/en/es. | — |
 | Peso del JavaScript delle pagine pubbliche | — | `/public.js` su tutte: 6,6 KB, 2,5 KB gzip, 2,1 KB brotli. In più solo sulla landing `/lenis.js`: 18,3 KB, 5,3 KB gzip, 4,7 KB brotli. Il budget della build fallisce sopra 4 KB (public.js) e 6 KB (Lenis) brotli; nessun altro script è ammesso. Senza JavaScript le pagine funzionano come prima. | `npm run budget`; e2e: ogni pagina pubblica scarica solo `/public.js`. | — |
 | Suite e2e intera e test del timer | Timer fallito | Il test del timer passa (round chiuso dal server alla scadenza). | Suite intera sullo stack locale, in tre parti (in un colpo solo il PC finiva la memoria): **336 passati, 2 saltati, 0 falliti** su 338. Unitari 410/410, Rust tutti, fmt e clippy puliti. | I 2 saltati sono condizionali (screenshot opzionali e un test che dipende da una variabile d'ambiente), come prima. |
-| Android nativo (sipario e grana) | — | Non guardato. | — | **Non provato**: serve un telefono Android collegato o un emulatore, che qui non ho. |
+| Android nativo (sipario e grana) | — | Sipario, luce ambrata e grana si vedono in nativo (accesso, Diario, Serata, Registra, Profilo). **Trovato e corretto un crash**: dopo l'accesso ogni schermata andava in errore ("undefined cannot be used as a constructor"), perché Hermes, il motore JavaScript di Android, non ha `Intl.PluralRules`, `RelativeTimeFormat`, `ListFormat` e `DisplayNames`. Ora `src/i18n/intl.native.ts` usa regole it/en/es scritte a mano, confrontate valore per valore con l'`Intl` vero (`tests/intl-fallback.test.ts`). Il web non le carica (`intl.ts`). | Emulatore Pixel 8a (Android, Expo Go), app collegata allo stack locale; screenshot. | Non è un telefono vero né l'app firmata: in Expo Go il ritorno dal link email (`pausa://`) non si apre da solo, l'ho passato a mano con l'indirizzo di Expo Go. Senza `DisplayNames` i paesi compaiono come sigla (IT, ES). |
 
 Strada facendo: `cargo fmt --check` falliva già su `main` (lo controlla la CI `rebuild-ci.yml`); ora è pulito, e `cargo clippy --workspace -D warnings` non dà avvisi.
 
-## 4–5
+## 4. Funzioni richieste e assenti
 
-Non ancora iniziati.
+Le sezioni 4 e 5 sono state fatte dopo il push di `e361d45`, nella cartella di lavoro: **non ancora committate né pubblicate** (il commit è stato bloccato dal controllo dei permessi; serve il tuo ok).
+
+| Voce | C'era | C'è ora | Provata come | Cosa manca |
+|---|---|---|---|---|
+| Traguardi | — (nessun traguardo in v1) | Profilo → "Traguardi e classifica". Sei scale: visioni, recensioni, Serate fatte, Serate aperte, generi esplorati, rivisti. Contano tutte le visioni, importazioni comprese, e le vedi solo tu. Regole in `crates/core/src/achievements.rs`, testate. | e2e (11 visioni = 7 a mano + 4 importate → "11 su 50"); screenshot 375/1280 scuro/chiaro; controllo di accessibilità automatico (axe) su 4 combinazioni. | — |
+| Classifica globale | — | Si entra **solo scegliendo**, con un nome pubblico apposta (2–32 caratteri, niente email o link), e si esce quando si vuole: uscendo, nome, link pubblico e punteggi si cancellano subito. Contano **solo le visioni registrate a mano** (le importate mai), **al massimo 5 al giorno**, contando il giorno in cui la visione viene scritta e non la data dichiarata (retrodatare non serve). Il punteggio si **calcola ogni ora** con un cron, mai alla lettura. Tabelle "Sempre" e "Questo mese", pari merito con la stessa posizione. Migrazione `0004_leaderboard.sql`, cron `0 * * * *` (4 trigger sui 5 del piano gratuito). | e2e: nome con email rifiutato; entrata; calcolo → 5 punti con 7 visioni in un giorno; importate escluse; "tu" in tabella; uscita → pagina pubblica 404 e assente dalla tabella anche dopo un nuovo calcolo. | Nessun filtro per i nomi offensivi (oltre a email e link): oggi andrebbe gestito a mano da un operatore. |
+| Privacy e landing | "Non esistono profili pubblici né classifiche globali" | Testi aggiornati nelle tre lingue: privacy ("Quali dati": nome pubblico e punteggio, solo se entri; "Chi vede": le due eccezioni facoltative), punto privacy della landing, FAQ. Data della privacy: 2026-11-27. | Testi riletti; test SEO e legali verdi. | Rileggili tu: sono testi legali. |
+| Pagina pubblica del profilo | — | `/u/:handle`, solo se la persona la accende: nome pubblico, traguardi raggiunti, punteggio e posizione. Niente Cerchie, niente visioni. L'indirizzo è casuale (12 caratteri), non deriva dal nome. Nessun accesso richiesto; `noindex`. | e2e da un browser senza sessione; dopo l'uscita → 404. | — |
+| Statistiche personali | Solo anno in rassegna e insight di Cerchia | Profilo → "Statistiche": ore viste (film: durata del film; episodio: durata dell'episodio; una serie registrata tutta insieme non ha durata, e la pagina dice che le ore sono "almeno"), film/serie/episodi, voto medio, generi, anno per anno, distribuzione dei voti. | e2e; screenshot. | — |
+| QR dell'invito alla Cerchia | Solo sulla Card della Serata | "Mostra il QR" su ogni invito della pagina Cerchia: nero su bianco (si legge meglio), con un nome per i lettori di schermo. | e2e (comparsa, dimensione, scomparsa). | Non l'ho inquadrato con un telefono vero. |
+| Immagine OG dinamica della Serata | Statica | Fatta nella sezione 3. | — | — |
+| Sentry | Reporter senza SDK, attivo con `SENTRY_DSN` | Stesso approccio nel Worker (`crates/core/src/sentry.rs`, testato): ogni risposta 500 manda a Sentry il motivo (mai al client), metodo e percorso **senza query string** (può contenere codici d'invito). Spento finché non c'è il segreto. | Test del formato (busta di 3 righe JSON, query tolta, messaggio troncato). | **Tu**: crea un progetto Sentry (piano gratuito) e dai `npx wrangler secret put SENTRY_DSN` in `crates/api`. Non provato con Sentry vero. |
+| Metriche di prodotto della v1 | `/admin/metrics` | Il pannello c'era già con le metriche della v1, ma "Card condivisa" e "invito condiviso" erano **sempre a zero**: la v2 non registrava mai quegli eventi. Ora condividere la Card o l'invito li registra (`POST /api/serate/:code/events`, uno per persona per Serata, come v1). | Compilazione e test esistenti. | Nessun e2e dedicato agli eventi. |
+| Guide SEO aggiuntive | 1 guida | Invariato. | — | **Mi servono i contenuti da te.** |
+| Anime solo-AniList: "dove guardarlo" | API senza schermata | Nuova sezione "Dove guardarlo" nella pagina del titolo: i servizi in abbonamento del tuo paese (TMDB/JustWatch, i tuoi in evidenza) oppure, per un anime che TMDB non conosce, i siti di streaming indicati da AniList, come link. "Non sappiamo" resta diverso da "da nessuna parte". | e2e con Death Note (solo AniList nel catalogo finto): Crunchyroll e Netflix; siti non di streaming e link non https scartati (test Rust). | AniList non dice in quali paesi vale ogni sito: la pagina lo scrive. |
+| Anime solo-AniList come semi di "Per te" | Solo semi TMDB | Gli anime solo-AniList votati alti diventano semi e portano i consigli di AniList. "Per te" funziona anche con TMDB spento, se ci sono semi AniList. | e2e: compaiono i consigli di Death Note (One Piece, Naruto), non Death Note stesso. | — |
+
+### Già presenti, provati nell'interfaccia (stack locale, 412px)
+
+| Voce | Esito |
+|---|---|
+| "Un anno fa" | Funziona: una visione di esattamente un anno fa compare sotto "Un anno fa… e oltre" nel diario della Cerchia. |
+| "Per cominciare" | Funziona: compare in una Cerchia nuova con i passi mancanti. |
+| Browser dentro un'altra app | Funziona: con lo user agent di Instagram il pulsante Google sparisce e compare il suggerimento; con un browser normale c'è (Google simulato acceso). |
+| "Per te" | Funziona: per Giulia (dati di prova) 2 titoli da 1 seme. |
+| Notifiche push | **Non provate**: in locale manca la chiave VAPID privata e la pagina dice correttamente "non configurate su questo server". Servono la produzione e un telefono vero. |
+
+## 5. Verifiche
+
+| Voce | Esito |
+|---|---|
+| Serata dal vivo, due persone più un ospite senza account | Provata con browser veri (end-to-end): un membro che apre, un membro, un ospite con solo il nome; sala, torneo con i voti di ognuno, tavolo con 3 punti e un veto, stesso risultato su tutti gli schermi, Card 1080x1920 e 1200x630, socket che cade e torna, timer del server. **Non** provata con persone e telefoni veri. |
+| Link email vero (arriva?) | **Non provato**: richiede la produzione e la tua casella di posta. |
+| Link scaduto o già usato | **Trovato e corretto un difetto**: portava alla scelta della lingua senza spiegare niente e perdeva la pagina di destinazione. Ora va su `/{lingua}/sign-in` con il messaggio ("è scaduto, dura 15 minuti, o è già stato usato") e conserva `next`. e2e aggiunto. |
+| Google | **Non provato**: serve un account Google vero sul dominio di produzione. |
+| Ritorno alla pagina di partenza | Coperto da e2e: una pagina privata senza sessione porta all'accesso e poi alla pagina richiesta; un `next` esterno viene ignorato. |
+| App v1 installata (guscio Tauri) | **Non provato**: non ho il guscio. |
+| Guide nelle tre lingue | Viste: titolo e testo giusti in it/en/es, a 375 e 1280. |
+| Telefono Android vero, web app su iPhone | **Non provato**: solo emulatore Android (sezione 3). |
+| AAB firmato per Google Play | **Non fatto**: la chiave non si tocca. Nel repository non c'è un progetto Android da firmare: va generato (Expo) e firmato da te. |
+| Costi nel piano gratuito, CPU misurata in produzione | **Non misurato**: serve il pannello Cloudflare (qui wrangler non è autenticato). Peso del Worker: 974 KB compresso su 3 MB; immagine OG 2 ms in locale. |
+
+### Test dopo le sezioni 4–5
+
+Suite end-to-end intera (in tre parti, per la memoria del PC): **345 passati, 2 saltati, 0 falliti**. Unitari 424/424. Rust tutti verdi, `cargo fmt` e `clippy -D warnings` puliti. Budget JavaScript: pagina più pesante 347,7 KB su 350 (i testi delle schermate nuove sono divisi per schermata, così non pesano sulle altre).

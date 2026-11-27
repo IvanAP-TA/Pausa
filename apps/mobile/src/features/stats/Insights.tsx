@@ -23,6 +23,7 @@ import { RequireSession } from "../session";
 import "./stats.messages";
 import { shareYearCard } from "./year-card";
 import type { YearCard } from "./year-card-types";
+import { listFormat } from "@/i18n/intl";
 
 /** Month name from `2026-03`, in the person's language. */
 const monthName = (key: string, locale: string) => {
@@ -119,7 +120,7 @@ function ForYouSection({ circleId }: { circleId: string }) {
   const { t, locale, href } = useI18n();
   const { c } = useTheme();
   const mine = useResource((signal) => statsApi.forYou({ locale }, signal), [locale]);
-  const list = (names: string[]) => new Intl.ListFormat(locale, { type: "conjunction" }).format(names);
+  const list = (names: string[]) => listFormat(locale, names);
   return (
     <Section title={t("discover.title")} lede={t("discover.body")}>
       {mine.loading && !mine.data ? <Loading rows={2} /> : null}
@@ -154,7 +155,7 @@ function Recs({ circleId }: { circleId: string }) {
   const { t, locale, href } = useI18n();
   const { c } = useTheme();
   const recs = useResource((signal) => statsApi.recommendations(circleId, { limit: 6, locale }, signal), [circleId, locale]);
-  const list = (names: string[]) => new Intl.ListFormat(locale, { type: "conjunction" }).format(names);
+  const list = (names: string[]) => listFormat(locale, names);
   return (
     <Section title={t("insights.recs.title")} lede={t("insights.recs.body")}>
       {recs.loading && !recs.data ? <Loading rows={2} /> : null}
@@ -248,7 +249,7 @@ function YearInReview({ data, year }: { data: InsightsDto; year: number }) {
     y.mostActive ? t("insights.facts.mostActive", { name: y.mostActive.person.name, count: y.mostActive.count }) : null,
     ...extra,
     y.togetherMost ? t("insights.facts.together", { a: y.togetherMost.a.name, b: y.togetherMost.b.name, count: y.togetherMost.times }) : null,
-    new Intl.ListFormat(locale, { type: "conjunction" }).format(kinds.filter(([n]) => n > 0).map(([n, k]) => `${n} ${t(`kind.${k}`).toLowerCase()}`)),
+    listFormat(locale, kinds.filter(([n]) => n > 0).map(([n, k]) => `${n} ${t(`kind.${k}`).toLowerCase()}`)),
   ].filter((x): x is string => !!x);
   const card: YearCard = {
     kicker: t("insights.yearCard.kicker", { year }),

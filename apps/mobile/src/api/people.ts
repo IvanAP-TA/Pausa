@@ -1,4 +1,4 @@
-import type { ForYou, MyProviders, MySettings, PersonProfile, Provider, ProviderCatalogue } from "@pausa/api-types";
+import type { Availability, ForYou, MyProviders, MySettings, PersonProfile, Provider, ProviderCatalogue } from "@pausa/api-types";
 import { client } from "@/api";
 import type { Client } from "./client";
 import { query } from "./diary";
@@ -28,6 +28,8 @@ export function peopleEndpoints(c: Client) {
     forYou: (locale: string, signal?: AbortSignal) => c.json<ForYou>("GET", `/api/me/for-you${query({ locale })}`, { signal }),
     providerCatalogue: (country: string, locale: string, signal?: AbortSignal) => c.json<ProviderCatalogue>("GET", `/api/providers${query({ country, locale })}`, { signal }),
     myProviders: (signal?: AbortSignal) => c.json<MyProviders>("GET", "/api/me/providers", { signal }),
+    /** Where a title streams: TMDB services in your country, or AniList's streaming sites for an anime TMDB does not know. */
+    availability: (mediaId: string, signal?: AbortSignal) => c.json<Availability>("GET", `/api/media/${encodeURIComponent(mediaId)}/availability`, { signal }),
     saveProviders: (country: string | null, providers: Provider[]) => c.none("PUT", "/api/me/providers", { body: { country, providers } }),
     /** The Web Push public key; 404 when this server has no VAPID keys (push is off). */
     pushKey: (signal?: AbortSignal) => c.json<{ publicKey: string }>("GET", "/api/push/key", { signal }),

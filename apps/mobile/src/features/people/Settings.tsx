@@ -17,6 +17,7 @@ import { ErrorState, Heading, Loading, Notice, Screen, Text, Title } from "@/ui"
 import { RequireSession } from "../session";
 import { CircleSwitches } from "./CircleSwitches";
 import "./people.messages";
+import { regionName } from "@/i18n/intl";
 
 function Form({ s }: { s: MySettings }) {
   const { t, href, locale } = useI18n();
@@ -26,13 +27,13 @@ function Form({ s }: { s: MySettings }) {
   const [off, setOff] = useState<string[]>(s.notifyOff);
   const [saved, setSaved] = useState(false);
   const save = useAction();
-  const regions = new Intl.DisplayNames(locale, { type: "region" });
+  const regionOf = regionName(locale);
   const touch = () => setSaved(false);
   return (
     <>
       <Section title={t("people.settings.prefsTitle")} first>
         <Choice label={t("people.settings.language")} value={pref} onChange={(v) => { setPref(v); touch(); }} options={[{ value: "", label: t("people.settings.auto") }, ...LOCALES.map((l) => ({ value: l as string, label: t(`app.languages.${l}`) }))]} />
-        <Choice label={t("people.settings.country")} value={country} onChange={(v) => { setCountry(v); touch(); }} options={[{ value: "", label: t("people.settings.none") }, ...COUNTRIES.map((c) => ({ value: c as string, label: regions.of(c) ?? c }))]} />
+        <Choice label={t("people.settings.country")} value={country} onChange={(v) => { setCountry(v); touch(); }} options={[{ value: "", label: t("people.settings.none") }, ...COUNTRIES.map((c) => ({ value: c as string, label: regionOf(c) }))]} />
         <Toggle label={t("notifPrefs.digest")} hint={t("notifPrefs.digestHint")} value={digest} onChange={(v) => { setDigest(v); touch(); }} testID="digest" />
       </Section>
       <Section title={t("notifPrefs.title")} lede={t("notifPrefs.body")}>

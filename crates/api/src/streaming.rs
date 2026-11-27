@@ -157,6 +157,7 @@ async fn catalogue_inner(req: &Request, env: &Env) -> R<Response> {
 struct EntityRow {
     kind: String,
     tmdb_id: Option<i64>,
+    anilist_id: Option<i64>,
 }
 
 /// `GET /api/media/:id/availability?country=`: where the title streams (subscription services) in that country, and which of
@@ -177,7 +178,7 @@ async fn availability_inner(req: &Request, env: &Env, media_id: &str) -> R<Respo
         return Err(Fail::invalid());
     }
     let entity = db
-        .prepare("SELECT kind, tmdb_id FROM media_entity WHERE id = ?1")
+        .prepare("SELECT kind, tmdb_id, anilist_id FROM media_entity WHERE id = ?1")
         .bind(&[media_id.into()])?
         .first::<EntityRow>(None)
         .await?
@@ -194,6 +195,37 @@ async fn availability_inner(req: &Request, env: &Env, media_id: &str) -> R<Respo
         .bind(&[media_id.into(), country.as_str().into()])?
         .first::<Checked>(None)
         .await?;
+    // An anime only AniList knows: TMDB has no providers for it, so the answer is AniList's list of streaming sites (cached by
+    // the catalogue layer like every AniList answer). Not per country: shown as links, never as "on your services".
+    if let (None, Some(anilist_id)) = (entity.tmdb_id, entity.anilist_id) {
+        let caller = Caller {
+            db: &db,
+            user_id: &s.user_id,
+            counted: true,
+        };
+        let (links, known) = match catalog::anilist_post(
+            env,
+            &caller,
+            pausa_core::catalog::ANILIST_STREAMING,
+            serde_json::json!({ "id": anilist_id }),
+        )
+        .await
+        {
+            Ok(v) => (pausa_core::catalog::anilist_streaming_links(&v), true),
+            Err(f) if f.status == 429 => return Err(f),
+            Err(_) => (Vec::new(), false),
+        };
+        return json(
+            &Availability {
+                country,
+                providers: Vec::new(),
+                mine: Vec::new(),
+                known,
+                links,
+            },
+            200,
+        );
+    }
     let fresh = checked
         .as_ref()
         .is_some_and(|c| now - c.fetched_at < AVAILABILITY_TTL_MS);
@@ -259,6 +291,7 @@ async fn availability_inner(req: &Request, env: &Env, media_id: &str) -> R<Respo
             providers,
             mine: mine_here,
             known,
+            links: Vec::new(),
         },
         200,
     )

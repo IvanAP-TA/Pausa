@@ -111,6 +111,15 @@ const server = http.createServer((req, res) => {
         if (variables?.id !== 96881) return send(200, { errors: [{ message: "Not Found." }], data: { Staff: null } });
         return send(200, { data: { Staff: { id: 96881, name: { full: "Eiichiro Oda" }, image: { large: "https://s4.anilist.co/oda.jpg" }, description: "Mangaka.", dateOfBirth: { year: 1975, month: 1, day: 1 }, dateOfDeath: {}, homeTown: "Kumamoto", staffMedia: { edges: [{ staffRole: "Original Creator", node: { id: 21, type: "ANIME", title: { romaji: "ONE PIECE", english: "One Piece" }, seasonYear: 1999, startDate: { year: 1999 }, coverImage: { large: "https://s4.anilist.co/file/op.jpg" } } }] } } } });
       }
+      // where an AniList-only anime streams, and AniList's own recommendations ("Per te" seeds)
+      if (query.includes("externalLinks")) {
+        const links = [21, 1535].includes(Number(variables?.id)) ? [{ site: "Crunchyroll", url: "https://www.crunchyroll.com/series/one-piece", type: "STREAMING" }, { site: "Official Site", url: "https://one-piece.com", type: "INFO" }, { site: "Netflix", url: "https://www.netflix.com/title/80107103", type: "STREAMING" }] : [];
+        return send(200, { data: { Media: { externalLinks: links } } });
+      }
+      if (query.includes("recommendations")) {
+        const nodes = Number(variables?.id) === 1535 ? [{ mediaRecommendation: { id: 21, title: { romaji: "ONE PIECE", english: "One Piece" }, seasonYear: 1999, isAdult: false, coverImage: { large: "https://s4.anilist.co/file/op.jpg" } } }, { mediaRecommendation: { id: 20, title: { romaji: "NARUTO", english: "Naruto" }, seasonYear: 2002, isAdult: false, coverImage: { large: "https://s4.anilist.co/file/naruto.jpg" } } }] : Number(variables?.id) === 21 ? [{ mediaRecommendation: { id: 1535, title: { romaji: "DEATH NOTE", english: "Death Note" }, seasonYear: 2006, isAdult: false, coverImage: { large: "https://s4.anilist.co/file/dn.jpg" } } }, { mediaRecommendation: { id: 20, title: { romaji: "NARUTO", english: "Naruto" }, seasonYear: 2002, isAdult: false, coverImage: { large: "https://s4.anilist.co/file/naruto.jpg" } } }] : [];
+        return send(200, { data: { Media: { recommendations: { nodes } } } });
+      }
       if (query.includes("Page(")) {
         const q = String(variables?.q ?? "").toLowerCase();
         const media = [];

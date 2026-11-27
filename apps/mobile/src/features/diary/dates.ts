@@ -1,3 +1,4 @@
+import { relativeTimeFormat } from "@/i18n/intl";
 /** ts-rs writes `i64` as `bigint`, but JSON delivers plain numbers: read them as numbers. */
 export const num = (v: bigint | number | null | undefined): number | null => (v === null || v === undefined ? null : Number(v));
 
@@ -40,7 +41,7 @@ export function dedupeCandidates<T extends { key: string; kind: string; title: s
  * Under a minute it is "adesso" (seconds would tick and say nothing).
  */
 export function relativeTime(then: number, now: number, locale: string): string {
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const rtf = relativeTimeFormat(locale);
   const s = (then - now) / 1000;
   const a = Math.abs(s);
   if (a < 60) return rtf.format(0, "second");
@@ -57,7 +58,7 @@ export const dayKey = (ms: number) => msToYmd(ms);
 
 /** The name of a diary day: oggi, ieri, or the weekday ("lunedì"). */
 export function dayName(ms: number, now: number, locale: string): string {
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const rtf = relativeTimeFormat(locale);
   if (dayKey(ms) === dayKey(now)) return rtf.format(0, "day");
   if (dayKey(ms) === dayKey(now - 86_400_000)) return rtf.format(-1, "day");
   return new Intl.DateTimeFormat(locale, { weekday: "long" }).format(ms);

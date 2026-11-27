@@ -21,6 +21,7 @@ import { Heading, Text } from "@/ui/Text";
 import { NewSerata } from "./NewSerata";
 import { WatchedSheet } from "./WatchedSheet";
 import "./serata.messages";
+import { listFormat } from "@/i18n/intl";
 
 export { MIN_TITLES, MAX_TITLES } from "./NewSerata";
 
@@ -87,7 +88,7 @@ function TogetherPicks({ circleId }: { circleId: string }) {
   const { t, locale, href } = useI18n();
   const { c } = useTheme();
   const recs = useResource((signal) => serataApi.recommendations(circleId, locale, 5, signal), [circleId, locale]);
-  const list = (names: string[]) => new Intl.ListFormat(locale, { type: "conjunction" }).format(names);
+  const list = (names: string[]) => listFormat(locale, names);
   return (
     <View style={{ gap: space.sm }}>
       <View style={{ gap: space["2xs"] }}>

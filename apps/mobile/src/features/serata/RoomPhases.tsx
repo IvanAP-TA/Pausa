@@ -2,6 +2,7 @@ import type { Candidate, RoomView } from "@pausa/api-types";
 import { useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, Share, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
+import { serataApi } from "@/api/serata";
 import { siteOrigin } from "@/features/circle-links";
 import { useI18n } from "@/i18n";
 import { control, hair, space, useTheme, web } from "@/theme";
@@ -93,19 +94,22 @@ export function Lobby({ view, onStart, busy }: { view: RoomView; onStart: () => 
   const share = async () => {
     const text = `${t("serata.lobby.shareText")} ${link}`;
     if (Platform.OS !== "web") {
-      await Share.share({ message: text }).catch(() => undefined);
+      const r = await Share.share({ message: text }).catch(() => null);
+      if (r && r.action === Share.sharedAction) void serataApi.track(view.code, "invite_shared");
       return;
     }
     // A phone's browser opens its share sheet; a desktop one copies the link.
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
         await navigator.share({ title: "Pausa", text: t("serata.lobby.shareText"), url: link });
+        void serataApi.track(view.code, "invite_shared");
         return;
       } catch {
         return;
       }
     }
     await Clipboard.setStringAsync(link);
+    void serataApi.track(view.code, "invite_shared");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

@@ -12,6 +12,7 @@ import { Check } from "@/ui/lucide";
 import { Section } from "@/ui/Section";
 import { Select } from "@/ui/Select";
 import { Loading, Notice, Text } from "@/ui";
+import { regionName } from "@/i18n/intl";
 
 const FALLBACK: Record<string, string> = { it: "IT", en: "GB", es: "ES" };
 
@@ -30,7 +31,7 @@ export function Services() {
     setPicked(new Set(mine.data.providers.map((p) => p.id)));
   }, [mine.data, locale]);
   const catalogue = useResource((signal) => (country ? peopleApi.providerCatalogue(country, locale, signal) : Promise.resolve(null)), [country, locale]);
-  const regions = useMemo(() => new Intl.DisplayNames(locale, { type: "region" }), [locale]);
+  const regionOf = useMemo(() => regionName(locale), [locale]);
   const list: Provider[] = catalogue.data?.providers ?? [];
   const toggle = (id: number) => {
     setSaved(false);
@@ -55,7 +56,7 @@ export function Services() {
             if (v !== mine.data?.country) setPicked(new Set());
             else setPicked(new Set(mine.data?.providers.map((p) => p.id) ?? []));
           }}
-          options={COUNTRIES.map((k) => ({ value: k as string, label: regions.of(k) ?? k }))}
+          options={COUNTRIES.map((k) => ({ value: k as string, label: regionOf(k) }))}
         />
       ) : null}
       {catalogue.error ? <Text variant="small" tone="muted">{t("services.off")}</Text> : null}

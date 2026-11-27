@@ -19,10 +19,12 @@
       "custom_domain": true
     }
   ],
+  // Every minute: push. Every hour: the leaderboard (src/achievements.rs). 17:00 UTC: email digest.
   // Daily housekeeping (03:17 UTC): expired sessions and tokens, stale rate-limit counters, old guest accounts. See src/cleanup.rs.
   "triggers": {
     "crons": [
       "* * * * *",
+      "0 * * * *",
       "0 17 * * *",
       "17 3 * * *"
     ]
@@ -64,7 +66,8 @@
       "/*/log/*",
       "/*/t/*",
       "/*/s/*",
-      "/*/lists/*"
+      "/*/lists/*",
+      "/*/u/*"
     ]
   },
   "d1_databases": [

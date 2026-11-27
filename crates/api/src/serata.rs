@@ -1050,3 +1050,34 @@ async fn og_inner(req: &Request, env: &Env, code: &str) -> R<Response> {
     }
     Ok(res)
 }
+
+#[derive(Deserialize)]
+struct EventIn {
+    name: String,
+}
+
+/// `POST /api/serate/:code/events {name}`: a share leaves no trace otherwise (v1 `trackEvent`). `card_shared` or `invite_shared`,
+/// one of each per person per Serata (a script calling this in a loop must not inflate the metrics). Guests count too. Always
+/// 204: metrics never get in the way of sharing.
+pub async fn event(mut req: Request, env: Env, code: &str) -> Result<Response> {
+    let _ = event_inner(&mut req, &env, code).await;
+    finish(no_content())
+}
+
+async fn event_inner(req: &mut Request, env: &Env, code: &str) -> R<()> {
+    let db = env.d1("DB")?;
+    let s = session::require(req, &db).await?;
+    let input: EventIn = body(req).await?;
+    if !matches!(input.name.as_str(), "card_shared" | "invite_shared") {
+        return Err(Fail::invalid());
+    }
+    let row = serata_row(&db, &code_of(code)?).await?;
+    db.prepare(
+        "INSERT INTO event (id, name, user_id, serata_id) SELECT ?1, ?2, ?3, ?4 \
+         WHERE NOT EXISTS (SELECT 1 FROM event WHERE name = ?2 AND user_id = ?3 AND serata_id = ?4)",
+    )
+    .bind(&[new_id().into(), input.name.as_str().into(), s.user_id.as_str().into(), row.id.as_str().into()])?
+    .run()
+    .await?;
+    Ok(())
+}

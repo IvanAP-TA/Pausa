@@ -120,6 +120,18 @@ test.describe("sign-in", () => {
     await ctx.close();
   });
 
+  test("a used (or expired) link lands on sign-in in the right language, says why, and keeps where you were going", async ({ browser }) => {
+    const { page, ctx, email } = await person(browser, "usedlink");
+    const r = await fetch(`${API}/api/auth/magic-link`, { method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "10.9.9.9" }, body: JSON.stringify({ email, next: "/en/lists", locale: "en" }) });
+    const { devLink } = (await r.json()) as { devLink: string };
+    const link = devLink.replace(/^https?:\/\/[^/]+/, API);
+    expect((await fetch(link, { redirect: "manual" })).status).toBe(303); // first use: it works (and is spent)
+    await page.goto(link.replace(API, ""));
+    await page.waitForURL(/\/en\/sign-in\?signin_error=link&next=(\/|%2F)en(\/|%2F)lists$/);
+    await expect(page.getByTestId("signin-error")).toContainText("This link no longer works");
+    await ctx.close();
+  });
+
   test("an off-site `next` is ignored: you land on the home, never on another site", async ({ browser }) => {
     const { page, ctx, email } = await person(browser, "evil");
     await signIn(page, email, "https://evil.example/");

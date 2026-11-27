@@ -88,7 +88,7 @@ check("plain http dev cookie has no Secure/__Host-", !/Secure/.test(giulia.setCo
 
 // A link works once.
 const reuse = await call("GET", giulia.link);
-check("reused link does not sign in", reuse.status === 303 && /signin_error=link/.test(reuse.headers.get("location") ?? "") && reuse.cookies.length === 0, JSON.stringify([reuse.status, reuse.headers.get("location")]));
+check("reused link does not sign in", reuse.status === 303 && /\/sign-in\?signin_error=link/.test(reuse.headers.get("location") ?? "") && reuse.cookies.length === 0, JSON.stringify([reuse.status, reuse.headers.get("location")]));
 
 // Only the hash of the token is stored.
 const token = giulia.cookie.split("=")[1];

@@ -12,6 +12,8 @@ pub struct Fail {
     pub code: ErrorCode,
     pub status: u16,
     pub retry_after: Option<u32>,
+    /// What went wrong inside (never shown to the client): sent to Sentry when it is configured.
+    pub detail: Option<String>,
 }
 
 pub type R<T> = std::result::Result<T, Fail>;
@@ -22,6 +24,7 @@ impl Fail {
             code,
             status,
             retry_after: None,
+            detail: None,
         }
     }
     pub fn unauthorized() -> Self {
@@ -41,6 +44,7 @@ impl Fail {
             code: ErrorCode::RateLimited,
             status: 429,
             retry_after: Some(retry_after),
+            detail: None,
         }
     }
 }
@@ -48,13 +52,46 @@ impl Fail {
 impl From<worker::Error> for Fail {
     fn from(e: worker::Error) -> Self {
         console_error!("internal error: {e}");
-        Fail::internal()
+        Fail {
+            detail: Some(e.to_string()),
+            ..Fail::internal()
+        }
     }
 }
 
 impl From<serde_json::Error> for Fail {
     fn from(_: serde_json::Error) -> Self {
         Fail::invalid()
+    }
+}
+
+/// Internal header carrying an error's reason from `finish` to `main` (stripped there).
+pub const ERROR_HEADER: &str = "x-pausa-error";
+
+/// Sends one error to Sentry when the `SENTRY_DSN` secret is set (`pausa_core::sentry`); otherwise nothing. Never fails.
+pub async fn report(env: &Env, method: &str, path: &str, message: &str) {
+    let Some(dsn) = env
+        .secret("SENTRY_DSN")
+        .ok()
+        .map(|s| s.to_string())
+        .and_then(|s| pausa_core::sentry::parse_dsn(&s))
+    else {
+        return;
+    };
+    let (url, auth) = pausa_core::sentry::endpoint(&dsn);
+    let id = new_id().replace('-', "");
+    let release = env.var("RELEASE").ok().map(|v| v.to_string());
+    let body =
+        pausa_core::sentry::envelope(&id, now_ms(), message, method, path, release.as_deref());
+    let headers = Headers::new();
+    let _ = headers.set("content-type", "application/x-sentry-envelope");
+    let _ = headers.set("x-sentry-auth", &auth);
+    let mut init = RequestInit::new();
+    init.with_method(Method::Post)
+        .with_headers(headers)
+        .with_body(Some(body.into()));
+    if let Ok(req) = Request::new_with_init(&url, &init) {
+        let _ = Fetch::Request(req).send().await; // monitoring must never turn one error into two
     }
 }
 
@@ -70,6 +107,11 @@ pub fn finish(r: R<Response>) -> Result<Response> {
             .with_status(f.status);
             if let Some(s) = f.retry_after {
                 res.headers_mut().set("Retry-After", &s.to_string())?;
+            }
+            // Read (and removed) by `main` before the answer leaves: the reason goes to Sentry, never to the client.
+            if let (true, Some(d)) = (f.status >= 500, f.detail) {
+                let one_line: String = d.chars().filter(|c| !c.is_control()).take(500).collect();
+                res.headers_mut().set(ERROR_HEADER, &one_line)?;
             }
             Ok(res)
         }

@@ -40,6 +40,7 @@ pub fn shell_path(path: &str) -> Option<String> {
         ["s", _] => "s/[code]".to_string(),
         ["s", _, sub] if sub.bytes().all(|b| b.is_ascii_lowercase()) => format!("s/[code]/{sub}"),
         ["lists", _] => "lists/[id]".to_string(),
+        ["u", _] => "u/[handle]".to_string(),
         _ => return None,
     };
     Some(format!("/{locale}/{tail}"))
@@ -268,6 +269,7 @@ mod tests {
         assert_eq!(s("/it/s/6QLMP4"), Some("/it/s/[code]".into()));
         assert_eq!(s("/it/s/6QLMP4/result"), Some("/it/s/[code]/result".into()));
         assert_eq!(s("/it/lists/l1"), Some("/it/lists/[id]".into()));
+        assert_eq!(s("/en/u/abcdefghjkmn"), Some("/en/u/[handle]".into()));
         assert_eq!(s("/it/person/tmdb:9339"), Some("/it/person/[key]".into()));
         assert_eq!(
             s("/en/c/abc/person/anilist:96881"),

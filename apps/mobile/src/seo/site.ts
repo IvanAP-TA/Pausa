@@ -9,7 +9,7 @@ export const DEFAULT_LOCALE = "it";
 export const GUIDE_SLUGS: string[] = ["choose-a-movie-with-friends"];
 
 /** Date the legal texts and guides were last revised (kept from the old app, INVENTORY 1.5). */
-export const CONTENT_UPDATED = "2026-11-17";
+export const CONTENT_UPDATED = "2026-11-27";
 
 /** Pages under /{locale}, in sitemap order (INVENTORY 1.5): landing, guide index, guides, privacy, terms. */
 export const PUBLIC_SUBPATHS: string[] = ["", "/guide", ...GUIDE_SLUGS.map((s) => `/guide/${s}`), "/privacy", "/terms"];

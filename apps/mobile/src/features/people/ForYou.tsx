@@ -14,6 +14,7 @@ import { Skeleton } from "@/ui/motion";
 import { Well } from "@/ui/Surfaces";
 import { Text, Title } from "@/ui";
 import { useCurrentCircle } from "../current-circle";
+import { listFormat } from "@/i18n/intl";
 
 /** v1 `for-you.tsx`: titles like the ones I rated well and have not logged; "why", the services of mine that carry it, and a way to log it. */
 export function ForYou() {
@@ -58,7 +59,7 @@ function Pick({ p }: { p: ForYouPick }) {
   const router = useRouter();
   const { circleId } = useCurrentCircle();
   const go = useAction();
-  const list = (names: string[]) => new Intl.ListFormat(locale, { type: "conjunction" }).format(names);
+  const list = (names: string[]) => listFormat(locale, names);
   return (
     <View role="listitem" testID={`pick-${p.key}`} style={{ flexDirection: "row", gap: space.md, paddingVertical: space.lg, borderBottomWidth: hair, borderColor: c.rule }}>
       <MediaPoster title={p.title} path={p.posterPath} width={104} size="w342" />

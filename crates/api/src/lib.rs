@@ -4,6 +4,7 @@
 //! paginated JSON, no slow hashes. Authentication is a lookup of `SHA-256(token)`; see `session.rs`.
 
 mod account;
+mod achievements;
 mod admin;
 mod auth;
 mod catalog;
@@ -38,10 +39,11 @@ use worker::*;
 
 #[event(scheduled)]
 pub async fn scheduled(event: ScheduledEvent, env: Env, _ctx: ScheduleContext) {
-    // Three triggers (wrangler.jsonc): every minute (push), 17:00 UTC (email digest), 03:17 UTC (housekeeping).
+    // Four triggers (wrangler.jsonc): every minute (push), every hour (leaderboard), 17:00 UTC (email digest), 03:17 UTC (housekeeping).
     let result = match event.cron().as_str() {
         "* * * * *" => push::run_push(&env).await,
         "0 17 * * *" => push::run_digest(&env).await,
+        "0 * * * *" => achievements::recompute(&env).await,
         _ => cleanup::run(&env).await,
     };
     if let Err(e) = result {
@@ -56,7 +58,29 @@ pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
     if let (Method::Options, Some(o)) = (req.method(), &allowed) {
         return http::preflight(o);
     }
-    let res = http::with_security(route(req, env).await?);
+    let (method, path) = (req.method().to_string(), req.path());
+    let res = match route(req, env.clone()).await {
+        Ok(mut res) => {
+            if res.status_code() >= 500 {
+                let detail = res.headers().get(http::ERROR_HEADER).ok().flatten();
+                let _ = res.headers_mut().delete(http::ERROR_HEADER);
+                http::report(
+                    &env,
+                    &method,
+                    &path,
+                    detail.as_deref().unwrap_or("internal error"),
+                )
+                .await;
+            }
+            res
+        }
+        // An error no handler turned into the contract (a `?` in the router itself): still a JSON 500, and reported.
+        Err(e) => {
+            http::report(&env, &method, &path, &e.to_string()).await;
+            http::finish(Err(http::Fail::internal()))?
+        }
+    };
+    let res = http::with_security(res);
     Ok(match allowed {
         Some(o) => http::with_cors(res, &o),
         None => res,
@@ -188,6 +212,12 @@ async fn route(req: Request, env: Env) -> Result<Response> {
         (Method::Get, ["api", "me", "blocks"]) => admin::blocks(req, env).await,
         (Method::Put, ["api", "me", "blocks", user]) => admin::block(req, env, user).await,
         (Method::Delete, ["api", "me", "blocks", user]) => admin::unblock(req, env, user).await,
+        (Method::Get, ["api", "me", "achievements"]) => achievements::mine(req, env).await,
+        (Method::Get, ["api", "me", "stats"]) => achievements::stats(req, env).await,
+        (Method::Put, ["api", "me", "leaderboard"]) => achievements::join(req, env).await,
+        (Method::Delete, ["api", "me", "leaderboard"]) => achievements::leave(req, env).await,
+        (Method::Get, ["api", "leaderboard"]) => achievements::board(req, env).await,
+        (Method::Get, ["api", "u", handle]) => achievements::public_profile(req, env, handle).await,
         (Method::Get, ["api", "me", "settings"]) => profile::settings(req, env).await,
         (Method::Put, ["api", "me", "settings"]) => profile::save_settings(req, env).await,
         (Method::Put, ["api", "me", "profile"]) => profile::save_profile(req, env).await,
@@ -228,6 +258,7 @@ async fn route(req: Request, env: Env) -> Result<Response> {
             serata::public_result(req, env, code).await
         }
         (Method::Post, ["api", "serate", code, "join"]) => serata::join(req, env, code).await,
+        (Method::Post, ["api", "serate", code, "events"]) => serata::event(req, env, code).await,
         (Method::Post, ["api", "serate", code, "repeat"]) => serata::repeat(req, env, code).await,
         (Method::Post, ["api", "serate", code, "watched"]) => serata::watched(req, env, code).await,
         (

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { diaryApi } from "@/api/diary";
 import { useResource } from "@/api/useResource";
+import { WhereToWatch } from "@/features/WhereToWatch";
 import { useI18n } from "@/i18n";
 import { space } from "@/theme";
 import { BackLink } from "@/ui/BackLink";
@@ -113,6 +114,8 @@ function TitleBody({ id }: { id: string }) {
       <Section title={t("media.about")}>
         <Text tone={d.overview ? "ink" : "muted"}>{d.overview ?? t("media.noOverview")}</Text>
       </Section>
+
+      <WhereToWatch mediaId={id} />
 
       {series && d.seasons.length > 0 ? (
         <Section title={t("diary.title.seasons")}>

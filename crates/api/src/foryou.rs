@@ -34,6 +34,20 @@ struct CountryRow {
     country: Option<String>,
 }
 
+/// An anime only AniList knows, rated high: its seed is AniList's own recommendations.
+#[derive(Deserialize)]
+struct AnilistSeedRow {
+    media_id: String,
+    title: String,
+    rating: i64,
+    anilist_id: i64,
+}
+
+#[derive(Deserialize)]
+struct AnilistLogged {
+    anilist_id: i64,
+}
+
 #[derive(Deserialize)]
 struct LoggedRow {
     tmdb_id: i64,
@@ -52,7 +66,26 @@ async fn for_you_inner(req: &Request, env: &Env) -> R<Response> {
     let db = env.d1("DB")?;
     let s = session::require(req, &db).await?;
     let locale = locale_of(req);
-    if !catalog::tmdb_enabled(env) {
+    let tmdb_on = catalog::tmdb_enabled(env);
+    // AniList-only anime seed "Per te" too (AniList needs no key, so this works with TMDB off as well).
+    let anilist = db
+        .batch(vec![
+            db.prepare(
+                "SELECT l.media_id, COALESCE(mt.title, e.original_title) AS title, l.rating, e.anilist_id                  FROM log l JOIN media_entity e ON e.id = l.media_id LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?2                  WHERE l.user_id = ?1 AND e.tmdb_id IS NULL AND e.anilist_id IS NOT NULL AND l.rating IS NOT NULL                    AND l.id = (SELECT l2.id FROM log l2 WHERE l2.user_id = l.user_id AND l2.media_id = l.media_id                                ORDER BY l2.watched_on DESC, l2.created_at DESC, l2.id DESC LIMIT 1)                    AND l.rating >= ?3 ORDER BY l.rating DESC, l.watched_on DESC LIMIT ?4",
+            )
+            .bind(&[
+                s.user_id.as_str().into(),
+                catalog::locale_code(locale).into(),
+                (SEED_MIN_RATING as f64).into(),
+                (MAX_SEEDS as f64).into(),
+            ])?,
+            db.prepare("SELECT DISTINCT e.anilist_id FROM log l JOIN media_entity e ON e.id = l.media_id WHERE l.user_id = ?1 AND e.anilist_id IS NOT NULL")
+                .bind(&[s.user_id.as_str().into()])?,
+        ])
+        .await?;
+    let anilist_seeds = anilist[0].results::<AnilistSeedRow>()?;
+    let anilist_logged = anilist[1].results::<AnilistLogged>()?;
+    if !tmdb_on && anilist_seeds.is_empty() {
         return json(
             &ForYou {
                 enabled: false,
@@ -85,12 +118,21 @@ async fn for_you_inner(req: &Request, env: &Env) -> R<Response> {
             .bind(&[s.user_id.as_str().into()])?,
         ])
         .await?;
-    let seeds = res[0].results::<SeedRow>()?;
-    let exclude: HashSet<String> = res[1]
+    let seeds = if tmdb_on {
+        res[0].results::<SeedRow>()?
+    } else {
+        Vec::new()
+    };
+    let mut exclude: HashSet<String> = res[1]
         .results::<LoggedRow>()?
         .into_iter()
         .map(|r| key(&r.kind, r.tmdb_id))
         .collect();
+    exclude.extend(
+        anilist_logged
+            .iter()
+            .map(|r| format!("anilist:{}", r.anilist_id)),
+    );
     let caller = Caller {
         db: &db,
         user_id: &s.user_id,
@@ -118,6 +160,27 @@ async fn for_you_inner(req: &Request, env: &Env) -> R<Response> {
             Err(_) => {}
         }
     }
+    for r in &anilist_seeds {
+        match catalog::anilist_post(
+            env,
+            &caller,
+            pausa_core::catalog::ANILIST_RECOMMENDATIONS,
+            serde_json::json!({ "id": r.anilist_id }),
+        )
+        .await
+        {
+            Ok(v) => input.push((
+                Seed {
+                    media_id: r.media_id.clone(),
+                    title: r.title.clone(),
+                    rating: r.rating,
+                },
+                pausa_core::catalog::candidates_from_anilist_recommendations(&v, 12),
+            )),
+            Err(f) if f.status == 429 => return Err(f),
+            Err(_) => {}
+        }
+    }
     let mut picks = rank_discovery(&input, &exclude, 8);
     // "On your services": only when they set some. One TMDB lookup per pick; a failure just leaves the pick without services.
     let mine: Vec<Provider> = db
@@ -129,7 +192,7 @@ async fn for_you_inner(req: &Request, env: &Env) -> R<Response> {
         .into_iter()
         .map(|r| Provider { id: r.provider_id, name: r.name, logo_path: r.logo_path })
         .collect();
-    if !mine.is_empty() {
+    if tmdb_on && !mine.is_empty() {
         let country = db
             .prepare("SELECT country FROM user WHERE id = ?1")
             .bind(&[s.user_id.as_str().into()])?

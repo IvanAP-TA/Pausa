@@ -143,10 +143,29 @@ async fn verify_inner(req: &Request, env: &Env) -> R<Response> {
             .map(|(_, v)| v.to_string())
     };
     let next = safe_next(q("next").as_deref(), "/");
+    // A link that does not work (expired, used, unknown) lands on the sign-in page in the language of where the person was going,
+    // which says why and keeps `next`: one tap asks for a new link that leads to the same page.
     let fail_to = |reason: &str| -> R<Response> {
         let mut u = url.clone();
-        u.set_path("/");
-        u.set_query(Some(&format!("signin_error={reason}")));
+        let lang = next
+            .trim_start_matches('/')
+            .split('/')
+            .next()
+            .and_then(pausa_core::dto::Locale::from_code)
+            .unwrap_or_else(|| {
+                pausa_core::dto::Locale::negotiate(
+                    req.headers()
+                        .get("accept-language")
+                        .ok()
+                        .flatten()
+                        .as_deref(),
+                )
+            });
+        u.set_path(&format!("/{}/sign-in", crate::catalog::locale_code(lang)));
+        u.set_query(Some(&format!(
+            "signin_error={reason}&next={}",
+            encode(&next)
+        )));
         Ok(Response::redirect_with_status(u, 303)?)
     };
     let Some(token) = q("token") else {

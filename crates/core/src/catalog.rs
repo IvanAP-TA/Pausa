@@ -341,6 +341,63 @@ pub fn candidates_from_anilist(body: &Value, max: usize) -> Vec<Candidate> {
         .unwrap_or_default()
 }
 
+/// AniList's own recommendations of an anime (`Media.recommendations`, best rated first): the "Per te" candidates of an anime
+/// that TMDB does not know. Never adult, never the same title twice.
+pub const ANILIST_RECOMMENDATIONS: &str = "query($id:Int){Media(id:$id,type:ANIME){recommendations(sort:RATING_DESC,perPage:12){nodes{mediaRecommendation{id title{romaji english native} seasonYear startDate{year} isAdult coverImage{large}}}}}}";
+
+pub fn candidates_from_anilist_recommendations(body: &Value, max: usize) -> Vec<Candidate> {
+    let mut seen = std::collections::HashSet::new();
+    body.pointer("/data/Media/recommendations/nodes")
+        .and_then(Value::as_array)
+        .map(|a| {
+            a.iter()
+                .filter_map(|node| node.get("mediaRecommendation").filter(|m| m.is_object()))
+                .filter(|m| m.get("isAdult").and_then(Value::as_bool) != Some(true))
+                .filter_map(|m| {
+                    let id = n(m, "id")?;
+                    if !seen.insert(id) {
+                        return None;
+                    }
+                    let (_, shown) = anilist_titles(m)?;
+                    Some(Candidate {
+                        key: format!("anilist:{id}"),
+                        kind: Kind::Anime,
+                        title: shown,
+                        year: anilist_year(m),
+                        poster_path: anilist_poster(m),
+                    })
+                })
+                .take(max)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Where an anime streams, as AniList lists it (`Media.externalLinks` of type STREAMING): sites and links, the same in every
+/// country (AniList does not say where each one is available).
+pub const ANILIST_STREAMING: &str =
+    "query($id:Int){Media(id:$id,type:ANIME){externalLinks{site url type}}}";
+
+pub fn anilist_streaming_links(body: &Value) -> Vec<crate::dto::StreamLink> {
+    let mut seen = std::collections::HashSet::new();
+    body.pointer("/data/Media/externalLinks")
+        .and_then(Value::as_array)
+        .map(|a| {
+            a.iter()
+                .filter(|l| l.get("type").and_then(Value::as_str) == Some("STREAMING"))
+                .filter_map(|l| {
+                    let site = s(l, "site")?;
+                    let url =
+                        s(l, "url").filter(|u| u.starts_with("https://") && u.len() <= 300)?;
+                    seen.insert(site.to_lowercase())
+                        .then_some(crate::dto::StreamLink { site, url })
+                })
+                .take(12)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// `data.Media` of an AniList lookup by id.
 pub fn draft_from_anilist(body: &Value) -> Option<Draft> {
     let m = body.pointer("/data/Media")?;
@@ -645,6 +702,47 @@ mod tests {
         assert!(
             "100%abc" >= lo.as_str() && "100%abc" < hi.as_str() && "101" >= hi.as_str(),
             "wildcards are plain characters"
+        );
+    }
+}
+
+#[cfg(test)]
+mod anilist_extra_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn recommendations_skip_adult_missing_and_repeated() {
+        let body = json!({"data":{"Media":{"recommendations":{"nodes":[
+            {"mediaRecommendation":{"id":1,"title":{"romaji":"Mushishi","english":null},"seasonYear":2005,"isAdult":false,"coverImage":{"large":"https://s4.anilist.co/a.jpg"}}},
+            {"mediaRecommendation":null},
+            {"mediaRecommendation":{"id":2,"title":{"romaji":"X"},"isAdult":true}},
+            {"mediaRecommendation":{"id":1,"title":{"romaji":"Mushishi"}}},
+            {"mediaRecommendation":{"id":3,"title":{"romaji":"Natsume","english":"Natsume's Book of Friends"},"startDate":{"year":2008}}}
+        ]}}}});
+        let c = candidates_from_anilist_recommendations(&body, 10);
+        assert_eq!(
+            c.iter().map(|c| c.key.as_str()).collect::<Vec<_>>(),
+            ["anilist:1", "anilist:3"]
+        );
+        assert_eq!(c[0].kind, Kind::Anime);
+        assert_eq!(c[1].year, Some(2008));
+        assert!(candidates_from_anilist_recommendations(&json!({}), 10).is_empty());
+    }
+
+    #[test]
+    fn streaming_links_are_streaming_https_and_once_per_site() {
+        let body = json!({"data":{"Media":{"externalLinks":[
+            {"site":"Crunchyroll","url":"https://www.crunchyroll.com/series/x","type":"STREAMING"},
+            {"site":"Official Site","url":"https://x.jp","type":"INFO"},
+            {"site":"crunchyroll","url":"https://www.crunchyroll.com/other","type":"STREAMING"},
+            {"site":"Bad","url":"javascript:alert(1)","type":"STREAMING"},
+            {"site":"Netflix","url":"https://www.netflix.com/title/1","type":"STREAMING"}
+        ]}}});
+        let l = anilist_streaming_links(&body);
+        assert_eq!(
+            l.iter().map(|l| l.site.as_str()).collect::<Vec<_>>(),
+            ["Crunchyroll", "Netflix"]
         );
     }
 }

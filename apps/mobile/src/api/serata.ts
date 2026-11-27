@@ -16,6 +16,8 @@ export function serataEndpoints(c: Client) {
     create: (input: CreateSerataInput) => c.json<SerataCreated>("POST", "/api/serate", { body: input }),
     room: (code: string, signal?: AbortSignal) => c.json<RoomView>("GET", `/api/serate/${e(code)}`, { signal }),
     join: (code: string, input: JoinInput = {}) => c.json<RoomView>("POST", `/api/serate/${e(code)}/join`, { body: input }),
+    /** A share leaves no trace otherwise: the operator metrics count it (once per person per Serata). Never throws. */
+    track: (code: string, name: "card_shared" | "invite_shared") => c.none("POST", `/api/serate/${e(code)}/events`, { body: { name } }).catch(() => undefined),
     start: (code: string) => c.json<RoomView>("POST", `/api/serate/${e(code)}/start`, { body: {} }),
     vote: (code: string, mediaId: string) => c.json<RoomView>("POST", `/api/serate/${e(code)}/vote`, { body: { mediaId } }),
     ballot: (code: string, ballot: Ballot) => c.json<RoomView>("POST", `/api/serate/${e(code)}/ballot`, { body: ballot }),

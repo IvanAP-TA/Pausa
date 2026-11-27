@@ -57,6 +57,7 @@ export function ShareCardSheet({ code, open, onClose }: { code: string; open: bo
     if (!data) return;
     setDone(null);
     const out = await action.run(() => exportCard({ variant, data, viewRef: ref, saveOnly, fileName: `pausa-serata-${code}-${variant}.png` }));
+    if (out && out.value !== "cancelled") void serataApi.track(code, "card_shared");
     if (out && out.value !== "cancelled") setDone(out.value === "downloaded" ? t("serataApp.card.saved") : t("serataApp.card.shared"));
   };
 

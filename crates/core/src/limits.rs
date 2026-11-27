@@ -79,6 +79,17 @@ pub const JOIN_PREVIEW: Rule = Rule {
     window_ms: HOUR,
 };
 
+/// Joining the global board or changing the public name: per person (a name is read by strangers; no flood of renames).
+pub const BOARD_JOIN: Rule = Rule {
+    max: 10,
+    window_ms: HOUR,
+};
+/// Anonymous reads of a public profile page: per IP.
+pub const PUBLIC_PROFILE: Rule = Rule {
+    max: 120,
+    window_ms: HOUR,
+};
+
 /// Result of one more hit on a counter.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Hit {

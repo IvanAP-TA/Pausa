@@ -7,7 +7,7 @@ import { useI18n } from "@/i18n";
 import { control, hair, space, useTheme, web } from "@/theme";
 import { Avatar } from "@/ui/Avatar";
 import { Button } from "@/ui/Button";
-import { BookOpen, ChevronRight, Download, List, Pencil, Settings } from "@/ui/lucide";
+import { BookOpen, ChartColumn, ChevronRight, Download, List, Pencil, Settings, Trophy } from "@/ui/lucide";
 import { Row, RowList } from "@/ui/Row";
 import { Chapter, Well } from "@/ui/Surfaces";
 import { ErrorState, Heading, Loading, Notice, Screen, Tag, Text, TextLink, Title } from "@/ui";
@@ -101,6 +101,8 @@ function MeBody() {
               <Door to={href("/diary")} icon={BookOpen} title={t("profile.diary")} body={t("profile.diaryBody", { count: s.data.logs, private: s.data.privateLogs })} testID="me-diary" />
               <Door to={href("/lists")} icon={List} title={t("profile.lists")} body={t("profile.listsBody")} testID="me-lists" />
               <Door to={href("/import")} icon={Download} title={t("profile.import")} body={t("profile.importBody")} testID="me-import" />
+              <Door to={href("/me/achievements")} icon={Trophy} title={t("people.me.achievementsTitle")} body={t("people.me.achievementsBody")} testID="me-achievements" />
+              <Door to={href("/me/stats")} icon={ChartColumn} title={t("people.me.statsTitle")} body={t("people.me.statsBody")} testID="me-stats" />
               <Door to={href("/me/account")} icon={Settings} title={t("profile.settings")} body={t("profile.settingsBody")} testID="me-account" />
             </RowList>
           </View>

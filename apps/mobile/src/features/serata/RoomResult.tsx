@@ -104,6 +104,7 @@ export function RoomResult({ view, isGuest, meId, signInNext }: { view: RoomView
     }
     const data = cardData(pub.data, t, locale, date);
     const out = await share.run(() => exportCard({ variant: "story", data, fileName: `pausa-serata-${view.code}-story.png` }));
+    if (out && out.value !== "cancelled") void serataApi.track(view.code, "card_shared");
     if (out?.value === "downloaded") setCopied(true);
   };
 

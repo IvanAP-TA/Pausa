@@ -1,6 +1,7 @@
 // A small ICU MessageFormat subset, enough for packages/messages: {arg}, {n, plural, =0 {..} one {..} other {..}} with `#`,
 // {x, select, ..}, nested options, and rich tags (<b>..</b>). Written instead of pulling intl-messageformat into the app
 // shell (BUDGET: the entry bundle is tight). tests/i18n.test.ts compares it with intl-messageformat on every message.
+import { pluralRules, type Plural } from "./intl";
 
 export type Node =
   | { t: "text"; v: string }
@@ -151,12 +152,13 @@ class Parser {
 export type Values = Record<string, string | number | boolean | null | undefined>;
 export type TagRenderers<T> = Record<string, (children: Array<string | T>) => T>;
 
-const pluralRules = new Map<string, Intl.PluralRules>();
+const pluralCache = new Map<string, Plural>();
 const numberFormats = new Map<string, Intl.NumberFormat>();
 function rules(locale: string, ordinal: boolean) {
   const key = `${locale}/${ordinal}`;
-  let r = pluralRules.get(key);
-  if (!r) pluralRules.set(key, (r = new Intl.PluralRules(locale, { type: ordinal ? "ordinal" : "cardinal" })));
+  let r = pluralCache.get(key);
+  // Hermes (Android, iOS) has no Intl.PluralRules: ./intl falls back to the it/en/es rules there.
+  if (!r) pluralCache.set(key, (r = pluralRules(locale, ordinal)));
   return r;
 }
 function numberFormat(locale: string) {

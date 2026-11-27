@@ -579,7 +579,7 @@
       "items": [
         {
           "title": "Only who you invite",
-          "body": "The diary is visible only to the Circle's members. There are no public profiles and no global rankings."
+          "body": "The diary is visible only to the Circle's members. No public profile unless you turn it on: the Pausa leaderboard and the public page are optional, with a public name you choose and remove whenever you want."
         },
         {
           "title": "Invites that close",
@@ -612,7 +612,7 @@
         },
         {
           "q": "Who sees what I write?",
-          "a": "Only the members of the Circles you're in. Nothing is public. The only thing that leaves is the Card, if you choose to share it."
+          "a": "Only the members of the Circles you're in. Nothing is public. The only thing that leaves is the Card, if you choose to share it. The only exceptions are the Pausa leaderboard and the public page, if you choose to join: they show a public name, milestones and a score, never what you watched."
         },
         {
           "q": "Does it work with series and anime?",
@@ -1331,7 +1331,7 @@
     }
   },
   "legal": {
-    "updatedOn": "2026-11-17",
+    "updatedOn": "2026-11-27",
     "privacy": {
       "title": "Privacy notice",
       "updated": "Last updated",
@@ -1342,13 +1342,14 @@
           "p": [
             "Account: your email and the name you choose (with Google, also your profile picture). If you join a Serata as a guest, only the name you enter.",
             "Content: films, series and anime you log, ratings, reviews, comments, reactions, lists, your \"now watching\" status, your votes in Serate.",
-            "Technical: IP address and user agent of your sessions, for sign-in security and to limit abuse."
+            "Technical: IP address and user agent of your sessions, for sign-in security and to limit abuse.",
+            "Leaderboard, only if you join it: the public name you choose for it, whether you turned on the public page, and the score computed every hour from the viewings you log by hand (not imported ones)."
           ]
         },
         {
           "h": "Who sees your content",
           "p": [
-            "Only the members of the Cerchie you belong to. Pausa has no public profiles or public feeds. The only thing meant to leave the app is the Serata Card, which shows the chosen title and not who voted for what."
+            "Only the members of the Cerchie you belong to. Pausa has no public feeds. Two exceptions, only if you choose them: the Pausa leaderboard (people on it see your public name and score, never what you watched) and the public page (anyone with the link sees your public name, the milestones you reached and your score). You can leave whenever you want: your name and score are deleted at once. The other thing meant to leave the app is the Serata Card, which shows the chosen title and not who voted for what."
           ]
         },
         {
