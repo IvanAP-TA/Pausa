@@ -1,5 +1,5 @@
 import { Link, usePathname, useRouter, type Href } from "expo-router";
-import { useState, type ComponentType, type ReactNode } from "react";
+import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { Platform, Pressable, StyleSheet, useWindowDimensions, View, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/i18n";
@@ -195,7 +195,13 @@ function TabBar({ circleId, rail }: { circleId: string; rail: boolean }) {
     <View
       role="navigation"
       aria-label="Pausa"
-      style={{ flexDirection: "row", alignItems: "center", columnGap: space["2xs"], borderTopWidth: hair, borderColor: c.rule, backgroundColor: c.paper, paddingHorizontal: space["2xs"], paddingTop: space.xs, paddingBottom: Math.max(insets.bottom, space.xs) }}
+      // Web: the page itself scrolls, so the bar is pinned to the bottom of the window. Its height is published as --pausa-bar
+      // (sticky footers inside a screen sit on top of it) and reserved by a spacer of the same height at the end of the page.
+      onLayout={Platform.OS === "web" ? (e) => setBarVar(e.nativeEvent.layout.height) : undefined}
+      style={[
+        { flexDirection: "row", alignItems: "center", columnGap: space["2xs"], borderTopWidth: hair, borderColor: c.rule, backgroundColor: c.paper, paddingHorizontal: space["2xs"], paddingTop: space.xs, paddingBottom: Math.max(insets.bottom, space.xs) },
+        web({ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 200 }),
+      ]}
     >
       <View style={{ flex: 1, minWidth: 0, flexDirection: "row" }}>
         {tab("diary", base, a.diary)}
@@ -210,6 +216,14 @@ function TabBar({ circleId, rail }: { circleId: string; rail: boolean }) {
   );
 }
 
+/** Web: the phone tab bar's height, for sticky footers (`bottom: var(--pausa-bar, 0px)`) and the spacer under the page. */
+function setBarVar(h: number) {
+  if (typeof document !== "undefined") document.documentElement.style.setProperty("--pausa-bar", `${Math.round(h)}px`);
+}
+function clearBarVar() {
+  if (typeof document !== "undefined") document.documentElement.style.removeProperty("--pausa-bar");
+}
+
 /** The one bar at the top of every signed-in page: the mark (phones), the Cerchia I am in as a switch, the bell. */
 function TopBar({ rail }: { rail: boolean }) {
   const { c } = useTheme();
@@ -220,7 +234,10 @@ function TopBar({ rail }: { rail: boolean }) {
   return (
     <View
       role="banner"
-      style={{ zIndex: 250, flexDirection: "row", alignItems: "center", gap: space["2xs"], height: 56 + insets.top, paddingTop: insets.top, paddingLeft: Math.max(space.xs, insets.left), paddingRight: Math.max(space["2xs"], insets.right), borderBottomWidth: hair, borderColor: c.rule, backgroundColor: c.paper }}
+      style={[
+        { zIndex: 250, flexDirection: "row", alignItems: "center", gap: space["2xs"], height: 56 + insets.top, paddingTop: insets.top, paddingLeft: Math.max(space.xs, insets.left), paddingRight: Math.max(space["2xs"], insets.right), borderBottomWidth: hair, borderColor: c.rule, backgroundColor: c.paper },
+        web({ position: "sticky", top: 0 }),
+      ]}
     >
       {rail ? null : (
         <Link href={href(circle ? `/c/${circle.id}` : "/me/circles") as Href} aria-label="Pausa" style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
@@ -238,9 +255,19 @@ function TopBar({ rail }: { rail: boolean }) {
   );
 }
 
-/** The private shell fills exactly the window and scrolls inside (web: bounded height, so the tab bar stays put). */
-// (Web: an explicit height, not flex:1, because #root only has a min-height and a percentage flex-basis would resolve to the content.)
-const frame = (bg: string): ViewStyle[] => [{ backgroundColor: bg }, Platform.OS === "web" ? ({ height: "100dvh", overflow: "hidden" } as ViewStyle) : { flex: 1 }];
+/**
+ * The private shell. Native: fills the window and each screen scrolls inside. Web: the DOCUMENT scrolls, as in legacy (no
+ * scrollbar of its own in the page column, sticky bars relative to the window); the top bar is sticky, the rail and the aside
+ * are sticky full-height columns, the phone tab bar is fixed.
+ */
+const frame = (bg: string): ViewStyle[] => [{ backgroundColor: bg }, Platform.OS === "web" ? ({ minHeight: "100dvh" } as ViewStyle) : { flex: 1 }];
+
+/** Web: a new page starts at the top (the document scroll survives a client-side navigation otherwise). */
+function useScrollTopOnNavigate(path: string) {
+  useEffect(() => {
+    if (Platform.OS === "web" && typeof window !== "undefined") window.scrollTo(0, 0);
+  }, [path]);
+}
 
 /** Phones: top bar, page, tab bar. From 64rem: a centred 62rem frame, the rail on the left and a 40rem page column. */
 export function Shell({ children }: { children: ReactNode }) {
@@ -251,6 +278,18 @@ export function Shell({ children }: { children: ReactNode }) {
   const { circleId } = useCurrentCircle();
   const { width } = useWindowDimensions();
   const path = usePathname();
+  useScrollTopOnNavigate(path);
+  const phoneBar = !!circleId && width < breakpoints.rail && state.status === "ready";
+  useEffect(() => {
+    if (!phoneBar) clearBarVar();
+  }, [phoneBar]);
+  // The sticky top bar's height, for scroll-padding-top (theme/index.tsx).
+  const signedIn = state.status === "ready";
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof document === "undefined") return;
+    if (signedIn) document.documentElement.style.setProperty("--pausa-top", "56px");
+    return () => void document.documentElement.style.removeProperty("--pausa-top");
+  }, [signedIn]);
   // The bar is for signed-in screens; sign-in and the invite landing stand alone.
   const bare = state.status !== "ready" || path === href("/sign-in") || path.startsWith(href("/join/"));
   if (bare) return <View style={frame(c.paper)}><UpdateBanner />{children}</View>;
@@ -279,6 +318,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <UpdateBanner />
       <View style={{ flex: 1 }}>{children}</View>
       {circleId ? <TabBar circleId={circleId} rail={false} /> : null}
+      {circleId && Platform.OS === "web" ? <View aria-hidden style={web({ height: "var(--pausa-bar, 0px)", flexShrink: 0 })} /> : null}
     </View>
   );
 }

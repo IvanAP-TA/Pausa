@@ -276,6 +276,13 @@ async fn serve_client(req: Request, env: Env) -> Result<Response> {
         return finish(Err(Fail::not_found()));
     };
     let mut url = req.url()?;
+    // Old app addresses (bookmarks, shared links, installed apps): a permanent redirect to where the page lives now.
+    if let Some(to) = pausa_core::shell::legacy_redirect(&path) {
+        let target = pausa_core::shell::with_query(&to, url.query());
+        let mut res = Response::empty()?.with_status(301);
+        res.headers_mut().set("Location", &target)?;
+        return Ok(res);
+    }
     if let Some(shell) = pausa_core::shell::shell_path(&path) {
         url.set_path(&shell);
     }

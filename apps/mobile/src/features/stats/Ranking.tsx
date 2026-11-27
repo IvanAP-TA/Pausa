@@ -134,18 +134,29 @@ function RankingBody({ id }: { id: string }) {
   const clearAll = () => { setApplied(EMPTY); setYears({}); setPage(0); };
   const set = <K extends keyof Draft>(k: K) => (v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }));
   const pages = rank.data ? Math.max(1, Math.ceil(rank.data.total / rank.data.pageSize)) : 1;
+  const { width } = useWindowDimensions();
+  const phone = width < breakpoints.rail;
+  // Small buttons, still 44 tall (a touch screen can be wide too).
+  const tall = { minHeight: control };
 
   return (
     <Screen>
-      <BackLink to={href("/home")} label={t("app.circle.back")} />
-      <Heading level={1}>{circle.data?.name ?? t("ranking.title")}</Heading>
-      <Text tone="ink2">{t("ranking.lede")}</Text>
+      {/* As legacy: on a phone the ranking is reached from the diary (no tab of its own), so the way back is the diary. */}
+      {phone ? <BackLink to={href(`/c/${id}`)} label={t("tabs.diary")} /> : null}
+      <View style={{ gap: space.xs }}>
+        <Heading level={1}>{t("ranking.title")}</Heading>
+        <Text tone="ink2">{t("ranking.lede")}</Text>
+      </View>
+      {/* Type, order, filters and years in two short rows, so the first title shows on a phone without scrolling. */}
+      <View style={{ gap: space.xs }}>
       <Choice<Kind>
+        hideLabel
         label={t("stats.ranking.kindLabel")}
         value={kind}
         onChange={(k) => { setKind(k); setPage(0); }}
         options={(["movie", "tv", "anime"] as const).map((k) => ({ value: k, label: t(`kind.${k}`), testID: `kind-${k}` }))}
       />
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs, alignItems: "center" }}>
       <View role="group" aria-label={t("ranking.filters.sort")} style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs }}>
         {SORT_KEYS.map((k) => {
           const dir = sort?.key === k ? sort.dir : "off";
@@ -153,6 +164,8 @@ function RankingBody({ id }: { id: string }) {
           return (
             <Button
               key={k}
+              size="sm"
+              style={tall}
               label={label}
               variant={dir === "off" ? "secondary" : "primary"}
               icon={dir === "asc" ? ArrowUp : dir === "desc" ? ArrowDown : undefined}
@@ -164,11 +177,11 @@ function RankingBody({ id }: { id: string }) {
           );
         })}
       </View>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.xs }}>
-        <Button label={t("ranking.filters.title")} variant="secondary" icon={Filter} testID="open-filters" onPress={() => { setDraft(applied); setOpen(true); }} />
-        <Button label={yearsOn ? yearRangeLabel(t, years, yearPresets(new Date().getFullYear(), yearMin, yearMax)) : t("stats.ranking.years")} variant={yearsOn ? "primary" : "secondary"} icon={CalendarRange} testID="open-years" onPress={() => setYearsOpen(true)} />
+        <Button size="sm" style={tall} label={t("ranking.filters.title")} variant="secondary" icon={Filter} testID="open-filters" onPress={() => { setDraft(applied); setOpen(true); }} />
+        <Button size="sm" style={tall} label={yearsOn ? yearRangeLabel(t, years, yearPresets(new Date().getFullYear(), yearMin, yearMax)) : t("stats.ranking.years")} variant={yearsOn ? "primary" : "secondary"} icon={CalendarRange} testID="open-years" onPress={() => setYearsOpen(true)} />
         {filtered > 0 ? <Tag tone="accent" label={t("diary.feed.active", { count: filtered })} /> : null}
-        {filtered > 0 || yearsOn ? <Button label={t("ranking.filters.reset")} variant="quiet" onPress={clearAll} /> : null}
+        {filtered > 0 || yearsOn ? <Button size="sm" style={tall} label={t("ranking.filters.reset")} variant="quiet" onPress={clearAll} /> : null}
+      </View>
       </View>
       <YearRangeSheet key={yearsOpen ? "open" : "closed"} open={yearsOpen} onClose={() => setYearsOpen(false)} value={years} onApply={(r) => { setYears(r); setPage(0); }} yearMin={yearMin} yearMax={yearMax} />
 

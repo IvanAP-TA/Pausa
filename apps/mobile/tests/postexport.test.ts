@@ -86,17 +86,22 @@ describe("postexport transforms", () => {
     for (const f of ["index.html", "404.html"]) expect(read(f), f).not.toMatch(/<script\b/);
   });
 
-  it("writes a real 404.html (Expo renders an empty one): three languages, noindex, one h1, no scripts", () => {
+  it("writes a real 404 (Expo renders an empty one) per language: only that language, noindex, one h1, no scripts", () => {
     buildFixture();
     px.run(dist, { env: {}, ...quiet });
-    const html = read("404.html");
-    expect(html).toContain("Qui non c");
-    expect(html).toContain("Nothing here");
-    expect(html).toContain("Aquí no hay nada");
-    expect(html).toContain("noindex");
-    expect(html.match(/<h1/g)).toHaveLength(1);
-    expect(html).not.toContain("<script");
-    for (const l of LOCALES) expect(html).toContain(`href="/${l}"`);
+    const text = { it: "Qui non c", en: "Nothing here", es: "Aquí no hay nada" } as const;
+    for (const [file, l] of [["404.html", "it"], ["it/404.html", "it"], ["en/404.html", "en"], ["es/404.html", "es"]] as const) {
+      const html = read(file);
+      expect(html, file).toContain(`<html lang="${l}"`);
+      for (const o of LOCALES) {
+        if (o === l) expect(html, file).toContain(text[o]);
+        else expect(html, file).not.toContain(text[o as keyof typeof text]);
+      }
+      expect(html, file).toContain("noindex");
+      expect(html.match(/<h1/g), file).toHaveLength(1);
+      expect(html, file).not.toContain("<script");
+      expect(html, file).toContain(`href="/${l}"`);
+    }
   });
 
   it("leaves the app shell pages with their JavaScript", () => {

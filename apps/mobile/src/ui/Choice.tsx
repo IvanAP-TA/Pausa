@@ -6,13 +6,15 @@ import { Text } from "./Text";
 export type ChoiceOption<V extends string> = { value: V; label: string; testID?: string };
 
 /** A row of mutually exclusive options (expiry, cover, theme, language): a radio group, 44pt each, the chosen one filled. */
-export function Choice<V extends string>({ label, value, options, onChange }: { label: string; value: V; options: Array<ChoiceOption<V>>; onChange: (v: V) => void }) {
+export function Choice<V extends string>({ label, value, options, onChange, hideLabel }: { label: string; value: V; options: Array<ChoiceOption<V>>; onChange: (v: V) => void; /** Keep the label for screen readers only (the options say it all). */ hideLabel?: boolean }) {
   const { c } = useTheme();
   return (
     <View style={{ gap: space["2xs"] }}>
-      <Text variant="label" tone="ink2" nativeID={`choice-${label}`}>
-        {label}
-      </Text>
+      {hideLabel ? null : (
+        <Text variant="label" tone="ink2" nativeID={`choice-${label}`}>
+          {label}
+        </Text>
+      )}
       <View role="radiogroup" aria-label={label} style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs }}>
         {options.map((o) => {
           const on = o.value === value;

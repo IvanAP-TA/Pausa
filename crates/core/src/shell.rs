@@ -45,6 +45,82 @@ pub fn shell_path(path: &str) -> Option<String> {
     Some(format!("/{locale}/{tail}"))
 }
 
+/// Addresses of the old app (branch `legacy`) that moved: bookmarks, shared links and installed apps still open them.
+/// `/it/c/abc/serata` -> `Some("/it/c/abc/serate")`. The result may carry its own query (`?circle=`); the caller appends the
+/// request's query after it. `None` when the path is not an old address.
+pub fn legacy_redirect(path: &str) -> Option<String> {
+    let segs: Vec<&str> = path.trim_matches('/').split('/').collect();
+    let (locale, rest) = segs.split_first()?;
+    if !LOCALES.contains(locale) || !rest.iter().all(|s| plain(s) && !s.starts_with('.')) {
+        return None;
+    }
+    let tail = match rest {
+        ["me", "edit"] => "me/profile".to_string(),
+        ["me", "diary"] => "diary".to_string(),
+        ["me", "lists"] => "lists".to_string(),
+        ["me", "import"] => "import".to_string(),
+        ["me", "imports"] => "imports".to_string(),
+        ["c", id, "serata"] => format!("c/{id}/serate"),
+        ["c", id, "log"] => format!("log?circle={id}"),
+        ["c", _, "notifications"] => "notifications".to_string(),
+        ["c", id, "lists"] => format!("lists?circle={id}"),
+        ["c", _, "import"] => "import".to_string(),
+        ["c", id, "l", log] => format!("c/{id}/log/{log}"),
+        ["c", id, "l", log, "edit"] => format!("c/{id}/log/{log}/edit"),
+        ["c", id, "p", user] => format!("c/{id}/people/{user}"),
+        _ => return None,
+    };
+    Some(format!("/{locale}/{tail}"))
+}
+
+/// Joins a redirect target (maybe with its own `?a=b`) and the request query (without `?`).
+pub fn with_query(target: &str, query: Option<&str>) -> String {
+    match query.filter(|q| !q.is_empty()) {
+        None => target.to_string(),
+        Some(q) if target.contains('?') => format!("{target}&{q}"),
+        Some(q) => format!("{target}?{q}"),
+    }
+}
+
+#[cfg(test)]
+mod legacy_tests {
+    use super::{legacy_redirect as r, with_query};
+
+    #[test]
+    fn old_addresses_move_in_every_locale() {
+        for l in ["it", "en", "es"] {
+            assert_eq!(r(&format!("/{l}/me/edit")), Some(format!("/{l}/me/profile")));
+            assert_eq!(r(&format!("/{l}/me/diary")), Some(format!("/{l}/diary")));
+            assert_eq!(r(&format!("/{l}/me/lists")), Some(format!("/{l}/lists")));
+            assert_eq!(r(&format!("/{l}/me/import")), Some(format!("/{l}/import")));
+            assert_eq!(r(&format!("/{l}/me/imports/")), Some(format!("/{l}/imports")));
+            assert_eq!(r(&format!("/{l}/c/abc/serata")), Some(format!("/{l}/c/abc/serate")));
+            assert_eq!(r(&format!("/{l}/c/abc/log")), Some(format!("/{l}/log?circle=abc")));
+            assert_eq!(r(&format!("/{l}/c/abc/notifications")), Some(format!("/{l}/notifications")));
+            assert_eq!(r(&format!("/{l}/c/abc/lists")), Some(format!("/{l}/lists?circle=abc")));
+            assert_eq!(r(&format!("/{l}/c/abc/import")), Some(format!("/{l}/import")));
+            assert_eq!(r(&format!("/{l}/c/abc/l/x1")), Some(format!("/{l}/c/abc/log/x1")));
+            assert_eq!(r(&format!("/{l}/c/abc/l/x1/edit")), Some(format!("/{l}/c/abc/log/x1/edit")));
+            assert_eq!(r(&format!("/{l}/c/abc/p/u1")), Some(format!("/{l}/c/abc/people/u1")));
+        }
+    }
+
+    #[test]
+    fn current_and_foreign_addresses_are_untouched() {
+        for p in ["/it/me", "/it/me/circles", "/it/me/profile", "/it/c/abc", "/it/c/abc/serate", "/fr/me/edit", "/it/c/a b/log", "/it/c/../log", "/me/edit"] {
+            assert_eq!(r(p), None, "{p}");
+        }
+    }
+
+    #[test]
+    fn query_is_kept() {
+        assert_eq!(with_query("/it/log?circle=abc", Some("media=tmdb:1")), "/it/log?circle=abc&media=tmdb:1");
+        assert_eq!(with_query("/it/diary", Some("q=x")), "/it/diary?q=x");
+        assert_eq!(with_query("/it/diary", Some("")), "/it/diary");
+        assert_eq!(with_query("/it/diary", None), "/it/diary");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::shell_path as s;

@@ -65,6 +65,8 @@ export function classify(rel) {
   if (rel === "offline.html") return { kind: "offline" }; // written by this script (the service worker's fallback page)
   if (rel === "index.html") return { kind: "public", locale: DEFAULT_LOCALE, sub: "", chooser: true };
   if (rel === "+not-found.html" || rel === "404.html") return { kind: "notfound", locale: DEFAULT_LOCALE };
+  const nf = re(`^(${L})/404\.html$`).exec(rel);
+  if (nf) return { kind: "notfound", locale: nf[1] };
   const quiet = QUIET.exec(rel);
   if (quiet) return { kind: "quiet", locale: quiet[1] };
   for (const [r, f] of PUBLIC) {
@@ -81,19 +83,16 @@ export function classify(rel) {
 /**
  * 404.html. Expo statically renders +not-found as an EMPTY page (the not-found screen is chosen by the client router after JS runs;
  * measured: body has no content, and generateMetadata is ignored), which would make every missing URL a blank page for crawlers and
- * for visitors without JavaScript. So the 404 is written here: the same theme CSS as the other pages, the message in all three
- * languages (the URL does not say which one the visitor wants), links back, noindex, no scripts.
+ * for visitors without JavaScript. So the 404 is written here: the same theme CSS as the other pages, ONE language, a link back,
+ * noindex, no scripts. One file per locale (`it/404.html`...): the asset host serves the nearest 404.html up the path, so
+ * `/en/whatever` answers in English. The root `404.html` (no locale in the URL) uses the default locale, as legacy did.
  */
-export function build404Html({ css, messages }) {
+export function build404Html({ css, messages, locale = DEFAULT_LOCALE }) {
   const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-  const it = messages.it.errors;
-  const blocks = LOCALES.map((l, i) => {
-    const m = messages[l].errors;
-    const h = i === 0 ? "h1" : "h2";
-    return `<section lang="${l}" class="blk"><${h}>${esc(m.notFoundTitle)}</${h}><p>${esc(m.notFoundBody)}</p><a class="btn${i === 0 ? " pri" : ""}" href="/${l}">${esc(m.home)}</a></section>`;
-  }).join("");
+  const m = messages[locale].errors;
+  const blocks = `<section lang="${locale}" class="blk"><h1>${esc(m.notFoundTitle)}</h1><p>${esc(m.notFoundBody)}</p><a class="btn pri" href="/${locale}">${esc(m.home)}</a></section>`;
   const own = `body{margin:0}main{max-width:720px;margin:0 auto;padding:64px 16px;font-family:Barlow_400,ui-sans-serif,system-ui,sans-serif;line-height:1.55}.mk{margin:0 0 16px;font-family:SofiaSansExtraCondensed_400,ui-sans-serif,sans-serif;text-transform:uppercase;font-size:36px;line-height:1;color:var(--c-ink)}.blk{padding:24px 0;border-top:1px solid var(--c-rule)}.blk:first-child{border-top:0}h1,h2{font-family:SofiaSansExtraCondensed_200,ui-sans-serif,sans-serif;font-weight:200;text-transform:uppercase;line-height:1.08;margin:0 0 12px}h1{font-size:clamp(3.75rem,3.3rem + 1.9vw,4.5rem)}h2{font-size:2rem}p{margin:0 0 16px;color:var(--c-ink-2,var(--c-ink2));max-width:65ch}.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 24px;border:1px solid var(--c-ink);font-family:SofiaSansExtraCondensed_400,ui-sans-serif,sans-serif;text-transform:uppercase;font-size:20px}.btn.pri{background:var(--c-accent);border-color:var(--c-accent);color:var(--c-accentInk)}`;
-  return `<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><title>${esc(it.notFoundTitle)} · Pausa</title><meta name="robots" content="noindex, nofollow"/><meta name="theme-color" content="#001113"/><link rel="icon" href="/favicon.ico"/><style>${css}${own}</style></head><body><main><p class="mk">Pausa</p>${blocks}</main></body></html>`;
+  return `<!DOCTYPE html><html lang="${locale}"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><title>${esc(m.notFoundTitle)} · Pausa</title><meta name="robots" content="noindex, nofollow"/><meta name="theme-color" content="#001113"/><link rel="icon" href="/favicon.ico"/><style>${css}${own}</style></head><body><main><p class="mk">Pausa</p>${blocks}</main></body></html>`;
 }
 
 /** The theme/font CSS Expo already wrote into a page of this build (so the 404 looks like the rest without duplicating the tokens). */
@@ -172,14 +171,19 @@ export function checkPublicPage(html, { locale, sub, chooser }) {
   return bad;
 }
 
-export function check404(html) {
+export function check404(html, { locale } = { locale: DEFAULT_LOCALE }) {
   const bad = [];
   const h = readHead(html);
   if (!h.robots || !/noindex/i.test(h.robots)) bad.push("the 404 must be noindex");
   if (/<script\b/.test(html)) bad.push("the 404 must ship no JavaScript");
   if (!h.title) bad.push("the 404 has no <title>");
   if (h.h1 !== 1) bad.push(`the 404 needs one <h1>, found ${h.h1}`);
-  for (const l of LOCALES) if (!new RegExp(`<section lang="${l}"`).test(html)) bad.push(`the 404 lacks the ${l} message`);
+  if (h.lang !== locale) bad.push(`the 404 <html lang> is "${h.lang}", expected "${locale}"`);
+  for (const l of LOCALES) {
+    const has = new RegExp(`<section lang="${l}"`).test(html);
+    if (l === locale && !has) bad.push(`the 404 lacks the ${l} message`);
+    if (l !== locale && has) bad.push(`the ${locale} 404 must not show the ${l} message`);
+  }
   return bad;
 }
 
@@ -257,6 +261,10 @@ export function run(dist, { env = process.env, log = console.log, warn = console
   const css = fs.existsSync(themeSource) ? extractThemeCss(fs.readFileSync(themeSource, "utf8")) : "";
   const messages = Object.fromEntries(LOCALES.map((l) => [l, JSON.parse(fs.readFileSync(path.join(here, "..", "..", "..", "packages", "messages", `${l}.json`), "utf8"))]));
   fs.writeFileSync(path.join(dist, "404.html"), build404Html({ css, messages }));
+  for (const l of LOCALES) {
+    fs.mkdirSync(path.join(dist, l), { recursive: true });
+    fs.writeFileSync(path.join(dist, l, "404.html"), build404Html({ css, messages, locale: l }));
+  }
 
   const counts = { public: 0, quiet: 0, shell: 0, notfound: 0 };
   const htmls = [];
@@ -277,7 +285,7 @@ export function run(dist, { env = process.env, log = console.log, warn = console
     htmls.push(html);
     counts[info.kind]++;
     const bad =
-      info.kind === "public" ? checkPublicPage(html, info) : info.kind === "shell" ? checkShellPage(html) : info.kind === "quiet" ? checkQuietPage(html, info) : check404(html);
+      info.kind === "public" ? checkPublicPage(html, info) : info.kind === "shell" ? checkShellPage(html) : info.kind === "quiet" ? checkQuietPage(html, info) : check404(html, info);
     for (const b of bad) problems.push(`${rel}: ${b}`);
   }
 

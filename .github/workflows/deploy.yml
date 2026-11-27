@@ -46,6 +46,11 @@ jobs:
             echo "::error::Set LEGAL_ENTITY and CONTACT_EMAIL in the repository Actions variables."
             exit 1
           fi
+          # One address only: a comma/space-separated list turns into a mailto with several personal inboxes.
+          if [[ ! "$CONTACT_EMAIL" =~ ^[^[:space:],\;@]+@[^[:space:],\;@]+\.[^[:space:],\;@]+$ ]]; then
+            echo "::error::CONTACT_EMAIL must be a single email address."
+            exit 1
+          fi
           npm run build:web
           npm run budget
       - name: Build the Worker before touching D1

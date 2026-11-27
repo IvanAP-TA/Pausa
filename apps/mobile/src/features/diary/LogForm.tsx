@@ -198,7 +198,7 @@ function SaveBar({ children }: { children: ReactNode }) {
     <View
       style={[
         { gap: space.xs, marginHorizontal: -layout.gutter.phone, paddingHorizontal: layout.gutter.phone, paddingVertical: space.sm, borderTopWidth: hair, borderColor: c.rule, backgroundColor: c.paper },
-        web({ position: "sticky", bottom: 0, zIndex: 10 }),
+        web({ position: "sticky", bottom: "var(--pausa-bar, 0px)", zIndex: 10 }),
       ]}
     >
       {children}

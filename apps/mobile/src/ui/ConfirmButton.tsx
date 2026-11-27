@@ -13,7 +13,8 @@ export function ConfirmButton({ label, confirmLabel, onConfirm, busy, accessibil
   const [asking, setAsking] = useState(false);
   if (!asking) return <Button label={label} variant="quiet" accessibilityLabel={accessibilityLabel} onPress={() => setAsking(true)} />;
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs }}>
+    // maxWidth: inside a wrapping row of buttons it must wrap itself, not push "Annulla" off the screen.
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs, maxWidth: "100%" }}>
       <Button label={confirmLabel} variant="danger" busy={busy} onPress={onConfirm} />
       <Button label={t("app.cancel")} variant="quiet" onPress={() => setAsking(false)} />
     </View>

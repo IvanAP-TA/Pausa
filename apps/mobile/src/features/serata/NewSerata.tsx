@@ -56,7 +56,7 @@ function PosterCard({ pick, n, full, width, on, onPress }: { pick: Pick; n: numb
     <Pressable
       role="button"
       aria-pressed={taken}
-      aria-label={pick.title}
+      aria-label={on?.length ? `${pick.title}, ${on.join(", ")}` : pick.title}
       aria-disabled={full || undefined}
       disabled={full}
       onPress={onPress}
@@ -64,7 +64,7 @@ function PosterCard({ pick, n, full, width, on, onPress }: { pick: Pick; n: numb
       style={[{ width, gap: 6, opacity: full ? 0.4 : 1 }, web({ cursor: full ? "default" : "pointer" })]}
     >
       <View>
-        <MediaPoster title={pick.title} path={pick.posterPath} width={width} size="w342" />
+        <MediaPoster title={pick.title} path={pick.posterPath} width={width} size="w342" decorative />
         <View aria-hidden pointerEvents="none" style={{ position: "absolute", inset: 0, borderWidth: 2, borderColor: taken ? c.accent : "transparent" }} />
         <View aria-hidden pointerEvents="none" style={{ position: "absolute", right: 0, top: 0, width: 28, height: 28, alignItems: "center", justifyContent: "center", backgroundColor: taken ? c.accent : c.paper }}>
           {taken ? (
@@ -186,7 +186,6 @@ export function NewSerata({ circleId }: { circleId: string }) {
   };
   const ready = picks.length >= MIN_TITLES;
   const sv = services.data;
-  const stickyBottom = screenW >= 1024 ? 0 : 76;
 
   return (
     <View style={{ gap: space.lg }}>
@@ -265,7 +264,7 @@ export function NewSerata({ circleId }: { circleId: string }) {
       </View>
 
       {create.error ? <Text role="alert" tone="error">{errorMessage(t, create.error)}</Text> : null}
-      <View style={[{ backgroundColor: c.paper, paddingVertical: space.sm, borderTopWidth: hair, borderColor: c.rule, zIndex: 10 }, web({ position: "sticky", bottom: stickyBottom })]}>
+      <View style={[{ backgroundColor: c.paper, paddingVertical: space.sm, borderTopWidth: hair, borderColor: c.rule, zIndex: 10 }, web({ position: "sticky", bottom: "var(--pausa-bar, 0px)" })]}>
         <Button
           label={create.busy ? t("log.saving") : ready ? t("serata.createWith", { count: picks.length }) : t("serata.needTwo", { count: picks.length })}
           onPress={go}

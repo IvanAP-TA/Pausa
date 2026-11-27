@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Image, View } from "react-native";
 import { fonts, useTheme, type ColorName } from "@/theme";
 import { tintIndex } from "./Poster-seed";
-import { Text } from "./Text";
+import { Glyph } from "./Glyph";
 
 const TINTS: ColorName[] = ["tint1", "tint2", "tint3", "tint4", "tint5", "tint6", "tint7", "tint8"];
 
@@ -43,9 +43,8 @@ export function MediaPoster({ title, path, width = 56, decorative = true, size =
     .toUpperCase();
   return (
     <View {...a11y} style={{ width, height, backgroundColor: c[TINTS[tintIndex(title)]], alignItems: "center", justifyContent: "center" }}>
-      <Text aria-hidden maxFontSizeMultiplier={1.2} style={{ color: c.onTint, fontFamily: fonts.display400, fontSize: width * 0.4, lineHeight: width * 0.48 }}>
-        {initials}
-      </Text>
+      {/* Drawn by CSS on web (Glyph): inside a named button the initials are not text of the button (axe label-content-name-mismatch). */}
+      <Glyph style={{ color: c.onTint, fontFamily: fonts.display400, fontSize: width * 0.4, lineHeight: width * 0.48 }}>{initials}</Glyph>
     </View>
   );
 }

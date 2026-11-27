@@ -116,7 +116,8 @@ function OnAirFrame({ w, mine, width, onChanged }: { w: WatchingDto; mine: boole
   };
   return (
     <View role="listitem" style={[{ width }, web({ scrollSnapAlign: "start" })]}>
-      <Reel style={{ flex: 1, flexDirection: "row", gap: space.sm, paddingHorizontal: space.sm, paddingVertical: 26 }}>
+      <Reel style={{ flex: 1, gap: space.sm, paddingHorizontal: space.sm, paddingVertical: 26 }}>
+       <View style={{ flex: 1, flexDirection: "row", gap: space.sm }}>
         <MediaPoster title={w.media.title} path={w.media.posterPath} width={56} />
         <View style={{ flex: 1, minWidth: 0, justifyContent: "space-between", gap: space.xs }}>
           <View>
@@ -137,6 +138,12 @@ function OnAirFrame({ w, mine, width, onChanged }: { w: WatchingDto; mine: boole
               </Text>
             ) : null}
           </View>
+          {mine ? null : (
+            <View aria-hidden style={[{ width: 8, height: 8, backgroundColor: c.accent }, web({ animation: "pausa-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" })]} />
+          )}
+        </View>
+       </View>
+          {/* My own frame: the actions get the whole width of the frame (in the text column they were squeezed to its edge). */}
           {mine ? (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
               {w.media.kind !== "movie" ? (
@@ -147,15 +154,12 @@ function OnAirFrame({ w, mine, width, onChanged }: { w: WatchingDto; mine: boole
               ) : null}
               <Button size="sm" variant="quiet" style={finger} label={t("feed.stopWatching")} accessibilityLabel={`${t("feed.stopWatching")}: ${w.media.title}`} busy={act.busy} onPress={() => void run(() => diaryApi.clearProgress(w.media.id))} />
             </View>
-          ) : (
-            <View aria-hidden style={[{ width: 8, height: 8, backgroundColor: c.accent }, web({ animation: "pausa-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" })]} />
-          )}
+          ) : null}
           {act.error ? (
             <Text variant="small" tone="error" role="alert">
               {errorMessage(t, act.error)}
             </Text>
           ) : null}
-        </View>
       </Reel>
     </View>
   );

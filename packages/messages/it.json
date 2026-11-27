@@ -225,7 +225,7 @@
       "confirm": "Il nome non coincide. Non è stato eliminato niente."
     },
     "importTitle": "Importa la tua cronologia",
-    "importBody": "Da Letterboxd, IMDb, Trakt, AniList o MyAnimeList.",
+    "importBody": "Da Letterboxd, IMDb, Trakt, AniList, MyAnimeList o Cinemaniac.",
     "listsBody": "Watchlist e liste del gruppo."
   },
   "serata": {
@@ -1045,7 +1045,7 @@
     "onlyPrivate": "Solo miei ({count})",
     "emptyTitle": "Qui non c'è ancora niente.",
     "emptyPrivateTitle": "Nessuna visione solo tua.",
-    "emptyBody": "Importa la tua cronologia da Letterboxd, IMDb, Trakt, AniList o MyAnimeList, oppure registra una visione.",
+    "emptyBody": "Importa la tua cronologia da Letterboxd, IMDb, Trakt, AniList, MyAnimeList o Cinemaniac, oppure registra una visione.",
     "inAllCircles": "Chi lo vede: le tue Cerchie",
     "makePrivate": "Solo per me",
     "onlyYou": "Chi lo vede: solo tu",
@@ -1157,7 +1157,7 @@
     "lists": "Watchlist e liste",
     "listsBody": "Le tue liste personali: le vedi solo tu.",
     "import": "Importa",
-    "importBody": "Da Letterboxd, IMDb, Trakt, AniList o MyAnimeList.",
+    "importBody": "Da Letterboxd, IMDb, Trakt, AniList, MyAnimeList o Cinemaniac.",
     "settings": "Impostazioni",
     "settingsBody": "Account, notifiche, servizi streaming, lingua e tema.",
     "forYou": "Per te",

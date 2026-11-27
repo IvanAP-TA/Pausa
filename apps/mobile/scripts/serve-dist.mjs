@@ -98,6 +98,12 @@ export function createServer(dist, apiOrigin, { headers = process.env.NO_HEADERS
       }
     }
     if (file) return send(file, 200);
+    // As the asset host (not_found_handling "404-page"): the nearest 404.html up the path, so /en/x answers in English.
+    const segs = decodeURIComponent(url.split("?")[0]).split("/").filter(Boolean);
+    for (let i = segs.length - 1; i >= 0; i--) {
+      const near = path.resolve(dist, ...segs.slice(0, i), "404.html");
+      if (near.startsWith(path.resolve(dist) + path.sep) && fs.existsSync(near)) return send(near, 404);
+    }
     const nf = path.join(dist, "404.html");
     if (fs.existsSync(nf)) return send(nf, 404);
     res.writeHead(404).end("not found");

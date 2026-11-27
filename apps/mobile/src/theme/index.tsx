@@ -90,6 +90,8 @@ export function globalCss(): string {
     `html,body,#root{height:auto;min-height:100%}`,
     `body{overflow:auto;overflow-x:clip;-webkit-font-smoothing:antialiased}`,
     `#root{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}`,
+    // The signed-in shell pins a top bar (sticky) and, on phones, a tab bar (fixed): focus and scrollIntoView keep clear of both.
+    `html{scroll-padding-top:var(--pausa-top,0px);scroll-padding-bottom:var(--pausa-bar,0px)}`,
     `a{color:inherit;text-decoration:none}`,
     `:focus-visible{outline:2px solid var(--c-focus);outline-offset:2px}`,
     `::selection{background:color-mix(in oklab,var(--c-accent) 35%,transparent)}`,

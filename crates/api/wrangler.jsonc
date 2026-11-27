@@ -54,6 +54,12 @@
     "run_worker_first": [
       "/api/*",
       "/*/c/*",
+      // Only the old /me/* addresses need the Worker (redirects); listing them one by one keeps /me and /me/circles static.
+      "/*/me/edit",
+      "/*/me/diary",
+      "/*/me/lists",
+      "/*/me/import",
+      "/*/me/imports",
       "/*/join/*",
       "/*/log/*",
       "/*/t/*",

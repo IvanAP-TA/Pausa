@@ -295,14 +295,16 @@ test.describe("site files", () => {
     expect(await attr(page, 'link[rel="canonical"]', "href")).toBe(`${SITE}/`);
   });
 
-  test("a missing page is a 404 with the 404 page (not a soft 200), in three languages, noindex, no JavaScript", async ({ page }) => {
-    const res = await page.goto("/it/this-does-not-exist");
-    expect(res?.status()).toBe(404);
-    await expect(page.locator("h1")).toContainText(msg.it.errors.notFoundTitle);
-    await expect(page.locator("body")).toContainText(msg.en.errors.notFoundTitle);
-    await expect(page.locator("body")).toContainText(msg.es.errors.notFoundTitle);
-    expect(await attr(page, 'meta[name="robots"]', "content")).toMatch(/noindex/);
-    expect(await page.locator("script[src]").count()).toBe(0);
-    await expect(page).toHaveTitle(`${msg.it.errors.notFoundTitle} · Pausa`);
+  test("a missing page is a 404 with the 404 page (not a soft 200), only in the language of the address, noindex, no JavaScript", async ({ page }) => {
+    for (const [l, others] of [["it", ["en", "es"]], ["en", ["it", "es"]], ["es", ["it", "en"]]] as const) {
+      const res = await page.goto(`/${l}/this-does-not-exist`);
+      expect(res?.status()).toBe(404);
+      await expect(page.locator("html")).toHaveAttribute("lang", l);
+      await expect(page.locator("h1")).toContainText(msg[l].errors.notFoundTitle);
+      for (const o of others) await expect(page.locator("body")).not.toContainText(msg[o].errors.notFoundTitle);
+      expect(await attr(page, 'meta[name="robots"]', "content")).toMatch(/noindex/);
+      expect(await page.locator("script[src]").count()).toBe(0);
+      await expect(page).toHaveTitle(`${msg[l].errors.notFoundTitle} · Pausa`);
+    }
   });
 });

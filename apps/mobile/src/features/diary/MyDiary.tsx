@@ -1,14 +1,14 @@
 import type { DiaryCounts, LogDto, ProgressDto } from "@pausa/api-types";
 import { Link, useLocalSearchParams, type Href } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { errorMessage } from "@/api/errors";
 import { diaryApi } from "@/api/diary";
 import { useAction } from "@/api/useAction";
 import { usePages } from "@/api/usePages";
 import { useResource } from "@/api/useResource";
 import { useI18n } from "@/i18n";
-import { control, hair, space, useTheme, web } from "@/theme";
+import { control, hair, layout, space, useTheme, web } from "@/theme";
 import { Button } from "@/ui/Button";
 import { Select } from "@/ui/Select";
 import { Sheet } from "@/ui/Sheet";
@@ -29,14 +29,19 @@ export function ProgressCard({ p, onChanged, onGone, inList }: { p: ProgressDto;
   const epLabel = useEpisodeLabel();
   const act = useAction();
   const where = epLabel(num(p.season), num(p.episode)) ?? t("diary.progress.started");
+  // Small buttons (v1 .btn-sm): 36px under a pointer, 44 under a finger.
+  const tall = { minHeight: control };
   return (
     <View {...(inList ? { role: "listitem" as const } : {})} testID={`progress-${p.media.id}`} style={{ width: 280, borderWidth: hair, borderColor: c.rule, padding: space.sm, gap: space.xs }}>
       <View style={{ flexDirection: "row", gap: space.sm }}>
         <MediaPoster title={p.media.title} path={p.media.posterPath} width={48} />
         <View style={{ flex: 1, gap: space["2xs"] }}>
-          <Title numberOfLines={2} style={{ fontSize: 22, lineHeight: 24 }}>
-            {p.media.title}
-          </Title>
+          {/* The title opens Registra for it (it was a fourth button: the card now has legacy's three). */}
+          <Link href={`${href("/log")}?media=${p.media.id}` as Href} aria-label={`${t("log.submit")}: ${p.media.title}`}>
+            <Title numberOfLines={2} style={{ fontSize: 22, lineHeight: 24 }}>
+              {p.media.title}
+            </Title>
+          </Link>
           <Text variant="small" tone="ink2" testID={`progress-where-${p.media.id}`}>
             {where}
           </Text>
@@ -51,7 +56,8 @@ export function ProgressCard({ p, onChanged, onGone, inList }: { p: ProgressDto;
           onPress={async () => {
             if (await act.run(() => diaryApi.advance(p.media.id))) onChanged();
           }}
-          style={{ paddingHorizontal: space.md }}
+          size="sm"
+          style={tall}
         />
         <Button
           label={t("feed.nextSeason")}
@@ -61,9 +67,9 @@ export function ProgressCard({ p, onChanged, onGone, inList }: { p: ProgressDto;
           onPress={async () => {
             if (await act.run(() => diaryApi.advance(p.media.id, true))) onChanged();
           }}
-          style={{ paddingHorizontal: space.md }}
+          size="sm"
+          style={tall}
         />
-        <Button label={t("log.submit")} accessibilityLabel={`${t("log.submit")}: ${p.media.title}`} variant="quiet" href={`${href("/log")}?media=${p.media.id}`} style={{ paddingHorizontal: space.md }} />
         <Button
           label={t("feed.stopWatching")}
           accessibilityLabel={`${t("feed.stopWatching")}: ${p.media.title}`}
@@ -72,7 +78,8 @@ export function ProgressCard({ p, onChanged, onGone, inList }: { p: ProgressDto;
           onPress={async () => {
             if (await act.run(() => diaryApi.clearProgress(p.media.id))) onGone();
           }}
-          style={{ paddingHorizontal: space.md }}
+          size="sm"
+          style={tall}
         />
       </View>
       {act.error ? (
@@ -94,11 +101,12 @@ function Continue() {
   if (items.length === 0) return null;
   return (
     <Section title={t("diary.progress.title")} first>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }} role="list">
+      {/* One row that scrolls sideways (the diary starts right after it), not a wall of cards before the first viewing. */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} role="list" style={[{ marginHorizontal: -layout.gutter.phone, flexGrow: 0 }, web({ scrollbarWidth: "none", overscrollBehaviorX: "contain", scrollSnapType: "x mandatory", scrollPaddingLeft: layout.gutter.phone })]} contentContainerStyle={{ paddingHorizontal: layout.gutter.phone, gap: space.sm }}>
         {items.map((p) => (
           <ProgressCard key={p.media.id} inList p={p} onChanged={() => void list.reload()} onGone={() => setGone((g) => [...g, p.media.id])} />
         ))}
-      </View>
+      </ScrollView>
     </Section>
   );
 }
@@ -234,14 +242,15 @@ function DiaryBody() {
   const diary = usePages((before, signal) => diaryApi.diary({ before, locale, only: only ? "private" : undefined }, signal), [locale, sent, only]);
   const counts = useResource((signal) => diaryApi.diaryCounts(signal), [sent]);
   const changed = () => void counts.reload();
+  const tall = { minHeight: control };
   return (
     <Screen onRefresh={() => void diary.reload()} refreshing={diary.status === "loading" && diary.items.length > 0} onNearEnd={() => void diary.loadMore()}>
       <Heading level={1}>{t("space.diaryTitle")}</Heading>
-      <Text variant="lead" tone="ink2">{t("space.lede")}</Text>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs }}>
+      <Text variant="small" tone="ink2" style={{ maxWidth: 640 }}>{t("space.lede")}</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space.xs }}>
         {me.circles.length > 0 ? <Button icon={Plus} label={t("space.add")} href={`${href("/log")}?private=1`} testID="add-private" /> : null}
-        <Button icon={Download} label={t("space.import")} variant="secondary" href={href("/import")} />
-        <Button icon={ListChecks} label={t("space.manageImports")} variant="quiet" href={href("/imports")} testID="manage-imports" />
+        <Button size="sm" style={tall} icon={Download} label={t("space.import")} variant="secondary" href={href("/import")} />
+        <Button size="sm" style={tall} icon={ListChecks} label={t("space.manageImports")} variant="quiet" href={href("/imports")} testID="manage-imports" />
       </View>
       {notice ? <Notice>{notice}</Notice> : null}
       <PendingLogs />
