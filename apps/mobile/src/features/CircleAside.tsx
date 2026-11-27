@@ -44,7 +44,7 @@ export function CircleAside({ circleId }: { circleId: string }) {
   const fmt = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const rule = { borderBottomWidth: hair, borderColor: c.rule };
   return (
-    <View role="complementary" aria-label={t("aside.label")} style={[{ width: 288, flexShrink: 0 }, web({ height: "100dvh", position: "sticky", top: 0 })]}>
+    <View role="complementary" aria-label={t("aside.label")} style={[{ width: 288, flexShrink: 0 }, web({ height: "100dvh", position: "sticky", top: 0, zIndex: 1 })]}>
       <ScrollView contentContainerStyle={{ gap: space.xl, paddingVertical: space.xl - 8 }}>
         <View style={{ gap: space.sm }}>
           <Head id="aside-recs">{t("insights.recs.title")}</Head>

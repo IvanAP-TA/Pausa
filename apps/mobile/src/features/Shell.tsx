@@ -172,9 +172,11 @@ function TabBar({ circleId, rail }: { circleId: string; rail: boolean }) {
   );
   const log = <LogTab to={href("/log")} active={a.log} rail={rail} />;
 
+  // zIndex on the rail (and on CircleAside): the page column comes later in the tree and its curtain (ui/Safelight) is wider
+  // than the column, so without it the folds are drawn over the rail and flicker away as the page scrolls.
   if (rail)
     return (
-      <View role="navigation" aria-label="Pausa" style={[{ width: 224, flexShrink: 0, borderRightWidth: hair, borderColor: c.rule, paddingHorizontal: space.sm, paddingTop: space.xl - 8 + insets.top, paddingBottom: space.lg, gap: space["2xs"] }, web({ height: "100dvh", position: "sticky", top: 0 })]}>
+      <View role="navigation" aria-label="Pausa" style={[{ width: 224, flexShrink: 0, borderRightWidth: hair, borderColor: c.rule, paddingHorizontal: space.sm, paddingTop: space.xl - 8 + insets.top, paddingBottom: space.lg, gap: space["2xs"] }, web({ height: "100dvh", position: "sticky", top: 0, zIndex: 1 })]}>
         <Link href={href(base) as Href} aria-label="Pausa" style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: space.sm, marginBottom: space.lg }}>
           <Wordmark size={33.2} />
         </Link>
