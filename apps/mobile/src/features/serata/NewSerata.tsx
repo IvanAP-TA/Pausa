@@ -8,6 +8,7 @@ import { serataApi } from "@/api/serata";
 import { useAction } from "@/api/useAction";
 import { useResource } from "@/api/useResource";
 import { SEARCH_DELAY } from "@/features/TitleSearch";
+import { useTmdbOff } from "@/features/useTmdbOff";
 import { dedupeTitles, titleIdentity } from "@/features/title-identity";
 import { useI18n } from "@/i18n";
 import { control, fallbackSans, fontSize, fonts, hair, space, useTheme, web } from "@/theme";
@@ -100,6 +101,7 @@ export function NewSerata({ circleId }: { circleId: string }) {
   const [query, setQuery] = useState("");
   const [found, setFound] = useState<Pick[]>([]);
   const [searching, setSearching] = useState(false);
+  const tmdbOff = useTmdbOff();
   const [focus, setFocus] = useState(false);
   const [suggested, setSuggested] = useState<Pick[]>([]);
   const [on, setOn] = useState<Record<string, string[]>>({});
@@ -244,6 +246,7 @@ export function NewSerata({ circleId }: { circleId: string }) {
         <Text role="status" aria-live="polite" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 }}>
           {searching ? t("log.searching") : ""}
         </Text>
+        {tmdbOff ? <Text variant="small" tone="muted" testID="tmdb-off">{t("log.tmdbOff")}</Text> : null}
 
         {pool.length === 0 ? (
           <Text tone="ink2" style={{ borderTopWidth: hair, borderColor: c.rule, paddingTop: space.md }}>{t("serata.emptyPool")}</Text>

@@ -82,6 +82,80 @@ pub fn with_query(target: &str, query: Option<&str>) -> String {
     }
 }
 
+/// `/it/s/6QLMP4` or `/it/s/6QLMP4/card` -> `Some(("it", "6QLMP4"))`: a shared Serata link, whose page gets the preview tags.
+pub fn serata_code(path: &str) -> Option<(&str, &str)> {
+    let segs: Vec<&str> = path.trim_matches('/').split('/').collect();
+    match segs.as_slice() {
+        [l, "s", code] | [l, "s", code, "card"]
+            if LOCALES.contains(l) && plain(code) && !code.starts_with('.') =>
+        {
+            Some((l, code))
+        }
+        _ => None,
+    }
+}
+
+fn attr(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('"', "&quot;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+/// The Open Graph and Twitter tags of a link preview; every value escaped (a film title can hold quotes).
+pub fn preview_tags(title: &str, description: &str, image: &str) -> String {
+    let (t, d, i) = (attr(title), attr(description), attr(image));
+    format!(
+        "<meta property=\"og:type\" content=\"website\"/><meta property=\"og:site_name\" content=\"Pausa\"/>         <meta property=\"og:title\" content=\"{t}\"/><meta property=\"og:description\" content=\"{d}\"/>         <meta property=\"og:image\" content=\"{i}\"/><meta property=\"og:image:width\" content=\"1200\"/>         <meta property=\"og:image:height\" content=\"630\"/><meta name=\"twitter:card\" content=\"summary_large_image\"/>         <meta name=\"twitter:title\" content=\"{t}\"/><meta name=\"twitter:description\" content=\"{d}\"/>         <meta name=\"twitter:image\" content=\"{i}\"/>"
+    )
+}
+
+/// `tags` placed right before `</head>`; `None` when the page has no head to put them in.
+pub fn inject_head(html: &str, tags: &str) -> Option<String> {
+    let at = html.find("</head>")?;
+    Some(format!("{}{tags}{}", &html[..at], &html[at..]))
+}
+
+#[cfg(test)]
+mod preview_tests {
+    use super::*;
+
+    #[test]
+    fn serata_links_are_recognised() {
+        assert_eq!(serata_code("/it/s/6QLMP4"), Some(("it", "6QLMP4")));
+        assert_eq!(serata_code("/en/s/6QLMP4/card/"), Some(("en", "6QLMP4")));
+        for p in [
+            "/fr/s/X",
+            "/it/s",
+            "/it/s/X/result",
+            "/it/s/../x",
+            "/it/c/X",
+            "/s/X",
+        ] {
+            assert_eq!(serata_code(p), None, "{p}");
+        }
+    }
+
+    #[test]
+    fn tags_are_escaped_and_go_in_the_head() {
+        let tags = preview_tags("Ecco \"Heat\"", "a <b> & c", "https://x/i?a=1&b=2");
+        assert!(tags.contains("content=\"Ecco &quot;Heat&quot;\""));
+        assert!(tags.contains("a &lt;b&gt; &amp; c"));
+        assert!(tags.contains("https://x/i?a=1&amp;b=2"));
+        assert!(!tags.contains("<b>"));
+        let html = inject_head(
+            "<html><head><title>P</title></head><body></body></html>",
+            "<meta x/>",
+        )
+        .unwrap();
+        assert_eq!(
+            html,
+            "<html><head><title>P</title><meta x/></head><body></body></html>"
+        );
+        assert_eq!(inject_head("<p>no head</p>", "<meta/>"), None);
+    }
+}
+
 #[cfg(test)]
 mod legacy_tests {
     use super::{legacy_redirect as r, with_query};
@@ -89,32 +163,75 @@ mod legacy_tests {
     #[test]
     fn old_addresses_move_in_every_locale() {
         for l in ["it", "en", "es"] {
-            assert_eq!(r(&format!("/{l}/me/edit")), Some(format!("/{l}/me/profile")));
+            assert_eq!(
+                r(&format!("/{l}/me/edit")),
+                Some(format!("/{l}/me/profile"))
+            );
             assert_eq!(r(&format!("/{l}/me/diary")), Some(format!("/{l}/diary")));
             assert_eq!(r(&format!("/{l}/me/lists")), Some(format!("/{l}/lists")));
             assert_eq!(r(&format!("/{l}/me/import")), Some(format!("/{l}/import")));
-            assert_eq!(r(&format!("/{l}/me/imports/")), Some(format!("/{l}/imports")));
-            assert_eq!(r(&format!("/{l}/c/abc/serata")), Some(format!("/{l}/c/abc/serate")));
-            assert_eq!(r(&format!("/{l}/c/abc/log")), Some(format!("/{l}/log?circle=abc")));
-            assert_eq!(r(&format!("/{l}/c/abc/notifications")), Some(format!("/{l}/notifications")));
-            assert_eq!(r(&format!("/{l}/c/abc/lists")), Some(format!("/{l}/lists?circle=abc")));
-            assert_eq!(r(&format!("/{l}/c/abc/import")), Some(format!("/{l}/import")));
-            assert_eq!(r(&format!("/{l}/c/abc/l/x1")), Some(format!("/{l}/c/abc/log/x1")));
-            assert_eq!(r(&format!("/{l}/c/abc/l/x1/edit")), Some(format!("/{l}/c/abc/log/x1/edit")));
-            assert_eq!(r(&format!("/{l}/c/abc/p/u1")), Some(format!("/{l}/c/abc/people/u1")));
+            assert_eq!(
+                r(&format!("/{l}/me/imports/")),
+                Some(format!("/{l}/imports"))
+            );
+            assert_eq!(
+                r(&format!("/{l}/c/abc/serata")),
+                Some(format!("/{l}/c/abc/serate"))
+            );
+            assert_eq!(
+                r(&format!("/{l}/c/abc/log")),
+                Some(format!("/{l}/log?circle=abc"))
+            );
+            assert_eq!(
+                r(&format!("/{l}/c/abc/notifications")),
+                Some(format!("/{l}/notifications"))
+            );
+            assert_eq!(
+                r(&format!("/{l}/c/abc/lists")),
+                Some(format!("/{l}/lists?circle=abc"))
+            );
+            assert_eq!(
+                r(&format!("/{l}/c/abc/import")),
+                Some(format!("/{l}/import"))
+            );
+            assert_eq!(
+                r(&format!("/{l}/c/abc/l/x1")),
+                Some(format!("/{l}/c/abc/log/x1"))
+            );
+            assert_eq!(
+                r(&format!("/{l}/c/abc/l/x1/edit")),
+                Some(format!("/{l}/c/abc/log/x1/edit"))
+            );
+            assert_eq!(
+                r(&format!("/{l}/c/abc/p/u1")),
+                Some(format!("/{l}/c/abc/people/u1"))
+            );
         }
     }
 
     #[test]
     fn current_and_foreign_addresses_are_untouched() {
-        for p in ["/it/me", "/it/me/circles", "/it/me/profile", "/it/c/abc", "/it/c/abc/serate", "/fr/me/edit", "/it/c/a b/log", "/it/c/../log", "/me/edit"] {
+        for p in [
+            "/it/me",
+            "/it/me/circles",
+            "/it/me/profile",
+            "/it/c/abc",
+            "/it/c/abc/serate",
+            "/fr/me/edit",
+            "/it/c/a b/log",
+            "/it/c/../log",
+            "/me/edit",
+        ] {
             assert_eq!(r(p), None, "{p}");
         }
     }
 
     #[test]
     fn query_is_kept() {
-        assert_eq!(with_query("/it/log?circle=abc", Some("media=tmdb:1")), "/it/log?circle=abc&media=tmdb:1");
+        assert_eq!(
+            with_query("/it/log?circle=abc", Some("media=tmdb:1")),
+            "/it/log?circle=abc&media=tmdb:1"
+        );
         assert_eq!(with_query("/it/diary", Some("q=x")), "/it/diary?q=x");
         assert_eq!(with_query("/it/diary", Some("")), "/it/diary");
         assert_eq!(with_query("/it/diary", None), "/it/diary");

@@ -946,3 +946,107 @@ async fn suggest_inner(req: &Request, env: &Env, circle_id: &str) -> R<Response>
         .collect();
     json(&SerataSuggest { titles, on }, 200)
 }
+
+#[derive(Deserialize)]
+struct PreviewRow {
+    status: String,
+    mode: String,
+    host: Option<String>,
+    n: i64,
+    w_title: Option<String>,
+    w_year: Option<i64>,
+}
+
+/// What the link preview of a room shows, owned so it outlives the query. `None` for an unknown or expired room: the page then
+/// keeps the generic app image.
+pub struct Preview {
+    done: bool,
+    bracket: bool,
+    host: String,
+    count: u32,
+    title: String,
+    year: Option<i64>,
+}
+
+impl Preview {
+    pub fn card(&self) -> pausa_og::Card<'_> {
+        if self.done {
+            pausa_og::Card::Result {
+                title: &self.title,
+                year: self.year,
+            }
+        } else {
+            pausa_og::Card::Invite {
+                host: &self.host,
+                bracket: self.bracket,
+                count: self.count,
+            }
+        }
+    }
+    /// Part of the image address, so a room that has just decided gets a fresh image instead of the cached invitation.
+    pub fn state(&self) -> &'static str {
+        if self.done {
+            "done"
+        } else {
+            "open"
+        }
+    }
+}
+
+pub async fn preview(db: &D1Database, code: &str, locale: Locale) -> R<Option<Preview>> {
+    let Some(code) = normalize_code(code) else {
+        return Ok(None);
+    };
+    let row = db
+        .prepare(
+            "SELECT s.status, s.mode, u.name AS host, (SELECT COUNT(*) FROM serata_candidate c WHERE c.serata_id = s.id) AS n, \
+               COALESCE(mt.title, e.original_title) AS w_title, e.year AS w_year \
+             FROM serata s JOIN user u ON u.id = s.host_id LEFT JOIN media_entity e ON e.id = s.winner_media_id \
+             LEFT JOIN media_title mt ON mt.media_id = e.id AND mt.locale = ?2 WHERE s.code = ?1",
+        )
+        .bind(&[code.as_str().into(), catalog::locale_code(locale).into()])?
+        .first::<PreviewRow>(None)
+        .await?;
+    Ok(row.and_then(|r| {
+        let done = r.status == "done" && r.w_title.is_some();
+        (done || matches!(r.status.as_str(), "lobby" | "voting")).then(|| Preview {
+            done,
+            bracket: r.mode == "bracket",
+            host: r.host.unwrap_or_default(),
+            count: r.n.max(0) as u32,
+            title: r.w_title.unwrap_or_default(),
+            year: r.w_year,
+        })
+    }))
+}
+
+/// `GET /api/og/serata/:code?locale=it&s=open`: the PNG of the link preview. Drawn once per address and data centre, then
+/// served from the edge cache (five minutes while the room is open, a day once decided).
+pub async fn og_image(req: Request, env: Env, code: &str) -> Result<Response> {
+    finish(og_inner(&req, &env, code).await)
+}
+
+async fn og_inner(req: &Request, env: &Env, code: &str) -> R<Response> {
+    let key = req.url()?.to_string();
+    let cache = Cache::default();
+    if let Ok(Some(hit)) = cache.get(&key, false).await {
+        return Ok(hit);
+    }
+    let db = env.d1("DB")?;
+    let locale = locale_of(req);
+    let p = preview(&db, code, locale)
+        .await?
+        .ok_or_else(Fail::not_found)?;
+    let png = pausa_og::render(&p.card(), catalog::locale_code(locale));
+    let ttl = if p.done { 86_400 } else { 300 };
+    let mut res = Response::from_bytes(png)?;
+    res.headers_mut().set("Content-Type", "image/png")?;
+    res.headers_mut()
+        .set("Cache-Control", &format!("public, max-age={ttl}"))?;
+    res.headers_mut()
+        .set("Cross-Origin-Resource-Policy", "cross-origin")?;
+    if let Ok(copy) = res.cloned() {
+        let _ = cache.put(&key, copy).await;
+    }
+    Ok(res)
+}

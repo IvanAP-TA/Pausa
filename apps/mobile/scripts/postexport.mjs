@@ -3,7 +3,8 @@
 // What Expo's static export cannot do, and this does (PLAN T0e, D8):
 //   a. <html lang> from the path (Expo always writes "en"), and viewport-fit=cover.
 //   b. +not-found.html -> 404.html (asset host: not_found_handling "404-page").
-//   c. Public pages ship ZERO JavaScript: <script defer src>, the inline hydrate flag and <link rel=preload as=script> are removed.
+//   c. Public pages ship no app JavaScript: <script defer src>, the inline hydrate flag and <link rel=preload as=script> are removed;
+//      the one small /public.js (saved theme, signed-in redirect, Google button, parallax) goes in their <head>.
 //      The app shell pages keep theirs.
 //   d. sitemap.xml (public pages x 3 languages, xhtml:link alternates) and robots.txt.
 //   e. Fails the build, listing every problem, if a public page lacks title / description / canonical / hreflang it,en,es,x-default.
@@ -92,7 +93,7 @@ export function build404Html({ css, messages, locale = DEFAULT_LOCALE }) {
   const m = messages[locale].errors;
   const blocks = `<section lang="${locale}" class="blk"><h1>${esc(m.notFoundTitle)}</h1><p>${esc(m.notFoundBody)}</p><a class="btn pri" href="/${locale}">${esc(m.home)}</a></section>`;
   const own = `body{margin:0}main{max-width:720px;margin:0 auto;padding:64px 16px;font-family:Barlow_400,ui-sans-serif,system-ui,sans-serif;line-height:1.55}.mk{margin:0 0 16px;font-family:SofiaSansExtraCondensed_400,ui-sans-serif,sans-serif;text-transform:uppercase;font-size:36px;line-height:1;color:var(--c-ink)}.blk{padding:24px 0;border-top:1px solid var(--c-rule)}.blk:first-child{border-top:0}h1,h2{font-family:SofiaSansExtraCondensed_200,ui-sans-serif,sans-serif;font-weight:200;text-transform:uppercase;line-height:1.08;margin:0 0 12px}h1{font-size:clamp(3.75rem,3.3rem + 1.9vw,4.5rem)}h2{font-size:2rem}p{margin:0 0 16px;color:var(--c-ink-2,var(--c-ink2));max-width:65ch}.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 24px;border:1px solid var(--c-ink);font-family:SofiaSansExtraCondensed_400,ui-sans-serif,sans-serif;text-transform:uppercase;font-size:20px}.btn.pri{background:var(--c-accent);border-color:var(--c-accent);color:var(--c-accentInk)}`;
-  return `<!DOCTYPE html><html lang="${locale}"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><title>${esc(m.notFoundTitle)} · Pausa</title><meta name="robots" content="noindex, nofollow"/><meta name="theme-color" content="#001113"/><link rel="icon" href="/favicon.ico"/><style>${css}${own}</style></head><body><main><p class="mk">Pausa</p>${blocks}</main></body></html>`;
+  return `<!DOCTYPE html><html lang="${locale}"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><title>${esc(m.notFoundTitle)} · Pausa</title><meta name="robots" content="noindex, nofollow"/><meta name="theme-color" content="#001113"/><link rel="icon" href="/favicon.ico"/><style>${css}${own}</style>${PUBLIC_SCRIPT}</head><body><main><p class="mk">Pausa</p>${blocks}</main></body></html>`;
 }
 
 /** The theme/font CSS Expo already wrote into a page of this build (so the 404 looks like the rest without duplicating the tokens). */
@@ -102,6 +103,19 @@ export const setLang = (html, lang) => html.replace(/<html lang="[^"]*"/, `<html
 
 export const patchViewport = (html) =>
   html.replace(/(<meta name="viewport" content=")([^"]*)(")/, (_m, a, c, z) => (/viewport-fit/.test(c) ? a + c + z : `${a}${c}, viewport-fit=cover${z}`));
+
+/**
+ * The one script public pages carry (public/public.js: saved theme, signed-in redirect, Google button, parallax). A blocking tag at
+ * the end of <head>, so the saved theme is on before the first paint. Everything else on a public page stays script-free.
+ */
+export const PUBLIC_SCRIPT = '<script src="/public.js"></script>';
+/** The Lenis UMD build (sets `globalThis.Lenis`), without its source-map comment (the map is not shipped). */
+export const lenisScript = () =>
+  fs.readFileSync(path.join(here, "..", "node_modules", "lenis", "dist", "lenis.min.js"), "utf8").replace(/\n\/\/# sourceMappingURL=.*\s*$/, "\n");
+export const addPublicScript = (html) => html.replace("</head>", `${PUBLIC_SCRIPT}</head>`);
+/** Scripts with a `src` other than the public one: none may be left on a public page. */
+const foreignScripts = (html) => [...html.matchAll(/<script\b[^>]*\bsrc="([^"]*)"[^>]*>/g)].map((m) => m[1]).filter((src) => src !== "/public.js");
+const inlineScripts = (html) => [...html.matchAll(/<script\b(?![^>]*\bsrc=)(?![^>]*type="application\/ld\+json")[^>]*>/g)];
 
 /** Removes every script except JSON-LD, and every script preload. */
 export function stripScripts(html) {
@@ -166,7 +180,9 @@ export function checkPublicPage(html, { locale, sub, chooser }) {
     if (!meta("property", "og:locale")) bad.push("og:locale missing");
     if ((head.match(/property="og:locale:alternate"/g) ?? []).length !== LOCALES.length - 1) bad.push("og:locale:alternate must list the other languages");
   }
-  if (/<script\b[^>]*\bsrc=/.test(html)) bad.push("contains <script src>: a public page must ship no JavaScript");
+  for (const src of foreignScripts(html)) bad.push(`contains <script src="${src}">: a public page ships only ${PUBLIC_SCRIPT}`);
+  if (inlineScripts(html).length) bad.push("contains an inline script: a public page ships only /public.js");
+  if (!html.includes(PUBLIC_SCRIPT)) bad.push(`lacks ${PUBLIC_SCRIPT}`);
   if (/<link\b[^>]*as="script"/.test(html)) bad.push("contains a script preload");
   return bad;
 }
@@ -175,7 +191,7 @@ export function check404(html, { locale } = { locale: DEFAULT_LOCALE }) {
   const bad = [];
   const h = readHead(html);
   if (!h.robots || !/noindex/i.test(h.robots)) bad.push("the 404 must be noindex");
-  if (/<script\b/.test(html)) bad.push("the 404 must ship no JavaScript");
+  if (foreignScripts(html).length || inlineScripts(html).length) bad.push(`the 404 ships no JavaScript but ${PUBLIC_SCRIPT}`);
   if (!h.title) bad.push("the 404 has no <title>");
   if (h.h1 !== 1) bad.push(`the 404 needs one <h1>, found ${h.h1}`);
   if (h.lang !== locale) bad.push(`the 404 <html lang> is "${h.lang}", expected "${locale}"`);
@@ -195,7 +211,8 @@ export function checkQuietPage(html, { locale }) {
   if (!h.robots || !/noindex/i.test(h.robots)) bad.push(`a quiet page must be noindex (robots: ${h.robots ?? "none"})`);
   if (!h.title || h.title.trim() === "" || h.title === "Pausa") bad.push("a quiet page needs its own <title>");
   if (h.h1 !== 1) bad.push(`expected one <h1>, found ${h.h1}`);
-  if (/<script\b[^>]*\bsrc=/.test(html)) bad.push("contains <script src>: a quiet page must ship no JavaScript");
+  for (const src of foreignScripts(html)) bad.push(`contains <script src="${src}">: a quiet page ships only ${PUBLIC_SCRIPT}`);
+  if (inlineScripts(html).length) bad.push("contains an inline script: a quiet page ships only /public.js");
   if (/<link\b[^>]*as="script"/.test(html)) bad.push("contains a script preload");
   return bad;
 }
@@ -260,6 +277,9 @@ export function run(dist, { env = process.env, log = console.log, warn = console
   const themeSource = path.join(dist, "it", "index.html");
   const css = fs.existsSync(themeSource) ? extractThemeCss(fs.readFileSync(themeSource, "utf8")) : "";
   const messages = Object.fromEntries(LOCALES.map((l) => [l, JSON.parse(fs.readFileSync(path.join(here, "..", "..", "..", "packages", "messages", `${l}.json`), "utf8"))]));
+  // Lenis (smooth scrolling on the landing, as in legacy): copied from the pinned package, loaded by /public.js only on the landing
+  // and only without "reduce motion". Not linked from any HTML.
+  fs.writeFileSync(path.join(dist, "lenis.js"), lenisScript());
   fs.writeFileSync(path.join(dist, "404.html"), build404Html({ css, messages }));
   for (const l of LOCALES) {
     fs.mkdirSync(path.join(dist, l), { recursive: true });
@@ -279,6 +299,7 @@ export function run(dist, { env = process.env, log = console.log, warn = console
     let html = fs.readFileSync(file, "utf8");
     html = patchViewport(setLang(html, info.locale));
     if (info.kind === "public" || info.kind === "notfound" || info.kind === "quiet") html = stripScripts(html);
+    if (info.kind !== "shell" && !html.includes(PUBLIC_SCRIPT)) html = addPublicScript(html);
     html = addInstallTags(html, info.locale);
     if (info.kind === "public") html = ogLocaleAlternates(html, info.locale, OG_LOCALE);
     fs.writeFileSync(file, html);
@@ -324,7 +345,7 @@ export function run(dist, { env = process.env, log = console.log, warn = console
   if (missing.length)
     warn(`WARNING: ${missing.join(" and ")} not set at build time: /privacy and /terms show a visible placeholder instead of the controller and contact. Set them before launch (PLAN D7).`);
 
-  log(`postexport OK: ${counts.public} public pages (no JavaScript), ${counts.shell} app shell pages, 404.html, sitemap.xml (${PUBLIC_SUBPATHS.length * LOCALES.length} URLs), robots.txt; removed ${removed.length} stray files; PWA: 3 manifests, offline.html, sw.js ${sw.version} (${precacheList(dist).length} precached files); _headers with ${hashes.length} script hash(es).`);
+  log(`postexport OK: ${counts.public} public pages (only /public.js), ${counts.shell} app shell pages, 404.html, sitemap.xml (${PUBLIC_SUBPATHS.length * LOCALES.length} URLs), robots.txt; removed ${removed.length} stray files; PWA: 3 manifests, offline.html, sw.js ${sw.version} (${precacheList(dist).length} precached files); _headers with ${hashes.length} script hash(es).`);
   return { counts, removed };
 }
 

@@ -225,8 +225,8 @@ function Form({ picked, edit, initial }: { picked: Picked; edit?: { logId: strin
   const [detail, setDetail] = useState<MediaDetailDto | null>(null);
   const [detailDone, setDetailDone] = useState(false);
   const [overview, setOverview] = useState("");
-  // Everything optional is folded; an edit, or a viewing that arrives with people tagged, shows what it already holds.
-  const [detailsOpen, setDetailsOpen] = useState(!!edit || initial.withIds.length > 0);
+  // An edit opens the folded details, so it shows what the viewing already holds.
+  const [detailsOpen, setDetailsOpen] = useState(!!edit);
   const [touched, setTouched] = useState(false);
   const save = useAction();
   const outbox = useOutbox();
@@ -409,6 +409,20 @@ function Form({ picked, edit, initial }: { picked: Picked; edit?: { logId: strin
     );
   }
 
+  const withGroup =
+    taggable.length > 0 ? (
+      <View role="group" aria-label={t("log.with")} style={{ gap: space.xs }}>
+        <Text variant="label" tone="ink2">
+          {t("log.with")}
+        </Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs }}>
+          {taggable.map((p) => (
+            <PersonChip key={p.id} type="checkbox" label={p.name} person={p} on={withIds.includes(p.id)} onPress={() => toggle(withIds, setWithIds, p.id)} testID={`with-${p.id}`} />
+          ))}
+        </View>
+      </View>
+    ) : null;
+
   return (
     <View style={{ gap: space.lg }}>
       {head}
@@ -446,19 +460,11 @@ function Form({ picked, edit, initial }: { picked: Picked; edit?: { logId: strin
 
         {offerOverview ? <Field label={t("log.overview")} value={overview} onChangeText={setOverview} multiline maxLength={1200} placeholder={t("log.overviewPlaceholder")} testID="overview-input" /> : null}
 
-        {taggable.length > 0 ? (
-          <View role="group" aria-label={t("log.with")} style={{ gap: space.xs }}>
-            <Text variant="label" tone="ink2">
-              {t("log.with")}
-            </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.xs }}>
-              {taggable.map((p) => (
-                <PersonChip key={p.id} type="checkbox" label={p.name} person={p} on={withIds.includes(p.id)} onPress={() => toggle(withIds, setWithIds, p.id)} testID={`with-${p.id}`} />
-              ))}
-            </View>
-          </View>
-        ) : null}
+        {withGroup}
       </Details>
+      ) : initial.withIds.length > 0 ? (
+        // A new log has no folded details; one that arrives from a Serata shows who was there, already ticked.
+        withGroup
       ) : null}
 
       <ChipGroup label={t("log.who")} hint={circles.length === 0 ? `${t("log.privateOnly")}. ${t("log.privateHelp")}` : t("diary.log.shareHint", { count: circles.length })}>
@@ -474,7 +480,7 @@ function Form({ picked, edit, initial }: { picked: Picked; edit?: { logId: strin
 
 function NewLog() {
   const { t, href, locale } = useI18n();
-  const { media, circle, private: priv, pick, title: pickTitle, year: pickYear, kind: pickKind, poster: pickPoster } = useLocalSearchParams<{ media?: string; circle?: string; private?: string; pick?: string; title?: string; year?: string; kind?: string; poster?: string }>();
+  const { media, circle, private: priv, pick, title: pickTitle, year: pickYear, kind: pickKind, poster: pickPoster, with: withParam } = useLocalSearchParams<{ media?: string; circle?: string; private?: string; pick?: string; title?: string; year?: string; kind?: string; poster?: string; with?: string | string[] }>();
   const { circleId } = useCurrentCircle();
   const { c } = useTheme();
   // "Per te" hands over a catalogue title (not yet in Pausa): `pick` is its key, the rest is what the search would have shown.
@@ -507,7 +513,8 @@ function NewLog() {
     rewatch: false,
     season: "",
     episode: "",
-    withIds: [],
+    // From a Serata's result: `with=` names the other people in the room (the form keeps only those it can tag).
+    withIds: [...new Set((Array.isArray(withParam) ? withParam : withParam ? [withParam] : []).filter((x) => !!x && x.length <= 64))],
     circles: (priv ? [] : [circle ? String(circle) : circleId]).filter((x): x is string => !!x),
   };
   return (

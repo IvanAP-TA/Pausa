@@ -1,7 +1,8 @@
 // JavaScript budget of the static web build. Run after `expo export -p web` and postexport:  node scripts/budget.mjs [distDir]
 //   - prints raw / gzip / brotli (quality 11) for the entry bundle, for the initial JS of each app shell page, and for all JS
 //   - FAILS if the entry bundle or the initial JS of any app shell page is over 350 KB brotli (PLAN D8)
-//   - FAILS if any public page contains a <script src>, an inline script other than JSON-LD, or a script preload
+//   - FAILS if any public page contains a <script src> other than /public.js, an inline script other than JSON-LD, or a script
+//     preload; FAILS if /public.js itself is over PUBLIC_LIMIT_KB brotli (it is hand-written, no bundler, no library)
 // "Initial JS" of a page = every <script src> its HTML loads (runtime, layouts, shared chunk, entry, route chunk): what a
 // visitor of that page really downloads before it runs.
 import fs from "node:fs";
@@ -10,6 +11,10 @@ import zlib from "node:zlib";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const LIMIT_KB = 350;
+export const PUBLIC_LIMIT_KB = 4;
+/** Lenis 1.3.27 is 4.7 KB brotli: a little room, and a failure if an upgrade grows it. */
+export const LENIS_LIMIT_KB = 6;
+const PUBLIC_TAG = '<script src="/public.js"></script>';
 const kb = (n) => (n / 1024).toFixed(1).padStart(8) + " KB";
 
 export function sizes(buf) {
@@ -33,6 +38,7 @@ const isPublic = (rel) => /^(index|404|offline)\.html$/.test(rel) || /^(it|en|es
 /** Public-page violations: any script that is not JSON-LD, any script preload. */
 export function publicViolations(html) {
   const out = [];
+  html = html.replaceAll(PUBLIC_TAG, "");
   if (/<script\b[^>]*\bsrc=/.test(html)) out.push("<script src>");
   for (const m of html.matchAll(/<script\b([^>]*)>/g)) if (!/type="application\/ld\+json"/.test(m[1])) out.push(`<script${m[1]}>`);
   if (/<link\b[^>]*as="script"/.test(html)) out.push('<link as="script">');
@@ -81,8 +87,20 @@ export function report(dist, log = console.log) {
   for (const s of new Set(showing)) row(`initial JS ${s.rel}`, s.size);
   for (const s of m.shells)
     if (s.size.brotli > LIMIT_KB * 1024) failures.push(`${s.rel}: initial JS is ${(s.size.brotli / 1024).toFixed(1)} KB brotli, over ${LIMIT_KB} KB`);
-  log(`app shell pages measured: ${m.shells.length}; public pages with JavaScript: ${m.publicBad.length}`);
+  log(`app shell pages measured: ${m.shells.length}; public pages with JavaScript other than /public.js: ${m.publicBad.length}`);
   for (const b of m.publicBad) failures.push(`public page ships JavaScript: ${b}`);
+  const pub = path.join(dist, "public.js");
+  if (fs.existsSync(pub)) {
+    const s = sizes(fs.readFileSync(pub));
+    row("public.js (public pages)", s);
+    if (s.brotli > PUBLIC_LIMIT_KB * 1024) failures.push(`public.js is ${(s.brotli / 1024).toFixed(1)} KB brotli, over ${PUBLIC_LIMIT_KB} KB`);
+  }
+  const lenis = path.join(dist, "lenis.js");
+  if (fs.existsSync(lenis)) {
+    const s = sizes(fs.readFileSync(lenis));
+    row("lenis.js (landing only)", s);
+    if (s.brotli > LENIS_LIMIT_KB * 1024) failures.push(`lenis.js is ${(s.brotli / 1024).toFixed(1)} KB brotli, over ${LENIS_LIMIT_KB} KB`);
+  }
   return { failures, m };
 }
 

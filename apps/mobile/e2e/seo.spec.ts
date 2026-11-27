@@ -116,12 +116,12 @@ for (const l of LOCALES)
         expect(await attr(page, 'meta[name="apple-mobile-web-app-title"]', "content")).toBe("Pausa");
       });
 
-      test("19 content is in the HTML and no JavaScript is shipped", async ({ page }) => {
+      test("19 content is in the HTML and no app JavaScript is shipped (only the small /public.js)", async ({ page }) => {
         // javaScriptEnabled is false for this whole file, so what we read is exactly what was served.
         await expect(page.locator("h1")).not.toBeEmpty();
-        expect(await page.locator("script[src]").count()).toBe(0);
+        expect(await page.locator("script[src]").evaluateAll((s) => s.map((e) => e.getAttribute("src")))).toEqual(["/public.js"]);
         expect(await page.locator('link[as="script"]').count()).toBe(0);
-        const inline = await page.locator("script:not([type='application/ld+json'])").count();
+        const inline = await page.locator("script:not([src]):not([type='application/ld+json'])").count();
         expect(inline).toBe(0);
         expect((await page.locator("body").innerText()).length).toBeGreaterThan(200);
       });
@@ -295,7 +295,7 @@ test.describe("site files", () => {
     expect(await attr(page, 'link[rel="canonical"]', "href")).toBe(`${SITE}/`);
   });
 
-  test("a missing page is a 404 with the 404 page (not a soft 200), only in the language of the address, noindex, no JavaScript", async ({ page }) => {
+  test("a missing page is a 404 with the 404 page (not a soft 200), only in the language of the address, noindex, no app JavaScript", async ({ page }) => {
     for (const [l, others] of [["it", ["en", "es"]], ["en", ["it", "es"]], ["es", ["it", "en"]]] as const) {
       const res = await page.goto(`/${l}/this-does-not-exist`);
       expect(res?.status()).toBe(404);
@@ -303,7 +303,7 @@ test.describe("site files", () => {
       await expect(page.locator("h1")).toContainText(msg[l].errors.notFoundTitle);
       for (const o of others) await expect(page.locator("body")).not.toContainText(msg[o].errors.notFoundTitle);
       expect(await attr(page, 'meta[name="robots"]', "content")).toMatch(/noindex/);
-      expect(await page.locator("script[src]").count()).toBe(0);
+      expect(await page.locator("script[src]").evaluateAll((s) => s.map((e) => e.getAttribute("src")))).toEqual(["/public.js"]);
       await expect(page).toHaveTitle(`${msg[l].errors.notFoundTitle} · Pausa`);
     }
   });

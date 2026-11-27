@@ -63,7 +63,7 @@ function KeepIt({ code, next, circleName, inviteCode }: { code: string; next: st
 }
 
 /** The end of a Serata: the winner as a print, how it was decided (a draw is said), the table's scores, and what to do next. Never who voted what. */
-export function RoomResult({ view, isGuest, signInNext }: { view: RoomView; isGuest: boolean; signInNext: string }) {
+export function RoomResult({ view, isGuest, meId, signInNext }: { view: RoomView; isGuest: boolean; meId: string; signInNext: string }) {
   const { t, href, locale, date } = useI18n();
   const { c } = useTheme();
   const { width, height } = useWindowDimensions();
@@ -77,6 +77,16 @@ export function RoomResult({ view, isGuest, signInNext }: { view: RoomView; isGu
   const result = view.result;
   const winner = view.candidates.find((x) => x.id === result?.winner);
   if (!result || !winner) return null;
+  // Registra, filled in (v1): the winner, the Cerchia, and the other people with an account already tagged as company.
+  const logHref = view.circleId
+    ? href(
+        `/log?media=${encodeURIComponent(winner.id)}&circle=${encodeURIComponent(view.circleId)}` +
+          view.participants
+            .filter((p) => !p.isGuest && p.id !== meId)
+            .map((p) => `&with=${encodeURIComponent(p.id)}`)
+            .join(""),
+      )
+    : null;
 
   // The print as tall as the phone allows while its title stays in view (v1: 38dvh).
   const poster = Math.max(120, Math.min(Math.floor(height * 0.38 * (2 / 3)) , 260, width - 2 * space.md));
@@ -129,13 +139,16 @@ export function RoomResult({ view, isGuest, signInNext }: { view: RoomView; isGu
           <Button label={copied ? t("serata.result.copied") : t("serata.result.share")} onPress={onShare} busy={share.busy} fullWidth testID="open-card" />
         </View>
         <View style={{ flex: 1 }}>
-          {!isGuest && view.circleId ? (
-            <Button label={linked ? t("serataApp.watched.done") : t("serataApp.watched.cta")} variant="secondary" onPress={() => setWatched(true)} disabled={linked} fullWidth testID="watched" />
+          {!isGuest && logHref ? (
+            <Button label={t("serata.result.log")} variant="secondary" href={logHref} fullWidth testID="log-winner" />
           ) : (
             <Button label={t("serata.result.open")} variant="secondary" href={`${href(`/s/${view.code}/card`)}`} fullWidth />
           )}
         </View>
       </View>
+      {!isGuest && view.circleId ? (
+        <Button label={linked ? t("serataApp.watched.done") : t("serataApp.watched.cta")} variant="quiet" onPress={() => setWatched(true)} disabled={linked} testID="watched" />
+      ) : null}
       {linked ? <Notice>{t("serataApp.watched.linked")}</Notice> : null}
 
       {result.scores ? (

@@ -223,6 +223,7 @@ async fn route(req: Request, env: Env) -> Result<Response> {
         (Method::Post, ["api", "serate"]) => serata::create(req, env).await,
         (Method::Get, ["api", "serate", code]) => serata::state(req, env, code).await,
         (Method::Get, ["api", "serate", code, "ws"]) => serata::ws(req, env, code).await,
+        (Method::Get, ["api", "og", "serata", code]) => serata::og_image(req, env, code).await,
         (Method::Get, ["api", "serate", code, "result"]) => {
             serata::public_result(req, env, code).await
         }
@@ -283,8 +284,48 @@ async fn serve_client(req: Request, env: Env) -> Result<Response> {
         res.headers_mut().set("Location", &target)?;
         return Ok(res);
     }
-    if let Some(shell) = pausa_core::shell::shell_path(&path) {
-        url.set_path(&shell);
+    let shell = pausa_core::shell::shell_path(&path);
+    if let Some(shell) = &shell {
+        url.set_path(shell);
     }
-    assets.fetch(url.to_string(), None).await
+    let res = assets.fetch(url.to_string(), None).await?;
+    // A shared Serata link: the shell is the same file for every room, so the preview tags (title, image) go in here.
+    match pausa_core::shell::serata_code(&path) {
+        Some((locale, code)) if res.status_code() == 200 => {
+            with_serata_preview(res, &env, locale, code).await
+        }
+        _ => Ok(res),
+    }
+}
+
+async fn with_serata_preview(
+    mut res: Response,
+    env: &Env,
+    locale: &str,
+    code: &str,
+) -> Result<Response> {
+    let loc = pausa_core::dto::Locale::from_code(locale).unwrap_or(pausa_core::dto::Locale::It);
+    let Ok(db) = env.d1("DB") else { return Ok(res) };
+    let preview = match serata::preview(&db, code, loc).await {
+        Ok(Some(p)) => p,
+        _ => return Ok(res),
+    };
+    let app = env
+        .var("APP_URL")
+        .map(|v| v.to_string())
+        .unwrap_or_default();
+    let meta = pausa_og::meta(&preview.card(), locale);
+    let image = format!(
+        "{app}/api/og/serata/{code}?locale={locale}&s={}",
+        preview.state()
+    );
+    let html = res.text().await?;
+    let tags = pausa_core::shell::preview_tags(&meta.title, &meta.description, &image);
+    let Some(body) = pausa_core::shell::inject_head(&html, &tags) else {
+        return Response::from_html(html);
+    };
+    let mut out = Response::from_html(body)?;
+    // The tags change when the room decides: never cached as a static file.
+    out.headers_mut().set("Cache-Control", "no-cache")?;
+    Ok(out)
 }

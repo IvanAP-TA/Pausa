@@ -78,15 +78,25 @@ describe("postexport transforms", () => {
     for (const l of LOCALES)
       for (const s of SUBS) {
         const html = read(file(l, s));
-        expect(html, `${l}${s}`).not.toMatch(/<script\b[^>]*\bsrc=/);
+        expect(html.replace('<script src="/public.js"></script>', ""), `${l}${s}`).not.toMatch(/<script\b[^>]*\bsrc=/);
+        expect(html, `${l}${s}`).toContain('<script src="/public.js"></script>');
         expect(html).not.toContain("__EXPO_ROUTER_HYDRATE__");
         expect(html).not.toMatch(/as="script"/);
         expect(html).toContain('type="application/ld+json"');
       }
-    for (const f of ["index.html", "404.html"]) expect(read(f), f).not.toMatch(/<script\b/);
+    for (const f of ["index.html", "404.html"]) expect(read(f).replace('<script src="/public.js"></script>', ""), f).not.toMatch(/<script\b/);
   });
 
-  it("writes a real 404 (Expo renders an empty one) per language: only that language, noindex, one h1, no scripts", () => {
+  it("ships Lenis for the landing as /lenis.js, from the pinned package, without the source-map comment", () => {
+    buildFixture();
+    px.run(dist, { env: {}, ...quiet });
+    const js = read("lenis.js");
+    expect(js).toContain("globalThis.Lenis=");
+    expect(js).toContain("1.3.27");
+    expect(js).not.toContain("sourceMappingURL");
+  });
+
+  it("writes a real 404 (Expo renders an empty one) per language: only that language, noindex, one h1, only /public.js", () => {
     buildFixture();
     px.run(dist, { env: {}, ...quiet });
     const text = { it: "Qui non c", en: "Nothing here", es: "Aquí no hay nada" } as const;
@@ -99,7 +109,8 @@ describe("postexport transforms", () => {
       }
       expect(html, file).toContain("noindex");
       expect(html.match(/<h1/g), file).toHaveLength(1);
-      expect(html, file).not.toContain("<script");
+      expect(html.match(/<script[ >][^>]*>?/g)?.length, file).toBe(1);
+      expect(html, file).toContain('<script src="/public.js"></script>');
       expect(html, file).toContain(`href="/${l}"`);
     }
   });
@@ -220,7 +231,7 @@ describe("pure helpers", () => {
     const ok = '<!DOCTYPE html><html lang="it"><head><title>Piano, piano · Pausa</title><meta name="robots" content="noindex, nofollow"/></head><body><h1>x</h1></body></html>';
     expect(px.checkQuietPage(ok, { locale: "it" })).toEqual([]);
     expect(px.checkQuietPage(ok.replace("noindex, nofollow", "index, follow"), { locale: "it" }).join()).toContain("noindex");
-    expect(px.checkQuietPage(ok.replace("</body>", '<script src="/a.js"></script></body>'), { locale: "it" }).join()).toContain("JavaScript");
+    expect(px.checkQuietPage(ok.replace("</body>", '<script src="/a.js"></script></body>'), { locale: "it" }).join()).toContain("/a.js");
     expect(px.robotsTxt()).toContain("Disallow: /*/slow-down");
   });
 });
@@ -231,6 +242,8 @@ describe("budget script", () => {
     expect(budget.publicViolations('<script id="_R_">x</script>').length).toBeGreaterThan(0);
     expect(budget.publicViolations('<link rel="preload" as="script" href="a"/>')).toContain('<link as="script">');
     expect(budget.publicViolations('<script type="application/ld+json">{}</script><p>hi</p>')).toEqual([]);
+    expect(budget.publicViolations('<head><script src="/public.js"></script></head>')).toEqual([]);
+    expect(budget.publicViolations('<script src="/public.js" async></script>')).toContain("<script src>");
   });
   it("brotli is smaller than gzip is smaller than raw for text", () => {
     const s = budget.sizes(Buffer.from("function hello(){return 'hello world'}".repeat(500)));
@@ -281,7 +294,7 @@ describe("postexport: Open Graph, install, offline and headers", () => {
       expect(html, rel).toMatch(/<link rel="manifest" href="\/manifest-(it|en|es)\.webmanifest"\/>/);
       expect(html, rel).toContain('rel="apple-touch-icon"');
     }
-    for (const rel of ["it/index.html", "en/guide/index.html", "es/privacy.html", "404.html"]) expect(read(rel), rel).not.toMatch(/<script\b[^>]*\bsrc=/);
+    for (const rel of ["it/index.html", "en/guide/index.html", "es/privacy.html", "404.html"]) expect(read(rel).replace('<script src="/public.js"></script>', ""), rel).not.toMatch(/<script\b[^>]*\bsrc=/);
     expect(read("it/home.html")).toMatch(/<script\b[^>]*\bsrc=/);
   });
 

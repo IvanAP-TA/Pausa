@@ -51,7 +51,8 @@ export function Header({ locale, signIn }: { locale: Locale; signIn: string }) {
               </li>
             ))}
           </ul>
-          {/* The theme, with no script: a checkbox that `:root:has(:checked)` reads. It lasts for this page only (no cookie). */}
+          {/* The theme: a checkbox that `:root:has(:checked)` reads, so it works with no script; /public.js ticks it to match the saved
+              choice and saves a new one (the same storage as the app). */}
           <label className="lp-theme-btn lp-ctl">
             <input type="checkbox" className="lp-sr lp-theme" />
             <span className="lp-sr">{t("common.theme")}</span>
@@ -97,7 +98,7 @@ export function Footer({ locale }: { locale: Locale }) {
   return (
     <footer className="lp-footer">
       <div className="lp-wrap">
-        <p className="lp-mast"><Mark height="0.6em" /><span>Pausa</span></p>
+        <p className="lp-mast" data-speed-x="-0.12"><Mark height="0.6em" /><span>Pausa</span></p>
         <p className="lp-tagline">{t("landing.footer.tagline")}</p>
         <div className="lp-plate lp-cols">
           <ul className="lp-flist links lp-s4">

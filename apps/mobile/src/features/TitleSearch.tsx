@@ -10,6 +10,7 @@ import { Row, RowList } from "@/ui/Row";
 import { ErrorState, Loading } from "@/ui/Status";
 import { Text } from "@/ui/Text";
 import { dedupeTitles } from "./title-identity";
+import { useTmdbOff } from "./useTmdbOff";
 
 export type TitleSearchLabels = {
   field: string;
@@ -38,6 +39,7 @@ export function TitleSearch({
   placeholder?: string;
 }) {
   const { t, locale } = useI18n();
+  const tmdbOff = useTmdbOff();
   const [q, setQ] = useState("");
   const [state, setState] = useState<{ q: string; results: CandidateDto[] | null; error: unknown; loading: boolean }>({ q: "", results: null, error: null, loading: false });
   const abort = useRef<AbortController | null>(null);
@@ -69,6 +71,7 @@ export function TitleSearch({
   return (
     <View style={{ gap: space.sm }}>
       <Field label={labels.field} value={q} onChangeText={setQ} placeholder={placeholder} autoCapitalize="none" autoCorrect={false} returnKeyType="search" testID="title-search" />
+      {tmdbOff ? <Text variant="small" tone="muted" testID="tmdb-off">{t("log.tmdbOff")}</Text> : null}
       {state.loading ? <Loading rows={2} /> : null}
       {state.error ? <ErrorState error={state.error} onRetry={() => run(state.q)} /> : null}
       {state.results && state.results.length === 0 ? <Text tone="muted">{labels.none}</Text> : null}

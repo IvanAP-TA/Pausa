@@ -216,6 +216,11 @@ test.describe("a Serata with a member host, another member and a guest", () => {
     await expect(stranger.page.getByRole("link", { name: it.serata.result.ctaButton })).toHaveAttribute("href", /\/it\/sign-in$/);
     await expect(stranger.page.getByText(it.tmdb.attribution)).toBeVisible();
     await stranger.ctx.close();
+    // the link preview now tells the result, and its image address changed so a chat app does not keep the invitation
+    const html = await (await fetch(`${API}/it/s/${code}/card`)).text();
+    expect(html).toContain(`<meta property="og:title" content="${it.serata.invite.titleDone}"/>`);
+    expect(html).toContain(`<meta property="og:description" content="Stasera: Matrix. Deciso su Pausa."/>`);
+    expect(html).toContain(`/api/og/serata/${code}?locale=it&amp;s=done"`);
   });
 
   test("history: the finished Serata is a card with its winner; 'Ripeti' opens a new room with the same titles", async () => {
@@ -232,6 +237,22 @@ test.describe("a Serata with a member host, another member and a guest", () => {
     await expect(page.getByText("Matrix").first()).toBeVisible();
     await expect(page.getByText("One Piece").first()).toBeVisible();
     await expect(page.getByText("Breaking Bad").first()).toBeVisible();
+  });
+
+  test("'Registra' on the result opens the log form filled in: the winner, the Cerchia, the other member tagged (not the guest)", async () => {
+    const { page } = host;
+    const membId = (await api<{ id: string }>(memb, "GET", "/api/me")).json.id;
+    await page.goto(`/it/s/${code}`);
+    await page.getByTestId("log-winner").click();
+    await page.waitForURL(/\/it\/log/);
+    const url = new URL(page.url());
+    expect(url.pathname).toBe("/it/log");
+    expect(url.searchParams.get("media")).toBeTruthy();
+    expect(url.searchParams.get("circle")).toBe(circleId);
+    expect(url.searchParams.getAll("with")).toEqual([membId]);
+    await expect(page.getByText("Matrix").first()).toBeVisible();
+    await expect(page.getByTestId(`with-${membId}`)).toBeChecked();
+    await expect(page.getByTestId(`share-${circleId}`)).toBeChecked();
   });
 
   test("'we watched it': the host picks one of THEIR diary entries of the winner, and the history says so", async () => {
@@ -506,6 +527,43 @@ test.describe("looks", () => {
       await host.ctx.close();
       await memb.ctx.close();
     }
+  });
+});
+
+test.describe("the shared link", () => {
+  test("/s/:code carries its own preview: og tags in the page and a 1200x630 PNG drawn by the Worker", async ({ browser }) => {
+    const host = await person(browser, "oghost");
+    await signIn(host.page, host.email);
+    const c = await circleOf(host, "Anteprima");
+    const key = async (q: string) => (await api<Array<{ key: string }>>(host, "GET", `/api/media/search?q=${q}&locale=it`)).json[0].key;
+    const made = await api<{ code: string }>(host, "POST", "/api/serate", { circleId: c.id, mode: "bracket", mediaKeys: [await key("matrix"), await key("breaking")] });
+    const code = made.json.code;
+    // what a chat app's crawler reads: no JavaScript, just the HTML the Worker sends
+    const html = await (await fetch(`${API}/en/s/${code}`)).text();
+    const og = (p: string) => html.match(new RegExp(`<meta property="og:${p}" content="([^"]*)"`))?.[1];
+    expect(og("title")).toBe("You have been invited to a Serata");
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image"/>');
+    const image = new URL(og("image")!.replaceAll("&amp;", "&"));
+    expect(image.pathname).toBe(`/api/og/serata/${code}`);
+    expect(image.searchParams.get("s")).toBe("open");
+    const res = await fetch(`${API}${image.pathname}${image.search}`);
+    expect(res.headers.get("content-type")).toBe("image/png");
+    expect(png(Buffer.from(await res.arrayBuffer()))).toEqual({ w: 1200, h: 630, magic: "PNG" });
+    // an unknown room keeps the page as it is, and has no image
+    expect(await (await fetch(`${API}/it/s/ZZZZ22`)).text()).not.toContain("og:image");
+    expect((await fetch(`${API}/api/og/serata/ZZZZ22?locale=it`)).status).toBe(404);
+    await host.ctx.close();
+  });
+
+  test("with TMDB off, the Serata search says it only looks among the titles Pausa already has", async ({ browser }) => {
+    const host = await person(browser, "tmdboff");
+    await signIn(host.page, host.email);
+    const c = await circleOf(host, "Senza TMDB");
+    await host.page.route("**/api/imports/config", (r) => r.fulfill({ json: { tmdb: false } }));
+    await host.page.goto(`/it/c/${c.id}/serate`);
+    await expect(host.page.getByTestId("tmdb-off")).toHaveText(it.log.tmdbOff);
+    await host.page.unroute("**/api/imports/config");
+    await host.ctx.close();
   });
 });
 

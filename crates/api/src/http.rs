@@ -169,7 +169,10 @@ pub fn with_security(mut res: Response) -> Response {
         let _ = h.set("Referrer-Policy", "strict-origin-when-cross-origin");
     }
     let _ = h.set("X-Frame-Options", "DENY");
-    let _ = h.set("Cross-Origin-Resource-Policy", "same-site");
+    // A link-preview image sets its own `cross-origin`: preview proxies of chat apps load it from their domains.
+    if !h.has("Cross-Origin-Resource-Policy").unwrap_or(false) {
+        let _ = h.set("Cross-Origin-Resource-Policy", "same-site");
+    }
     let _ = h.set(
         "Permissions-Policy",
         "camera=(), microphone=(), geolocation=(), payment=()",

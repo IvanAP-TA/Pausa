@@ -1,5 +1,6 @@
-// The landing's own stylesheet. The page ships NO JavaScript, so everything that legacy did with a script is CSS here:
-//   theme toggle   a hidden checkbox + `:root:has(:checked)` (valid on this page only: no cookie can be written)
+// The landing's own stylesheet. The page works with no JavaScript, so most of what legacy did with a script is CSS here
+// (/public.js adds the saved theme, the signed-in redirect, the Google button and parallax):
+//   theme toggle   a hidden checkbox + `:root:has(:checked)`; `data-theme` (set by /public.js from the saved choice) as well
 //   Serata demo    radio groups + `:has()` (a three-step state machine), "Ricomincia" is a form reset
 //   FAQ, install   <details>
 //   progress line, reveal, how-it-works crossfade, sticky CTA   `animation-timeline: scroll()/view()`, only under
@@ -19,10 +20,15 @@ const CARD_RULE = palettes.dark.rule;
 const CARD_ACCENT = palettes.dark.accent;
 
 export const LANDING_CSS = `
-:root:has(.lp-theme:checked){${light}}
-:root:has(.lp-theme:checked) .lp-grained::after{filter:invert(1)}
+:root:has(.lp-theme:checked),:root[data-theme="light"]{${light}}
+:root:has(.lp-theme:checked) .lp-grained::after,:root[data-theme="light"] .lp-grained::after{filter:invert(1)}
+@media (prefers-color-scheme:light){:root[data-theme="system"]{${light}}:root[data-theme="system"] .lp-grained::after{filter:invert(1)}}
 :root:has(.lp){scroll-padding-top:5rem}
 @media (prefers-reduced-motion:no-preference){:root:has(.lp){scroll-behavior:smooth}}
+html.lenis,html.lenis body{height:auto}
+html.lenis{scroll-behavior:auto}
+.lenis:not(.lenis-autoToggle).lenis-stopped{overflow:clip}
+.lenis.lenis-smooth iframe{pointer-events:none}
 .lp{--container:1440px;--gutter:64px;--gap:32px;--sg-s:120px;--sg:144px;--sg-l:176px;position:relative;z-index:1;display:block;width:100%;font-family:Barlow_400,ui-sans-serif,system-ui,sans-serif;font-size:16px;line-height:1.55;color:var(--c-ink);font-synthesis:none}
 @media (max-width:60rem){.lp{--gutter:24px;--sg-s:80px;--sg:96px;--sg-l:120px}}
 @media (max-width:40rem){.lp{--gutter:16px;--sg-s:56px;--sg:72px;--sg-l:96px;--gap:16px}}
@@ -248,7 +254,9 @@ export const LANDING_CSS = `
 .lp-final .lp-cols{align-items:end;row-gap:32px}
 .lp-final .lp-lead{max-width:40ch}
 .lp-final-side{display:grid;gap:24px}
-.lp-footer{border-top:1px solid var(--c-rule);padding:96px 0 40px}
+.lp-footer{border-top:1px solid var(--c-rule);padding:96px 0 40px;overflow-x:clip}
+.lp-google[hidden]{display:none}
+.lp-google svg{flex:none}
 .lp-mast{display:flex;align-items:center;gap:.14em;font-size:clamp(6rem,16vw,13rem);line-height:1}
 .lp-mast span{font-family:${D},ui-sans-serif,sans-serif;font-weight:200;text-transform:uppercase;line-height:1}
 .lp-footer .lp-tagline{margin-top:16px;color:var(--c-muted)}

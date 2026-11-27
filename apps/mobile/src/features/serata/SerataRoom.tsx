@@ -206,7 +206,7 @@ function Room({ code, isGuest, meId }: { code: string; isGuest: boolean; meId: s
   const inRoom = view.joined;
 
   let phase: React.ReactNode;
-  if (status === "done" && view.result) phase = <RoomResult view={view} isGuest={isGuest} signInNext={`/${locale}/s/${code}`} />;
+  if (status === "done" && view.result) phase = <RoomResult view={view} isGuest={isGuest} meId={meId} signInNext={`/${locale}/s/${code}`} />;
   else if (status === "expired") phase = <Empty title={t("serataApp.room.expired")} body={t("serataApp.room.expiredBody")} />;
   else if (!inRoom && status === "lobby")
     phase = (
