@@ -308,6 +308,19 @@ async fn serve_client(req: Request, env: Env) -> Result<Response> {
         return finish(Err(Fail::not_found()));
     };
     let mut url = req.url()?;
+    // The root has no page of its own to show: straight to the landing.
+    if path == "/" {
+        let accept = req.headers().get("Accept-Language")?.unwrap_or_default();
+        let mut res = Response::empty()?.with_status(302);
+        let headers = res.headers_mut();
+        headers.set(
+            "Location",
+            &pausa_core::shell::root_redirect(&accept, url.query()),
+        )?;
+        headers.set("Vary", "Accept-Language")?;
+        headers.set("Cache-Control", "no-store")?;
+        return Ok(res);
+    }
     // Old app addresses (bookmarks, shared links, installed apps): a permanent redirect to where the page lives now.
     if let Some(to) = pausa_core::shell::legacy_redirect(&path) {
         let target = pausa_core::shell::with_query(&to, url.query());

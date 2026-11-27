@@ -46,6 +46,30 @@ pub fn shell_path(path: &str) -> Option<String> {
     Some(format!("/{locale}/{tail}"))
 }
 
+/// Where `/` leads, as in v1: the landing in the browser's language (the first of `Accept-Language` that Pausa speaks,
+/// Italian otherwise). `?app` is v1's installed web app (`start_url` "/?app=1"): it opens on home. The rest of the query
+/// (campaign tags) is kept.
+pub fn root_redirect(accept_language: &str, query: Option<&str>) -> String {
+    let locale = accept_language
+        .split(',')
+        .filter_map(|part| part.trim().get(..2))
+        .find_map(|code| LOCALES.into_iter().find(|l| code.eq_ignore_ascii_case(l)))
+        .unwrap_or("it");
+    let mut app = false;
+    let rest: Vec<&str> = query
+        .unwrap_or("")
+        .split('&')
+        .filter(|pair| !pair.is_empty())
+        .filter(|pair| {
+            let is_app = *pair == "app" || pair.starts_with("app=");
+            app |= is_app;
+            !is_app
+        })
+        .collect();
+    let target = format!("/{locale}/{}", if app { "home" } else { "" });
+    with_query(&target, Some(&rest.join("&")))
+}
+
 /// Addresses of the old app (branch `legacy`) that moved: bookmarks, shared links and installed apps still open them.
 /// `/it/c/abc/serata` -> `Some("/it/c/abc/serate")`. The result may carry its own query (`?circle=`); the caller appends the
 /// request's query after it. `None` when the path is not an old address.
@@ -241,6 +265,18 @@ mod legacy_tests {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_root_goes_to_the_landing_in_the_browser_language() {
+        use super::root_redirect as to;
+        assert_eq!(to("en-GB,en;q=0.9,it;q=0.8", None), "/en/");
+        assert_eq!(to("fr-FR,ES;q=0.7", None), "/es/");
+        assert_eq!(to("", None), "/it/");
+        assert_eq!(to("de, à", None), "/it/");
+        assert_eq!(to("it", Some("utm_source=x")), "/it/?utm_source=x");
+        assert_eq!(to("es", Some("app=1")), "/es/home");
+        assert_eq!(to("es", Some("app=1&a=b")), "/es/home?a=b");
+    }
+
     use super::shell_path as s;
 
     #[test]

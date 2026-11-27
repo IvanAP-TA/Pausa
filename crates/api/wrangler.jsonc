@@ -55,6 +55,8 @@
     "not_found_handling": "404-page",
     "run_worker_first": [
       "/api/*",
+      // The root redirects to the landing in the browser's language.
+      "/",
       "/*/c/*",
       // Only the old /me/* addresses need the Worker (redirects); listing them one by one keeps /me and /me/circles static.
       "/*/me/edit",

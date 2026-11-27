@@ -1,4 +1,5 @@
-// `/`: a static page that links to the three languages (no Accept-Language redirect, by decision). Public: no JavaScript.
+// `/`: in production nobody sees this page, the Worker redirects to the landing in the browser's language (crates/api,
+// `serve_client`). The static file stays as the fallback of a plain file server, with the root's metadata. No JavaScript.
 import type { GenerateMetadataFunction } from "expo-server";
 import { Redirect } from "expo-router";
 import { Platform, View } from "react-native";

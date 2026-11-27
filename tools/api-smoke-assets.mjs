@@ -15,6 +15,10 @@ const get = async (p, init) => {
   return { status: r.status, type: r.headers.get("content-type") ?? "", text: await r.text() };
 };
 let r;
+for (const [accept, to] of [["it-IT,it;q=0.9", "/it/"], ["en-US,en", "/en/"], ["fr", "/it/"]]) {
+  const root = await fetch(base + "/", { redirect: "manual", headers: { "accept-language": accept } });
+  check(`the root goes to the landing (${accept} -> ${to})`, root.status === 302 && new URL(root.headers.get("location"), base).pathname === to, `${root.status} ${root.headers.get("location")}`);
+}
 r = await get("/it/privacy");
 check("a public page comes from the asset host (200, HTML)", r.status === 200 && r.type.includes("text/html") && r.text.includes("<title"), String(r.status));
 r = await get("/it/home");
